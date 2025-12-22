@@ -143,3 +143,5 @@ CREATE TABLE IF NOT EXISTS `favorite` (
 INSERT INTO `user` (`username`, `password`, `nickname`, `role`, `status`)
 VALUES ('admin', '$2a$10$EkI3qYaNGCh5NHSKgDg3PeZ3R3gKIjJmT4EC6k2k8Q3F8oF5hYk6W', '管理员', 1, 1)
 ON DUPLICATE KEY UPDATE id=id;
+
+# --修改管理员密码
