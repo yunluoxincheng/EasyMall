@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.ruikun.mapper.CartMapper">
+
+    <resultMap id="BaseResultMap" type="org.ruikun.entity.Cart">
+        <id column="id" property="id"/>
+        <result column="user_id" property="userId"/>
+        <result column="product_id" property="productId"/>
+        <result column="product_name" property="productName"/>
+        <result column="product_image" property="productImage"/>
+        <result column="product_price" property="productPrice"/>
+        <result column="quantity" property="quantity"/>
+        <result column="total_price" property="totalPrice"/>
+        <result column="selected" property="selected"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="deleted" property="deleted"/>
+    </resultMap>
+
+    <resultMap id="CartWithProductMap" type="org.ruikun.entity.Cart" extends="BaseResultMap">
+        <result column="stock" property="stock"/>
+    </resultMap>
+
+    <select id="getCartByUserId" resultMap="CartWithProductMap">
+        SELECT c.*, p.stock
+        FROM cart c
+        LEFT JOIN product p ON c.product_id = p.id
+        WHERE c.user_id = #{userId} AND c.deleted = 0
+        ORDER BY c.create_time DESC
+    </select>
+
+    <select id="getCartByUserIdAndProductId" resultMap="BaseResultMap">
+        SELECT * FROM cart
+        WHERE user_id = #{userId} AND product_id = #{productId} AND deleted = 0
+    </select>
+
+    <update id="batchUpdateSelected">
+        UPDATE cart
+        SET selected = #{selected}
+        WHERE user_id = #{userId}
+        <if test="cartIds != null and cartIds.size() > 0">
+            AND id IN
+            <foreach collection="cartIds" item="cartId" open="(" separator="," close=")">
+                #{cartId}
+            </foreach>
+        </if>
+    </update>
+
+    <update id="updateCartByUserIdAndProductId">
+        UPDATE cart
+        SET quantity = quantity + #{quantity},
+            total_price = product_price * (quantity + #{quantity})
+        WHERE user_id = #{userId} AND product_id = #{productId}
+    </update>
+
+</mapper>
