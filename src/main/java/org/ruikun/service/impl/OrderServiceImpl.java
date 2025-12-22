@@ -29,6 +29,8 @@ public class OrderServiceImpl implements IOrderService {
     private final OrderItemMapper orderItemMapper;
     private final CartMapper cartMapper;
     private final ProductMapper productMapper;
+    private final org.ruikun.service.IPointsService pointsService;
+    private final org.ruikun.service.IPriceService priceService;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -48,11 +50,14 @@ public class OrderServiceImpl implements IOrderService {
                 .map(Cart::getTotalPrice)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
+        // 应用会员折扣
+        BigDecimal payAmount = priceService.applyMemberDiscountToOrder(userId, totalAmount);
+
         Order order = new Order();
         order.setOrderNo(generateOrderNo());
         order.setUserId(userId);
         order.setTotalAmount(totalAmount);
-        order.setPayAmount(totalAmount);
+        order.setPayAmount(payAmount);
         order.setStatus(0);
         order.setReceiverName(orderCreateDTO.getReceiverName());
         order.setReceiverPhone(orderCreateDTO.getReceiverPhone());
@@ -140,6 +145,7 @@ public class OrderServiceImpl implements IOrderService {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void confirmOrder(Long userId, Long orderId) {
         Order order = orderMapper.selectById(orderId);
         if (order == null || !order.getUserId().equals(userId)) {
@@ -151,6 +157,9 @@ public class OrderServiceImpl implements IOrderService {
 
         order.setStatus(3);
         orderMapper.updateById(order);
+
+        // 订单完成后增加积分
+        pointsService.addPointsForOrder(userId, orderId, order.getPayAmount().doubleValue());
     }
 
     private String generateOrderNo() {
