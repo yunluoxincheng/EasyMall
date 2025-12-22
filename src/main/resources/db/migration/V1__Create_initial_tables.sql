@@ -145,3 +145,5 @@ VALUES ('admin', '$2a$10$EkI3qYaNGCh5NHSKgDg3PeZ3R3gKIjJmT4EC6k2k8Q3F8oF5hYk6W',
 ON DUPLICATE KEY UPDATE id=id;
 
 # --修改管理员密码
+
+# --修改管理员密码

@@ -37,11 +37,11 @@ public class UserController {
 
     @GetMapping("/info")
     public Result<UserVO> getUserInfo(HttpServletRequest request) {
-        String token = request.getHeader("Authorization");
-        if (token != null && token.startsWith("Bearer ")) {
-            token = token.substring(7);
+        // 从JWT过滤器中获取已验证的用户ID
+        Long userId = (Long) request.getAttribute("userId");
+        if (userId == null) {
+            return Result.error("用户未登录");
         }
-        Long userId = jwtUtil.getUserIdFromToken(token);
         UserVO userVO = userService.getUserInfo(userId);
         return Result.success(userVO);
     }
@@ -49,11 +49,11 @@ public class UserController {
     @PutMapping("/info")
     public Result<?> updateUserInfo(@RequestBody @Validated UserUpdateDTO updateDTO,
                                     HttpServletRequest request) {
-        String token = request.getHeader("Authorization");
-        if (token != null && token.startsWith("Bearer ")) {
-            token = token.substring(7);
+        // 从JWT过滤器获取用户ID
+        Long userId = (Long) request.getAttribute("userId");
+        if (userId == null) {
+            return Result.error("用户未登录");
         }
-        Long userId = jwtUtil.getUserIdFromToken(token);
         userService.updateUserInfo(userId, updateDTO);
         return Result.success("更新成功");
     }
@@ -62,21 +62,22 @@ public class UserController {
     public Result<?> updatePassword(@RequestParam String oldPassword,
                                    @RequestParam String newPassword,
                                    HttpServletRequest request) {
-        String token = request.getHeader("Authorization");
-        if (token != null && token.startsWith("Bearer ")) {
-            token = token.substring(7);
+        // 从JWT过滤器获取用户ID
+        Long userId = (Long) request.getAttribute("userId");
+        if (userId == null) {
+            return Result.error("用户未登录");
         }
-        Long userId = jwtUtil.getUserIdFromToken(token);
         userService.updatePassword(userId, oldPassword, newPassword);
         return Result.success("密码修改成功");
     }
 
     @PostMapping("/logout")
     public Result<?> logout(HttpServletRequest request) {
-        String token = request.getHeader("Authorization");
-        if (token != null && token.startsWith("Bearer ")) {
-            token = token.substring(7);
-            Long userId = jwtUtil.getUserIdFromToken(token);
+        // 从JWT过滤器获取用户ID
+        Long userId = (Long) request.getAttribute("userId");
+        if (userId != null) {
+            // 清除Redis中的token
+            userService.logout(userId);
         }
         return Result.success("退出成功");
     }

@@ -156,4 +156,10 @@ public class UserServiceImpl implements IUserService {
 
         redisTemplate.delete("login:" + userId);
     }
+
+    @Override
+    public void logout(Long userId) {
+        // 删除Redis中的token，使token失效
+        redisTemplate.delete("login:" + userId);
+    }
 }
