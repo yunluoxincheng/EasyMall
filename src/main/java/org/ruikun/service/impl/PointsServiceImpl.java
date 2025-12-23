@@ -142,6 +142,59 @@ public class PointsServiceImpl implements IPointsService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    public void addPoints(Long userId, Integer points, String description) {
+        // 获取用户信息
+        User user = userMapper.selectById(userId);
+        if (user == null) {
+            throw new BusinessException("用户不存在");
+        }
+
+        // 记录变动前积分
+        Integer beforePoints = user.getPoints();
+
+        if (points > 0) {
+            // 增加积分
+            user.setPoints(beforePoints + points);
+            userMapper.updateById(user);
+
+            // 记录积分变动（类型 4-系统赠送）
+            PointsRecord record = new PointsRecord();
+            record.setUserId(userId);
+            record.setPointsChange(points);
+            record.setBeforePoints(beforePoints);
+            record.setAfterPoints(beforePoints + points);
+            record.setType(4); // 系统赠送
+            record.setSourceId(0L);
+            record.setDescription(description);
+            pointsRecordMapper.insert(record);
+        } else if (points < 0) {
+            // 扣减积分
+            int deductAmount = -points;
+            if (beforePoints < deductAmount) {
+                throw new BusinessException("积分不足");
+            }
+
+            user.setPoints(beforePoints - deductAmount);
+            userMapper.updateById(user);
+
+            // 记录积分变动（类型 6-退款扣除）
+            PointsRecord record = new PointsRecord();
+            record.setUserId(userId);
+            record.setPointsChange(points); // 负数
+            record.setBeforePoints(beforePoints);
+            record.setAfterPoints(beforePoints - deductAmount);
+            record.setType(6); // 退款扣除
+            record.setSourceId(0L);
+            record.setDescription(description);
+            pointsRecordMapper.insert(record);
+        }
+
+        // 检查并升级/降级会员等级
+        memberService.checkAndUpgradeMember(userId);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
     public void addPointsForOrder(Long userId, Long orderId, Double amount) {
         // 计算积分（每消费1元获得1积分）
         int points = (int) (amount * POINTS_PER_YUAN);

@@ -9,12 +9,15 @@ import org.ruikun.utils.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.Collection;
+import java.util.Collections;
 
 @Slf4j
 @Component
@@ -36,7 +39,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (requestURI.startsWith("/api/user/login") ||
             requestURI.startsWith("/api/user/register") ||
             requestURI.startsWith("/api/product/") ||
-            requestURI.startsWith("/api/category/")) {
+            requestURI.startsWith("/api/category/") ||
+            requestURI.startsWith("/api/dev/")) {  // 开发工具接口
             filterChain.doFilter(request, response);
             return;
         }
@@ -48,15 +52,22 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             try {
                 String username = jwtUtil.getUsernameFromToken(token);
                 Long userId = jwtUtil.getUserIdFromToken(token);
+                Integer role = jwtUtil.getRoleFromToken(token);
 
                 // 检查token是否过期
                 if (!jwtUtil.isTokenExpired(token)) {
                     // 可选：检查Redis中的token
                     String redisToken = redisTemplate.opsForValue().get("login:" + userId);
                     if (redisToken != null && redisToken.equals(token)) {
+                        // 根据角色设置权限
+                        Collection<SimpleGrantedAuthority> authorities = Collections.emptyList();
+                        if (role == 1) {
+                            authorities = Collections.singletonList(new SimpleGrantedAuthority("ROLE_ADMIN"));
+                        }
+
                         // 创建认证对象
                         UsernamePasswordAuthenticationToken authentication =
-                            new UsernamePasswordAuthenticationToken(username, null, null);
+                            new UsernamePasswordAuthenticationToken(username, null, authorities);
                         authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
                         // 设置到Security上下文
@@ -65,6 +76,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         // 将用户信息放入request，供Controller使用
                         request.setAttribute("userId", userId);
                         request.setAttribute("username", username);
+                        request.setAttribute("role", role);
                     }
                 }
             } catch (Exception e) {

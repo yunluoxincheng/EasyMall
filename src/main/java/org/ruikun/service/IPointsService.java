@@ -37,6 +37,15 @@ public interface IPointsService {
     Page<PointsRecordVO> getPointsRecords(Long userId, Integer pageNum, Integer pageSize);
 
     /**
+     * 增加或扣减积分（便捷方法，用于后台管理）
+     *
+     * @param userId       用户ID
+     * @param points       积分值（正数为增加，负数为扣减）
+     * @param description  描述
+     */
+    void addPoints(Long userId, Integer points, String description);
+
+    /**
      * 订单完成后增加积分
      *
      * @param userId  用户ID

@@ -46,7 +46,7 @@ public class UserServiceImpl implements IUserService {
             throw new BusinessException("密码错误");
         }
 
-        String token = jwtUtil.generateToken(user.getUsername(), user.getId());
+        String token = jwtUtil.generateToken(user.getUsername(), user.getId(), user.getRole());
 
         redisTemplate.opsForValue().set("login:" + user.getId(), token, 24, TimeUnit.HOURS);
 

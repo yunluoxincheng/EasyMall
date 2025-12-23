@@ -27,9 +27,10 @@ public class JwtUtil {
         return Keys.hmacShaKeyFor(secret.getBytes());
     }
 
-    public String generateToken(String username, Long userId) {
+    public String generateToken(String username, Long userId, Integer role) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("userId", userId);
+        claims.put("role", role);
         return createToken(claims, username);
     }
 
@@ -60,6 +61,17 @@ public class JwtUtil {
 
     public Long getUserIdFromToken(String token) {
         return Long.valueOf(getClaimsFromToken(token).get("userId").toString());
+    }
+
+    public Integer getRoleFromToken(String token) {
+        Object role = getClaimsFromToken(token).get("role");
+        if (role == null) {
+            return 0; // 默认普通用户
+        }
+        if (role instanceof Integer) {
+            return (Integer) role;
+        }
+        return Integer.valueOf(role.toString());
     }
 
     public Date getExpirationDateFromToken(String token) {

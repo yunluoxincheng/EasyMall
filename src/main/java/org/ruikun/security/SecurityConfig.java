@@ -38,6 +38,7 @@ public class SecurityConfig {
                         // 允许无需认证的接口
                         .requestMatchers("/api/user/login", "/api/user/register").permitAll()
                         .requestMatchers("/api/product/**", "/api/category/**").permitAll()
+                        .requestMatchers("/api/dev/**").permitAll()  // 开发工具接口
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/", "/error", "/actuator/**").permitAll()
                         // 其他所有请求都需要认证
