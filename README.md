@@ -152,9 +152,124 @@ src/main/resources/
    - 接口地址：http://localhost:8080/api
    - 默认管理员账号：admin/admin123
 
+### Docker 开发环境（推荐）
+
+使用 Docker 可以快速搭建完整的开发环境，无需手动安装 MySQL、Redis、Elasticsearch 等依赖。
+
+**环境要求**
+- Docker Engine 20.10+
+- Docker Compose 2.0+
+
+**快速启动**
+
+1. **启动所有服务**
+   ```bash
+   # 使用 docker-compose 启动（基础模式）
+   docker-compose up -d
+
+   # 或使用开发模式（启用代码热重载）
+   docker-compose -f docker-compose.yml -f docker-dev.yml up -d
+   ```
+
+2. **查看服务状态**
+   ```bash
+   docker-compose ps
+   ```
+
+3. **查看应用日志**
+   ```bash
+   # 查看所有服务日志
+   docker-compose logs -f
+
+   # 仅查看应用日志
+   docker-compose logs -f easymall-app
+   ```
+
+4. **停止所有服务**
+   ```bash
+   docker-compose down
+
+   # 停止并删除数据卷（清空数据库数据）
+   docker-compose down -v
+   ```
+
+**服务说明**
+
+| 服务 | 容器名 | 端口映射 | 说明 |
+|------|--------|----------|------|
+| EasyMall 应用 | easymall-app | 8080:8080 | Spring Boot 应用 |
+| MySQL | easymall-mysql | 3306:3306 | 数据库 |
+| Redis | easymall-redis | 6379:6379 | 缓存 |
+| Elasticsearch | easymall-es | 9200:9200, 9300:9300 | 搜索引擎 |
+
+**代码热重载**
+
+使用开发模式启动后，修改 `src` 目录下的代码会自动触发应用重启：
+
+```bash
+docker-compose -f docker-compose.yml -f docker-dev.yml up
+```
+
+**环境配置**
+
+可通过 `.env` 文件自定义配置：
+
+```bash
+# 应用端口
+APP_PORT=8080
+
+# MySQL 配置
+MYSQL_PORT=3306
+MYSQL_PASSWORD=123456
+
+# Redis 配置
+REDIS_PORT=6379
+
+# Elasticsearch 配置
+ES_PORT=9200
+```
+
+**常见问题**
+
+1. **Elasticsearch 启动失败**
+   - Linux/Mac：调整 vm.max_map_count 参数
+     ```bash
+     sysctl -w vm.max_map_count=262144
+     ```
+   - Windows：使用 WSL2 或 Docker Desktop
+
+2. **Maven 依赖下载缓慢**
+   - 首次启动会下载依赖，请耐心等待
+   - 依赖会缓存到宿主机 `~/.m2` 目录，后续启动更快
+
+3. **端口冲突**
+   - 修改 `.env` 文件中的端口配置
+   - 或关闭占用端口的服务
+
+**数据库初始化**
+
+使用 Docker 首次启动时，数据库会自动执行初始化脚本（位于 `src/main/resources/db/migration/` 目录），包括：
+
+- 表结构创建（V1、V2、V3）
+- 测试数据导入（test-data.sql）
+
+所有表和字段均使用 **utf8mb4** 字符集，确保中文数据正常存储。
+
+**重新初始化数据库**
+
+如需清空数据重新初始化：
+
+```bash
+# 停止并删除所有容器和数据卷
+docker-compose -f docker-compose.yml -f docker-dev.yml down -v
+
+# 重新启动（自动初始化）
+docker-compose -f docker-compose.yml -f docker-dev.yml up -d
+```
+
 ## API接口文档
 
-### 用户模块
+### 用户模
 - POST /api/user/login - 用户登录
 - POST /api/user/register - 用户注册
 - GET /api/user/info - 获取用户信息

@@ -1,3 +1,12 @@
+-- ============================================
+-- 设置字符集为 utf8mb4，避免中文乱码
+-- ============================================
+SET NAMES utf8mb4;
+SET CHARACTER SET utf8mb4;
+SET character_set_client = utf8mb4;
+SET character_set_connection = utf8mb4;
+SET character_set_results = utf8mb4;
+
 -- 积分兑换商品表
 CREATE TABLE IF NOT EXISTS `points_product` (
     `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -14,7 +23,7 @@ CREATE TABLE IF NOT EXISTS `points_product` (
     `deleted` TINYINT DEFAULT 0,
     INDEX idx_status (`status`),
     INDEX idx_sort (`sort_order`)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 积分兑换记录表
 CREATE TABLE IF NOT EXISTS `points_exchange` (
@@ -35,7 +44,7 @@ CREATE TABLE IF NOT EXISTS `points_exchange` (
     INDEX idx_user_id (`user_id`),
     INDEX idx_exchange_no (`exchange_no`),
     INDEX idx_status (`status`)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 插入示例积分兑换商品
 INSERT INTO `points_product` (`name`, `description`, `image`, `points_required`, `stock`, `status`, `sort_order`)

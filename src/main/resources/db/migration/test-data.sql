@@ -1,4 +1,13 @@
 -- ============================================
+-- 设置字符集为 utf8mb4，避免中文乱码
+-- ============================================
+SET NAMES utf8mb4;
+SET CHARACTER SET utf8mb4;
+SET character_set_client = utf8mb4;
+SET character_set_connection = utf8mb4;
+SET character_set_results = utf8mb4;
+
+-- ============================================
 -- EasyMall 测试数据
 -- ============================================
 

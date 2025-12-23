@@ -1,0 +1,27 @@
+# Docker 开发环境配置
+# 使用方式: docker-compose -f docker-compose.yml -f docker-dev.yml up
+
+version: '3.8'
+
+services:
+  easymall-app:
+    # 开发模式额外挂载
+    volumes:
+      # 挂载完整源代码（热重载）
+      - ./src:/app/src:cached
+      - ./pom.xml:/app/pom.xml:cached
+      # Maven 本地仓库缓存
+      - ${HOME}/.m2:/root/.m2:cached
+    # 开发环境变量
+    environment:
+      # 启用 Spring Boot DevTools
+      - SPRING_DEVTOOLS_RESTART_ENABLED=true
+      - SPRING_DEVTOOLS_LIVERELOAD_ENABLED=true
+      # 日志级别
+      - LOGGING_LEVEL_ORG_RUIKUN=debug
+      - LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY=debug
+    # 保持容器运行，便于调试
+    restart: unless-stopped
+    # 开发模式下使用 stdin_open 和 tty 以支持交互式调试
+    stdin_open: true
+    tty: true

@@ -1,3 +1,12 @@
+-- ============================================
+-- 设置字符集为 utf8mb4，避免中文乱码
+-- ============================================
+SET NAMES utf8mb4;
+SET CHARACTER SET utf8mb4;
+SET character_set_client = utf8mb4;
+SET character_set_connection = utf8mb4;
+SET character_set_results = utf8mb4;
+
 -- 用户表
 CREATE TABLE IF NOT EXISTS `user` (
     `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -15,7 +24,7 @@ CREATE TABLE IF NOT EXISTS `user` (
     `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP,
     `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted` TINYINT DEFAULT 0 COMMENT '逻辑删除'
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 商品分类表
 CREATE TABLE IF NOT EXISTS `category` (
@@ -29,7 +38,7 @@ CREATE TABLE IF NOT EXISTS `category` (
     `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP,
     `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted` TINYINT DEFAULT 0
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 商品表
 CREATE TABLE IF NOT EXISTS `product` (
@@ -51,7 +60,7 @@ CREATE TABLE IF NOT EXISTS `product` (
     `deleted` TINYINT DEFAULT 0,
     INDEX idx_category_id (`category_id`),
     INDEX idx_status (`status`)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 购物车表
 CREATE TABLE IF NOT EXISTS `cart` (
@@ -70,7 +79,7 @@ CREATE TABLE IF NOT EXISTS `cart` (
     INDEX idx_user_id (`user_id`),
     INDEX idx_product_id (`product_id`),
     UNIQUE KEY uk_user_product (`user_id`, `product_id`, `deleted`)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 订单表
 CREATE TABLE IF NOT EXISTS `orders` (
@@ -91,7 +100,7 @@ CREATE TABLE IF NOT EXISTS `orders` (
     `deleted` TINYINT DEFAULT 0,
     INDEX idx_user_id (`user_id`),
     INDEX idx_order_no (`order_no`)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 订单项表
 CREATE TABLE IF NOT EXISTS `order_item` (
@@ -107,7 +116,7 @@ CREATE TABLE IF NOT EXISTS `order_item` (
     `deleted` TINYINT DEFAULT 0,
     INDEX idx_order_id (`order_id`),
     INDEX idx_product_id (`product_id`)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 评论表
 CREATE TABLE IF NOT EXISTS `comment` (
@@ -125,7 +134,7 @@ CREATE TABLE IF NOT EXISTS `comment` (
     INDEX idx_user_id (`user_id`),
     INDEX idx_product_id (`product_id`),
     INDEX idx_order_id (`order_id`)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 收藏表
 CREATE TABLE IF NOT EXISTS `favorite` (
@@ -137,7 +146,7 @@ CREATE TABLE IF NOT EXISTS `favorite` (
     UNIQUE KEY uk_user_product (`user_id`, `product_id`, `deleted`),
     INDEX idx_user_id (`user_id`),
     INDEX idx_product_id (`product_id`)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 插入默认管理员账号（密码：admin123）
 INSERT INTO `user` (`username`, `password`, `nickname`, `role`, `status`)

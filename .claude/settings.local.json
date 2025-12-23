@@ -6,7 +6,8 @@
       "Bash(openspec validate:*)",
       "Skill(openspec:proposal)",
       "Skill(openspec:archive)",
-      "Skill(openspec:apply)"
+      "Skill(openspec:apply)",
+      "Bash(openspec archive add-docker-dev-environment:*)"
     ]
   }
 }

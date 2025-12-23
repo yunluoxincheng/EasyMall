@@ -1,3 +1,12 @@
+-- ============================================
+-- 设置字符集为 utf8mb4，避免中文乱码
+-- ============================================
+SET NAMES utf8mb4;
+SET CHARACTER SET utf8mb4;
+SET character_set_client = utf8mb4;
+SET character_set_connection = utf8mb4;
+SET character_set_results = utf8mb4;
+
 -- 会员等级配置表
 CREATE TABLE IF NOT EXISTS `member_level` (
     `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -15,7 +24,7 @@ CREATE TABLE IF NOT EXISTS `member_level` (
     `deleted` TINYINT DEFAULT 0,
     INDEX idx_level (`level`),
     INDEX idx_points_range (`min_points`, `max_points`)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 积分变动记录表
 CREATE TABLE IF NOT EXISTS `points_record` (
@@ -31,7 +40,7 @@ CREATE TABLE IF NOT EXISTS `points_record` (
     INDEX idx_user_id (`user_id`),
     INDEX idx_type (`type`),
     INDEX idx_create_time (`create_time`)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 用户签到记录表
 CREATE TABLE IF NOT EXISTS `user_sign` (
@@ -44,7 +53,7 @@ CREATE TABLE IF NOT EXISTS `user_sign` (
     UNIQUE KEY uk_user_date (`user_id`, `sign_date`),
     INDEX idx_user_id (`user_id`),
     INDEX idx_sign_date (`sign_date`)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 插入默认会员等级配置
 INSERT INTO `member_level` (`level`, `level_name`, `min_points`, `max_points`, `discount`, `benefits`, `sort_order`, `status`)

@@ -1,0 +1,109 @@
+version: '3.8'
+
+services:
+  # EasyMall 应用服务
+  easymall-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: easymall-app
+    ports:
+      - "${APP_PORT:-8080}:8080"
+    environment:
+      # 数据源配置
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/easymall?useUnicode=true&characterEncoding=utf8mb4&useSSL=false&serverTimezone=UTC&connectionCollation=utf8mb4_unicode_ci
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD}
+      # Redis 配置
+      - SPRING_DATA_REDIS_HOST=redis
+      - SPRING_DATA_REDIS_PORT=6379
+      - SPRING_DATA_REDIS_PASSWORD=
+      # Elasticsearch 配置
+      - SPRING_ELASTICSEARCH_URIS=http://elasticsearch:9200
+      # 开发工具配置
+      - SPRING_DEVTOOLS_RESTART_ENABLED=true
+      - SPRING_DEVTOOLS_LIVERELOAD_ENABLED=true
+    volumes:
+      # 代码热重载
+      - ./src:/app/src
+      - ./pom.xml:/app/pom.xml
+      # Maven 仓库缓存（避免重复下载依赖）
+      - ${HOME}/.m2:/root/.m2
+    depends_on:
+      - mysql
+      - redis
+      - elasticsearch
+    networks:
+      - easymall-network
+
+  # MySQL 数据库服务
+  mysql:
+    image: mysql:8.0
+    container_name: easymall-mysql
+    command: >
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+      --default-authentication-plugin=mysql_native_password
+      --init-connect="SET NAMES utf8mb4"
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_PASSWORD}
+      - MYSQL_DATABASE=easymall
+      - TZ=Asia/Shanghai
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+      # 挂载数据库初始化脚本
+      - ./src/main/resources/db/migration:/docker-entrypoint-initdb.d:ro
+    networks:
+      - easymall-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis 缓存服务
+  redis:
+    image: redis:7-alpine
+    container_name: easymall-redis
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    networks:
+      - easymall-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Elasticsearch 搜索服务
+  elasticsearch:
+    image: elasticsearch:8.11.0
+    container_name: easymall-es
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    ports:
+      - "${ES_PORT:-9200}:9200"
+      - "${ES_TRANSPORT_PORT:-9300}:9300"
+    volumes:
+      - es-data:/usr/share/elasticsearch/data
+    networks:
+      - easymall-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+networks:
+  easymall-network:
+    driver: bridge
+
+volumes:
+  mysql-data:
+    driver: local
+  es-data:
+    driver: local
