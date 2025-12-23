@@ -292,11 +292,19 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 
 
 
-\* 管理员登录
+\* 商品管理（新增、修改、删除、上下架、库存管理）
 
-\* 商品管理（新增、修改、下架）
+\* 订单管理（订单列表、订单详情、状态修改、取消订单）
 
-\* 订单审核与发货
+\* 用户管理（用户列表、用户详情、状态管理、角色管理、积分调整）
+
+\* 评论审核（评论列表、审核通过/拒绝、商家回复、删除评论）
+
+\* 会员等级管理（等级配置、新增/修改/删除等级、状态管理）
+
+\* 分类管理（分类列表、新增/修改/删除分类、状态管理）
+
+\* 积分兑换商品管理（兑换商品列表、新增/修改/删除、上下架、库存管理）
 
 
 
@@ -304,9 +312,11 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 
 
 
-\* 后台接口仅管理员角色可访问
+\* 后台接口仅管理员角色可访问（`/api/admin/**` 路径）
 
 \* 使用 Spring Security 进行接口权限拦截
+
+\* 所有 AdminController 使用 `@PreAuthorize("hasRole('ADMIN')")` 注解
 
 
 
@@ -335,6 +345,18 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 \* 订单明细表（order\_item）
 
 \* 评论表（comment）
+
+\* 收藏表（favorite）
+
+\* 会员等级表（member\_level）
+
+\* 签到表（sign\_in）
+
+\* 积分记录表（points\_record）
+
+\* 积分兑换商品表（points\_product）
+
+\* 积分兑换记录表（points\_exchange）
 
 
 

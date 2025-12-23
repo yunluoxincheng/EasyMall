@@ -13,6 +13,7 @@ import org.ruikun.service.IPointsService;
 import org.ruikun.vo.admin.AdminUserPageVO;
 import org.ruikun.vo.admin.AdminUserVO;
 import org.springframework.beans.BeanUtils;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,6 +26,7 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/admin/users")
 @RequiredArgsConstructor
+@PreAuthorize("hasRole('ADMIN')")
 public class AdminUserController {
 
     private final UserMapper userMapper;

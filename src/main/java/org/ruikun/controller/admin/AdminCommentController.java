@@ -14,6 +14,7 @@ import org.ruikun.mapper.UserMapper;
 import org.ruikun.vo.admin.AdminCommentPageVO;
 import org.ruikun.vo.admin.AdminCommentVO;
 import org.springframework.beans.BeanUtils;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -26,6 +27,7 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/admin/comments")
 @RequiredArgsConstructor
+@PreAuthorize("hasRole('ADMIN')")
 public class AdminCommentController {
 
     private final CommentMapper commentMapper;

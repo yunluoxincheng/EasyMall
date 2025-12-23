@@ -1,0 +1,647 @@
+### ============================================
+### EasyMall API 接口测试文件
+### ============================================
+### 使用 REST Client 插件（如 IntelliJ IDEA 的 HTTP Client）
+### 可以直接运行这些请求进行 API 测试
+### ============================================
+
+# 设置基础URL
+@baseUrl = http://localhost:8080
+
+# ============================================
+### 一、开发工具接口（无需认证）
+### ============================================
+
+### 1. 生成 BCrypt 密码哈希
+### 用于生成数据库插入用户时的加密密码
+GET {{baseUrl}}/api/dev/hash?password=admin123
+
+# ============================================
+### 二、用户模块（公开接口）
+### ============================================
+
+### 2. 用户注册
+POST {{baseUrl}}/api/user/register
+Content-Type: application/json
+
+{
+  "username": "testuser",
+  "password": "123456",
+  "confirmPassword": "123456",
+  "nickname": "测试用户",
+  "email": "test@example.com",
+  "phone": "13800138000"
+}
+
+### 3. 用户登录
+### 返回的 token 用于后续需要认证的接口
+POST {{baseUrl}}/api/user/login
+Content-Type: application/json
+
+{
+  "username": "testuser",
+  "password": "123456"
+}
+
+### 登录成功后，将返回的 token 复制到下面
+@authToken = Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjowLCJ1c2VySWQiOjEsInN1YiI6InRlc3R1c2VyIiwiaWF0IjoxNzY2NDU4MjI3LCJleHAiOjE3NjY1NDQ2Mjd9.n1xLQvKBUlnhFWTol_9r2whGbEHXWL-Kj1epmv6pbNU
+
+### 4. 获取当前用户信息
+GET {{baseUrl}}/api/user/info
+Authorization: {{authToken}}
+
+### 5. 修改用户信息
+PUT {{baseUrl}}/api/user/info
+Content-Type: application/json
+Authorization: {{authToken}}
+
+{
+  "nickname": "新昵称",
+  "phone": "13900139000",
+  "email": "new@example.com",
+  "avatar": "https://example.com/avatar.jpg",
+  "gender": 1
+}
+
+### 6. 修改密码
+PUT {{baseUrl}}/api/user/password?oldPassword=123456&newPassword=654321
+Authorization: {{authToken}}
+
+### 7. 用户登出
+POST {{baseUrl}}/api/user/logout
+Authorization: {{authToken}}
+
+# ============================================
+### 三、商品模块（公开接口）
+### ============================================
+
+### 8. 分页查询商品列表
+GET {{baseUrl}}/api/product/page?pageNum=1&pageSize=10&keyword=手机&categoryId=1
+
+### 9. 查询商品详情
+GET {{baseUrl}}/api/product/1
+
+### 10. 查询热门商品
+GET {{baseUrl}}/api/product/hot?limit=5
+
+### 11. 查询新品
+GET {{baseUrl}}/api/product/new?limit=5
+
+### 12. 查询相关商品
+GET {{baseUrl}}/api/product/related?categoryId=1&productId=1&limit=5
+
+# ============================================
+### 四、分类模块（公开接口）
+### ============================================
+
+### 13. 获取分类树
+GET {{baseUrl}}/api/category/tree
+
+### 14. 获取分类详情
+GET {{baseUrl}}/api/category/1
+
+### 15. 按级别获取分类
+GET {{baseUrl}}/api/category/level/1
+
+# ============================================
+### 五、购物车模块（需要认证）
+### ============================================
+
+### 16. 获取购物车列表
+GET {{baseUrl}}/api/cart/list
+Authorization: {{authToken}}
+
+### 17. 获取购物车商品数量
+GET {{baseUrl}}/api/cart/count
+Authorization: {{authToken}}
+
+### 18. 添加商品到购物车
+POST {{baseUrl}}/api/cart/add
+Content-Type: application/json
+Authorization: {{authToken}}
+
+{
+  "productId": 1,
+  "quantity": 2
+}
+
+### 19. 修改购物车商品数量
+PUT {{baseUrl}}/api/cart/1
+Content-Type: application/json
+Authorization: {{authToken}}
+
+{
+  "quantity": 5
+}
+
+### 20. 删除购物车商品
+DELETE {{baseUrl}}/api/cart/1
+Authorization: {{authToken}}
+
+### 21. 批量删除购物车商品
+DELETE {{baseUrl}}/api/cart/batch
+Content-Type: application/json
+Authorization: {{authToken}}
+
+{
+  "cartIds": [1, 2, 3]
+}
+
+### 22. 全选/取消全选购物车
+PUT {{baseUrl}}/api/cart/selectAll/true
+Authorization: {{authToken}}
+
+### 23. 批量选中/取消购物车商品
+PUT {{baseUrl}}/api/cart/batchSelect/true
+Content-Type: application/json
+Authorization: {{authToken}}
+
+{
+  "cartIds": [1, 2, 3]
+}
+
+
+### 六、订单模块（需要认证）
+### ============================================
+
+### 24. 创建订单
+POST {{baseUrl}}/api/order/create
+Content-Type: application/json
+Authorization: {{authToken}}
+
+{
+  "receiverName": "张三",
+  "receiverPhone": "13800138000",
+  "receiverAddress": "北京市朝阳区xxx街道xxx号",
+  "items": [
+    {
+      "productId": 1,
+      "quantity": 1
+    }
+  ]
+}
+
+### 25. 分页查询我的订单
+GET {{baseUrl}}/api/order/page?pageNum=1&pageSize=10
+Authorization: {{authToken}}
+
+### 26. 查询订单详情
+GET {{baseUrl}}/api/order/1
+Authorization: {{authToken}}
+
+### 27. 取消订单
+PUT {{baseUrl}}/api/order/1/cancel
+Authorization: {{authToken}}
+
+### 28. 支付订单
+PUT {{baseUrl}}/api/order/1/pay?paymentMethod=alipay
+Authorization: {{authToken}}
+
+### 29. 确认收货
+PUT {{baseUrl}}/api/order/1/confirm
+Authorization: {{authToken}}
+
+# ============================================
+### 七、评论模块（混合接口）
+### ============================================
+
+### 30. 创建商品评论（需要认证）
+POST {{baseUrl}}/api/comment/create
+Content-Type: application/json
+Authorization: {{authToken}}
+
+{
+  "productId": 1,
+  "orderId": 1,
+  "content": "商品质量很好，物流很快！",
+  "rating": 5,
+  "images": "image1.jpg,image2.jpg"
+}
+
+### 31. 分页查询商品评论（公开）
+GET {{baseUrl}}/api/comment/product/1?pageNum=1&pageSize=10
+
+### 32. 分页查询我的评论（需要认证）
+GET {{baseUrl}}/api/comment/user?pageNum=1&pageSize=10
+Authorization: {{authToken}}
+
+### 33. 删除我的评论（需要认证）
+DELETE {{baseUrl}}/api/comment/1
+Authorization: {{authToken}}
+
+### 34. 获取商品评论数量（公开）
+GET {{baseUrl}}/api/comment/count/1
+
+### 35. 获取商品平均评分（公开）
+GET {{baseUrl}}/api/comment/rating/1
+
+# ============================================
+### 八、收藏模块（需要认证）
+### ============================================
+
+### 36. 添加收藏
+POST {{baseUrl}}/api/favorite/add/1
+Authorization: {{authToken}}
+
+### 37. 取消收藏
+DELETE {{baseUrl}}/api/favorite/remove/1
+Authorization: {{authToken}}
+
+### 38. 切换收藏状态
+POST {{baseUrl}}/api/favorite/toggle/1
+Authorization: {{authToken}}
+
+### 39. 检查是否已收藏
+GET {{baseUrl}}/api/favorite/check/1
+Authorization: {{authToken}}
+
+### 40. 分页查询我的收藏
+GET {{baseUrl}}/api/favorite/page?pageNum=1&pageSize=10
+Authorization: {{authToken}}
+
+# ============================================
+### 九、会员模块（需要认证）
+### ============================================
+
+### 41. 获取所有会员等级配置
+GET {{baseUrl}}/api/member/levels
+
+### 42. 获取当前会员等级信息
+GET {{baseUrl}}/api/member/level
+Authorization: {{authToken}}
+
+### 43. 获取会员折扣率
+GET {{baseUrl}}/api/member/discount
+Authorization: {{authToken}}
+
+# ============================================
+### 十、签到模块（需要认证）
+### ============================================
+
+### 44. 用户签到
+POST {{baseUrl}}/api/signin/do
+Authorization: {{authToken}}
+
+### 45. 检查今日是否已签到
+GET {{baseUrl}}/api/signin/status
+Authorization: {{authToken}}
+
+### 46. 获取连续签到天数
+GET {{baseUrl}}/api/signin/continuous
+Authorization: {{authToken}}
+
+# ============================================
+### 十一、积分模块（需要认证）
+### ============================================
+
+### 47. 分页查询积分记录
+GET {{baseUrl}}/api/points/records?pageNum=1&pageSize=10
+Authorization: {{authToken}}
+
+# ============================================
+### 十二、积分兑换模块（需要认证）
+### ============================================
+
+### 48. 获取可兑换的商品列表
+GET {{baseUrl}}/api/points/exchange/products
+Authorization: {{authToken}}
+
+### 49. 兑换商品
+POST {{baseUrl}}/api/points/exchange/exchange
+Content-Type: application/json
+Authorization: {{authToken}}
+
+{
+  "productId": 1,
+  "quantity": 1
+}
+
+### 50. 分页查询兑换记录
+GET {{baseUrl}}/api/points/exchange/records?pageNum=1&pageSize=10
+Authorization: {{authToken}}
+
+### 51. 查询兑换详情
+GET {{baseUrl}}/api/points/exchange/detail/1
+Authorization: {{authToken}}
+
+# ============================================
+### 十三、后台管理模块（需要 ADMIN 角色）
+### ============================================
+
+### 管理员登录获取 token
+POST {{baseUrl}}/api/user/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "admin123"
+}
+
+### 管理员 Token（登录后复制到这里）
+@adminToken = Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoxLCJ1c2VySWQiOjcsInN1YiI6ImFkbWluIiwiaWF0IjoxNzY2NDU4NjEwLCJleHAiOjE3NjY1NDUwMTB9.fNKjTm37Zg7ZsxJj01rSgw6hxlhko4NaH4Bk_aHz4UQ
+
+### === 商品管理 ===
+
+### 52. 分页查询商品列表
+GET {{baseUrl}}/api/admin/products?pageNum=1&pageSize=10&name=&categoryId=&status=
+Authorization: {{adminToken}}
+
+### 53. 查询商品详情
+GET {{baseUrl}}/api/admin/products/1
+Authorization: {{adminToken}}
+
+### 54. 新增商品
+POST {{baseUrl}}/api/admin/products
+Content-Type: application/json
+Authorization: {{adminToken}}
+
+{
+  "name": "iPhone 15 Pro",
+  "subtitle": "钛金属原色",
+  "description": "苹果最新旗舰手机",
+  "originalPrice": 8999.00,
+  "price": 7999.00,
+  "stock": 100,
+  "image": "https://example.com/image.jpg",
+  "images": "image1.jpg,image2.jpg",
+  "categoryId": 1,
+  "brand": "Apple"
+}
+
+### 55. 修改商品
+PUT {{baseUrl}}/api/admin/products/1
+Content-Type: application/json
+Authorization: {{adminToken}}
+
+{
+  "name": "iPhone 15 Pro",
+  "subtitle": "钛金属原色",
+  "description": "苹果最新旗舰手机，现货发售",
+  "originalPrice": 8999.00,
+  "price": 7799.00,
+  "stock": 80,
+  "image": "https://example.com/image.jpg",
+  "images": "image1.jpg,image2.jpg",
+  "categoryId": 1,
+  "brand": "Apple"
+}
+
+### 56. 修改商品状态
+PUT {{baseUrl}}/api/admin/products/1/status?status=1
+Authorization: {{adminToken}}
+
+### 57. 修改商品库存
+PUT {{baseUrl}}/api/admin/products/1/stock?stock=50
+Authorization: {{adminToken}}
+
+### 58. 删除商品
+DELETE {{baseUrl}}/api/admin/products/1
+Authorization: {{adminToken}}
+
+### === 订单管理 ===
+
+### 59. 分页查询订单列表
+GET {{baseUrl}}/api/admin/orders?pageNum=1&pageSize=10&orderNo=&userId=&status=&startTime=&endTime=
+Authorization: {{adminToken}}
+
+### 60. 查询订单详情
+GET {{baseUrl}}/api/admin/orders/1
+Authorization: {{adminToken}}
+
+### 61. 修改订单状态
+PUT {{baseUrl}}/api/admin/orders/1/status?status=2
+Authorization: {{adminToken}}
+
+### 62. 取消订单
+PUT {{baseUrl}}/api/admin/orders/1/cancel
+Authorization: {{adminToken}}
+
+### === 用户管理 ===
+
+### 63. 分页查询用户列表
+GET {{baseUrl}}/api/admin/users?pageNum=1&pageSize=10&username=&phone=&status=&role=
+Authorization: {{adminToken}}
+
+### 64. 查询用户详情
+GET {{baseUrl}}/api/admin/users/1
+Authorization: {{adminToken}}
+
+### 65. 修改用户状态
+PUT {{baseUrl}}/api/admin/users/1/status?status=1
+Authorization: {{adminToken}}
+
+### 66. 修改用户角色
+PUT {{baseUrl}}/api/admin/users/1/role?role=1
+Authorization: {{adminToken}}
+
+### 67. 调整用户积分
+PUT {{baseUrl}}/api/admin/users/1/points?points=100
+Authorization: {{adminToken}}
+
+### === 评论审核 ===
+
+### 68. 分页查询评论列表
+GET {{baseUrl}}/api/admin/comments?pageNum=1&pageSize=10&productId=&userId=&showStatus=&rating=
+Authorization: {{adminToken}}
+
+### 69. 查询评论详情
+GET {{baseUrl}}/api/admin/comments/1
+Authorization: {{adminToken}}
+
+### 70. 审核通过评论
+PUT {{baseUrl}}/api/admin/comments/1/approve
+Authorization: {{adminToken}}
+
+### 71. 审核拒绝评论
+PUT {{baseUrl}}/api/admin/comments/1/reject
+Authorization: {{adminToken}}
+
+### 72. 商家回复评论
+PUT {{baseUrl}}/api/admin/comments/1/reply
+Content-Type: application/json
+Authorization: {{adminToken}}
+
+{
+  "reply": "感谢您的评价，我们会继续努力！"
+}
+
+### 73. 删除评论
+DELETE {{baseUrl}}/api/admin/comments/1
+Authorization: {{adminToken}}
+
+### === 会员等级管理 ===
+
+### 74. 查询所有会员等级
+GET {{baseUrl}}/api/admin/member-levels
+Authorization: {{adminToken}}
+
+### 75. 查询会员等级详情
+GET {{baseUrl}}/api/admin/member-levels/1
+Authorization: {{adminToken}}
+
+### 76. 新增会员等级
+POST {{baseUrl}}/api/admin/member-levels
+Content-Type: application/json
+Authorization: {{adminToken}}
+
+{
+  "level": 1,
+  "levelName": "普通会员",
+  "minPoints": 0,
+  "maxPoints": 999,
+  "discount": 1.0,
+  "icon": "bronze",
+  "benefits": "享受基础会员权益",
+  "sortOrder": 1
+}
+
+### 77. 修改会员等级
+PUT {{baseUrl}}/api/admin/member-levels/1
+Content-Type: application/json
+Authorization: {{adminToken}}
+
+{
+  "level": 1,
+  "levelName": "普通会员",
+  "minPoints": 0,
+  "maxPoints": 1999,
+  "discount": 0.95,
+  "icon": "bronze",
+  "benefits": "享受95折优惠",
+  "sortOrder": 1
+}
+
+### 78. 修改会员等级状态
+PUT {{baseUrl}}/api/admin/member-levels/1/status?status=1
+Authorization: {{adminToken}}
+
+### 79. 删除会员等级
+DELETE {{baseUrl}}/api/admin/member-levels/1
+Authorization: {{adminToken}}
+
+### === 积分兑换商品管理 ===
+
+### 80. 分页查询积分兑换商品
+GET {{baseUrl}}/api/admin/points-products?pageNum=1&pageSize=10&name=&status=
+Authorization: {{adminToken}}
+
+### 81. 查询积分兑换商品详情
+GET {{baseUrl}}/api/admin/points-products/1
+Authorization: {{adminToken}}
+
+### 82. 新增积分兑换商品
+POST {{baseUrl}}/api/admin/points-products
+Content-Type: application/json
+Authorization: {{adminToken}}
+
+{
+  "name": "100元优惠券",
+  "description": "全场通用，无门槛使用",
+  "image": "https://example.com/coupon.jpg",
+  "pointsRequired": 1000,
+  "stock": 50,
+  "sortOrder": 1
+}
+
+### 83. 修改积分兑换商品
+PUT {{baseUrl}}/api/admin/points-products/1
+Content-Type: application/json
+Authorization: {{adminToken}}
+
+{
+  "name": "100元优惠券",
+  "description": "全场通用，无门槛使用",
+  "image": "https://example.com/coupon.jpg",
+  "pointsRequired": 800,
+  "stock": 40,
+  "sortOrder": 1
+}
+
+### 84. 修改积分兑换商品状态
+PUT {{baseUrl}}/api/admin/points-products/1/status?status=1
+Authorization: {{adminToken}}
+
+### 85. 修改积分兑换商品库存
+PUT {{baseUrl}}/api/admin/points-products/1/stock?stock=30
+Authorization: {{adminToken}}
+
+### 86. 删除积分兑换商品
+DELETE {{baseUrl}}/api/admin/points-products/1
+Authorization: {{adminToken}}
+
+### === 分类管理 ===
+
+### 87. 分页查询分类列表
+GET {{baseUrl}}/api/admin/categories?pageNum=1&pageSize=10&name=&parentId=&level=&status=
+Authorization: {{adminToken}}
+
+### 88. 查询分类详情
+GET {{baseUrl}}/api/admin/categories/1
+Authorization: {{adminToken}}
+
+### 89. 新增分类
+POST {{baseUrl}}/api/admin/categories
+Content-Type: application/json
+Authorization: {{adminToken}}
+
+{
+  "name": "数码产品",
+  "icon": "digital",
+  "parentId": 0,
+  "level": 1,
+  "sort": 1,
+  "status": 1
+}
+
+### 90. 修改分类
+PUT {{baseUrl}}/api/admin/categories/1
+Content-Type: application/json
+Authorization: {{adminToken}}
+
+{
+  "name": "数码产品",
+  "icon": "digital",
+  "parentId": 0,
+  "level": 1,
+  "sort": 1,
+  "status": 1
+}
+
+### 91. 修改分类状态
+PUT {{baseUrl}}/api/admin/categories/1/status?status=1
+Authorization: {{adminToken}}
+
+### 92. 删除分类
+DELETE {{baseUrl}}/api/admin/categories/1
+Authorization: {{adminToken}}
+
+# ============================================
+### 使用说明
+### ============================================
+
+### Token 说明
+# 所有需要认证的接口必须在请求头中携带：
+# Authorization: Bearer <你的token>
+#
+# Token 获取方式：
+# 1. 普通用户：通过 POST /api/user/login 获取
+# 2. 管理员：通过 POST /api/user/login 获取（需要数据库中用户 role=1）
+
+### 状态码说明
+# 200 - 操作成功
+# 500 - 操作失败（如参数错误、权限不足等）
+
+### 测试前准备
+# 1. 确保 MySQL 服务已启动
+# 2. 确保 Redis 服务已启动
+# 3. 确保 Elasticsearch 服务已启动（用于商品搜索）
+# 4. 确保后端服务已启动（端口 8080）
+
+### 创建管理员账号
+# 方法1：使用开发接口生成密码
+# GET http://localhost:8080/api/dev/hash?password=admin123
+# 然后复制返回的 SQL 执行
+#
+# 方法2：直接使用已知哈希（密码：admin123）
+# INSERT INTO user (username, password, nickname, role, status, points, level, create_time, update_time, deleted)
+# VALUES ('admin', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z2EHdHmAjQJtQ2ux4yWNTA5i', '管理员', 1, 1, 0, 1, NOW(), NOW(), 0);

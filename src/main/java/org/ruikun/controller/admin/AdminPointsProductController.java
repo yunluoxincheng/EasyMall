@@ -13,6 +13,7 @@ import org.ruikun.mapper.PointsProductMapper;
 import org.ruikun.vo.admin.AdminPointsProductPageVO;
 import org.ruikun.vo.admin.AdminPointsProductVO;
 import org.springframework.beans.BeanUtils;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.util.StringUtils;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -26,6 +27,7 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/admin/points-products")
 @RequiredArgsConstructor
+@PreAuthorize("hasRole('ADMIN')")
 public class AdminPointsProductController {
 
     private final PointsProductMapper pointsProductMapper;

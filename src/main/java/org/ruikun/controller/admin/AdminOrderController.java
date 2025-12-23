@@ -16,6 +16,7 @@ import org.ruikun.mapper.UserMapper;
 import org.ruikun.vo.admin.AdminOrderPageVO;
 import org.ruikun.vo.admin.AdminOrderVO;
 import org.springframework.beans.BeanUtils;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
@@ -29,6 +30,7 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/admin/orders")
 @RequiredArgsConstructor
+@PreAuthorize("hasRole('ADMIN')")
 public class AdminOrderController {
 
     private final OrderMapper orderMapper;

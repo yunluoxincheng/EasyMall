@@ -2,7 +2,10 @@
   "permissions": {
     "allow": [
       "Bash(dir:*)",
-      "Bash(openspec list:*)"
+      "Bash(openspec list:*)",
+      "Bash(openspec validate:*)",
+      "Skill(openspec:proposal)",
+      "Skill(openspec:archive)"
     ]
   }
 }

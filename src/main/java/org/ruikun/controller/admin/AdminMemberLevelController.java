@@ -8,6 +8,7 @@ import org.ruikun.entity.MemberLevel;
 import org.ruikun.mapper.MemberLevelMapper;
 import org.ruikun.vo.admin.AdminMemberLevelVO;
 import org.springframework.beans.BeanUtils;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,6 +21,7 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/admin/member-levels")
 @RequiredArgsConstructor
+@PreAuthorize("hasRole('ADMIN')")
 public class AdminMemberLevelController {
 
     private final MemberLevelMapper memberLevelMapper;

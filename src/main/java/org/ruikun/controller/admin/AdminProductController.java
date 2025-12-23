@@ -18,6 +18,7 @@ import org.ruikun.vo.admin.AdminProductPageVO;
 import org.ruikun.vo.admin.AdminProductVO;
 import org.ruikun.vo.ProductVO;
 import org.springframework.beans.BeanUtils;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.util.StringUtils;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -34,6 +35,7 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/admin/products")
 @RequiredArgsConstructor
+@PreAuthorize("hasRole('ADMIN')")
 public class AdminProductController {
 
     private final IProductService productService;
