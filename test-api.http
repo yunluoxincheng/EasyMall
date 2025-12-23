@@ -5,6 +5,50 @@
 ### 可以直接运行这些请求进行 API 测试
 ### ============================================
 
+# ============================================
+### API 响应格式说明
+# ============================================
+#
+## 增强后的响应结构
+#
+### 成功响应示例：
+# {
+#   "success": true,
+#   "code": "SUCCESS",
+#   "message": "操作成功",
+#   "timestamp": "2024-12-23T12:30:00.123",
+#   "traceId": "a1b2c3d4e5f6g7h8",
+#   "data": { ... }
+# }
+#
+### 错误响应示例：
+# {
+#   "success": false,
+#   "code": "VALIDATION_ERROR",
+#   "message": "参数校验失败",
+#   "timestamp": "2024-12-23T12:30:00.123",
+#   "traceId": "a1b2c3d4e5f6g7h8",
+#   "errors": [
+#     {
+#       "field": "productId",
+#       "code": "REQUIRED",
+#       "message": "商品ID不能为空",
+#       "rejectedValue": null
+#     }
+#   ]
+# }
+#
+## 字段说明
+# - success: 布尔值，true 表示成功，false 表示失败
+# - code: 业务状态码（字符串），如 "SUCCESS", "VALIDATION_ERROR", "PRODUCT_NOT_FOUND" 等
+# - message: 响应消息描述
+# - timestamp: 响应时间戳
+# - traceId: 请求追踪 ID，用于日志关联和问题追踪
+# - data: 响应数据（仅成功时存在）
+# - errors: 错误详情数组（仅错误时存在，用于参数校验等场景）
+#
+# ============================================
+
 # 设置基础URL
 @baseUrl = http://localhost:8080
 
@@ -44,7 +88,7 @@ Content-Type: application/json
 }
 
 ### 登录成功后，将返回的 token 复制到下面
-@authToken = Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjowLCJ1c2VySWQiOjEsInN1YiI6InRlc3R1c2VyIiwiaWF0IjoxNzY2NDU4MjI3LCJleHAiOjE3NjY1NDQ2Mjd9.n1xLQvKBUlnhFWTol_9r2whGbEHXWL-Kj1epmv6pbNU
+@authToken = Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjowLCJ1c2VySWQiOjIsInN1YiI6InRlc3R1c2VyIiwiaWF0IjoxNzY2NDY2ODExLCJleHAiOjE3NjY1NTMyMTF9.cz2ShPvVaV7seUQZIOiaFRddaJNZbjxMIcC9i77OKWk
 
 ### 4. 获取当前用户信息
 GET {{baseUrl}}/api/user/info
@@ -121,7 +165,7 @@ Content-Type: application/json
 Authorization: {{authToken}}
 
 {
-  "productId": 1,
+  "productId": 10,
   "quantity": 2
 }
 
@@ -265,6 +309,7 @@ Authorization: {{authToken}}
 
 ### 41. 获取所有会员等级配置
 GET {{baseUrl}}/api/member/levels
+Authorization: {{authToken}}
 
 ### 42. 获取当前会员等级信息
 GET {{baseUrl}}/api/member/level
@@ -338,7 +383,7 @@ Content-Type: application/json
 }
 
 ### 管理员 Token（登录后复制到这里）
-@adminToken = Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoxLCJ1c2VySWQiOjcsInN1YiI6ImFkbWluIiwiaWF0IjoxNzY2NDU4NjEwLCJleHAiOjE3NjY1NDUwMTB9.fNKjTm37Zg7ZsxJj01rSgw6hxlhko4NaH4Bk_aHz4UQ
+@adminToken = Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoxLCJ1c2VySWQiOjcsInN1YiI6ImFkbWluIiwiaWF0IjoxNzY2NDY2NjM3LCJleHAiOjE3NjY1NTMwMzd9.dEPsc85h4JGCKWww84Rx3s1qVQ0LHRmo6S_MWeQ58U4
 
 ### === 商品管理 ===
 

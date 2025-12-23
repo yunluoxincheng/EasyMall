@@ -17,11 +17,36 @@ EasyMall 是一个基于 B2C 模式的电子商城系统，采用前后端分离
 
 所有接口返回统一的 JSON 格式：
 
+**成功响应示例**：
+
 ```json
 {
-  "code": 200,
+  "success": true,
+  "code": "SUCCESS",
   "message": "操作成功",
+  "timestamp": "2024-12-23T12:30:00.123",
+  "traceId": "a1b2c3d4e5f6g7h8",
   "data": {}
+}
+```
+
+**错误响应示例（参数校验失败）**：
+
+```json
+{
+  "success": false,
+  "code": "VALIDATION_ERROR",
+  "message": "参数校验失败",
+  "timestamp": "2024-12-23T12:30:00.123",
+  "traceId": "a1b2c3d4e5f6g7h8",
+  "errors": [
+    {
+      "field": "productId",
+      "code": "REQUIRED",
+      "message": "商品ID不能为空",
+      "rejectedValue": null
+    }
+  ]
 }
 ```
 
@@ -29,9 +54,13 @@ EasyMall 是一个基于 B2C 模式的电子商城系统，采用前后端分离
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
-| code | Integer | 状态码，200 表示成功，500 表示失败 |
-| message | String | 响应消息 |
-| data | Object/Array | 业务数据 |
+| success | Boolean | true 表示成功，false 表示失败 |
+| code | String | 业务状态码（如 "SUCCESS", "VALIDATION_ERROR", "PRODUCT_NOT_FOUND"） |
+| message | String | 响应消息描述 |
+| timestamp | LocalDateTime | 响应时间戳 |
+| traceId | String | 请求追踪 ID，用于日志关联和问题追踪 |
+| data | Object/Array | 业务数据（仅成功时存在） |
+| errors | Array | 错误详情数组（仅错误时存在，用于参数校验等场景） |
 
 ### 分页响应格式
 
@@ -39,8 +68,11 @@ EasyMall 是一个基于 B2C 模式的电子商城系统，采用前后端分离
 
 ```json
 {
-  "code": 200,
+  "success": true,
+  "code": "SUCCESS",
   "message": "操作成功",
+  "timestamp": "2024-12-23T12:30:00.123",
+  "traceId": "a1b2c3d4e5f6g7h8",
   "data": {
     "total": 100,
     "records": [],
@@ -83,8 +115,11 @@ Content-Type: application/json
 
 ```json
 {
-  "code": 200,
+  "success": true,
+  "code": "SUCCESS",
   "message": "登录成功",
+  "timestamp": "2024-12-23T12:30:00.123",
+  "traceId": "a1b2c3d4e5f6g7h8",
   "data": {
     "token": "eyJhbGciOiJIUzI1NiJ9...",
     "user": { "..." }
@@ -110,10 +145,27 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiJ9...
 
 ### 错误码说明
 
-| 错误码 | 说明 |
-|--------|------|
-| 200 | 操作成功 |
-| 500 | 操作失败（参数错误、权限不足等） |
+| 业务状态码 | HTTP状态 | 说明 |
+|-----------|----------|------|
+| SUCCESS | 200 | 操作成功 |
+| ERROR | 500 | 操作失败 |
+| VALIDATION_ERROR | 400 | 参数校验失败 |
+| NOT_FOUND | 404 | 资源不存在 |
+| UNAUTHORIZED | 401 | 未授权，请先登录 |
+| FORBIDDEN | 403 | 无权访问 |
+| USER_NOT_FOUND | 404 | 用户不存在 |
+| USERNAME_EXISTS | 400 | 用户名已存在 |
+| PASSWORD_ERROR | 400 | 密码错误 |
+| PRODUCT_NOT_FOUND | 404 | 商品不存在 |
+| PRODUCT_OUT_OF_STOCK | 400 | 商品库存不足 |
+| PRODUCT_SHELF_ERROR | 400 | 商品已下架 |
+| ORDER_NOT_FOUND | 404 | 订单不存在 |
+| ORDER_STATUS_ERROR | 400 | 订单状态不允许此操作 |
+| CART_EMPTY | 400 | 购物车为空 |
+| COMMENT_NOT_FOUND | 404 | 评论不存在 |
+| MEMBER_LEVEL_NOT_FOUND | 404 | 会员等级不存在 |
+| POINTS_INSUFFICIENT | 400 | 积分不足 |
+| POINTS_PRODUCT_OUT_OF_STOCK | 400 | 积分兑换商品库存不足 |
 
 ---
 
@@ -142,7 +194,8 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiJ9...
 
 ```json
 {
-  "code": 200,
+  "success": true,
+  "code": "SUCCESS",
   "message": "注册成功",
   "data": null
 }
@@ -167,7 +220,8 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiJ9...
 
 ```json
 {
-  "code": 200,
+  "success": true,
+  "code": "SUCCESS",
   "message": "登录成功",
   "data": {
     "token": "eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjowLCJ1c2VySWQiOjEsInN1YiI6InRlc3R1c2VyIiwiaWF0IjoxNzY2NDU4MjI3LCJleHAiOjE3NjY1NDQ2Mjd9...",
@@ -199,7 +253,8 @@ Authorization: Bearer {token}
 
 ```json
 {
-  "code": 200,
+  "success": true,
+  "code": "SUCCESS",
   "message": "操作成功",
   "data": {
     "id": 1,
@@ -243,7 +298,8 @@ Authorization: Bearer {token}
 
 ```json
 {
-  "code": 200,
+  "success": true,
+  "code": "SUCCESS",
   "message": "更新成功",
   "data": null
 }
@@ -274,7 +330,8 @@ Authorization: Bearer {token}
 
 ```json
 {
-  "code": 200,
+  "success": true,
+  "code": "SUCCESS",
   "message": "密码修改成功",
   "data": null
 }
@@ -298,7 +355,8 @@ Authorization: Bearer {token}
 
 ```json
 {
-  "code": 200,
+  "success": true,
+  "code": "SUCCESS",
   "message": "退出成功",
   "data": null
 }
@@ -329,7 +387,8 @@ Authorization: Bearer {token}
 
 ```json
 {
-  "code": 200,
+  "success": true,
+  "code": "SUCCESS",
   "message": "操作成功",
   "data": {
     "total": 100,
@@ -369,7 +428,8 @@ Authorization: Bearer {token}
 
 ```json
 {
-  "code": 200,
+  "success": true,
+  "code": "SUCCESS",
   "message": "操作成功",
   "data": {
     "id": 1,
@@ -407,7 +467,8 @@ Authorization: Bearer {token}
 
 ```json
 {
-  "code": 200,
+  "success": true,
+  "code": "SUCCESS",
   "message": "操作成功",
   "data": [
     {
@@ -467,7 +528,8 @@ Authorization: Bearer {token}
 
 ```json
 {
-  "code": 200,
+  "success": true,
+  "code": "SUCCESS",
   "message": "操作成功",
   "data": [
     {
@@ -532,7 +594,8 @@ Authorization: Bearer {token}
 
 ```json
 {
-  "code": 200,
+  "success": true,
+  "code": "SUCCESS",
   "message": "操作成功",
   "data": [
     {
@@ -561,7 +624,8 @@ Authorization: Bearer {token}
 
 ```json
 {
-  "code": 200,
+  "success": true,
+  "code": "SUCCESS",
   "message": "操作成功",
   "data": 5
 }
@@ -696,7 +760,8 @@ Authorization: Bearer {token}
 
 ```json
 {
-  "code": 200,
+  "success": true,
+  "code": "SUCCESS",
   "message": "下单成功",
   "data": "ORD202412230001"
 }
@@ -928,7 +993,8 @@ Authorization: Bearer {token}
 
 ```json
 {
-  "code": 200,
+  "success": true,
+  "code": "SUCCESS",
   "message": "操作成功",
   "data": [
     {
@@ -976,7 +1042,8 @@ Authorization: Bearer {token}
 
 ```json
 {
-  "code": 200,
+  "success": true,
+  "code": "SUCCESS",
   "message": "操作成功",
   "data": {
     "points": 10,
@@ -1471,7 +1538,8 @@ Authorization: Bearer {token}
 
 ```json
 {
-  "code": 200,
+  "success": true,
+  "code": "SUCCESS",
   "message": "操作成功",
   "data": {
     "password": "admin123",

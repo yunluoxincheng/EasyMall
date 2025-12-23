@@ -81,11 +81,12 @@
 - [x] 8.2 在 IPointsService 中添加 addPoints(Long userId, Integer points, String description) 便捷方法
 
 ## 9. 测试与验证
-- [ ] 9.1 使用测试工具（如 Postman、test-api.http）测试所有后台管理接口
-- [ ] 9.2 验证权限控制：确认普通用户无法访问 /api/admin/** 接口
-- [ ] 9.3 验证业务逻辑：确认分页、筛选、状态更新等功能正常
-- [ ] 9.4 验证参数校验：确认必填参数、格式校验等正常工作
+- [x] 9.1 使用测试工具（如 Postman、test-api.http）测试所有后台管理接口
+- [x] 9.2 验证权限控制：确认普通用户无法访问 /api/admin/** 接口
+- [x] 9.3 验证业务逻辑：确认分页、筛选、状态更新等功能正常
+- [x] 9.4 验证参数校验：确认必填参数、格式校验等正常工作
+- [x] 9.5 为所有 AdminController 添加 @PreAuthorize("hasRole('ADMIN')") 注解
 
 ## 10. 文档更新
-- [ ] 10.1 更新 API 文档（如有）
-- [ ] 10.2 更新 CLAUDE.md 项目文档
+- [x] 10.1 更新 API 文档（test-api.http 已包含 92 个接口）
+- [x] 10.2 更新 CLAUDE.md 项目文档

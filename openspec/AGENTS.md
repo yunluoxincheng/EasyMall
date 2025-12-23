@@ -1,3 +1,4 @@
+
 # OpenSpec Instructions
 
 Instructions for AI coding assistants using OpenSpec for spec-driven development.

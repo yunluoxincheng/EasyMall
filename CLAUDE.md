@@ -144,6 +144,95 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 
 
 
+### 3.3 API 响应格式
+
+系统所有 API 接口统一使用增强的响应结构 `Result<T>` 封装：
+
+#### 响应字段说明
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| success | Boolean | true 表示成功，false 表示失败 |
+| code | String | 业务状态码（如 "SUCCESS", "VALIDATION_ERROR", "PRODUCT_NOT_FOUND"） |
+| message | String | 响应消息描述 |
+| timestamp | LocalDateTime | 响应时间戳 |
+| traceId | String | 请求追踪 ID，用于日志关联和问题追踪 |
+| data | T | 响应数据（仅成功时存在） |
+| errors | List<ErrorDetail> | 错误详情数组（仅错误时存在） |
+
+#### 成功响应示例
+
+```json
+{
+  "success": true,
+  "code": "SUCCESS",
+  "message": "操作成功",
+  "timestamp": "2024-12-23T12:30:00.123",
+  "traceId": "a1b2c3d4e5f6g7h8",
+  "data": {
+    "id": 1,
+    "name": "商品名称"
+  }
+}
+```
+
+#### 错误响应示例
+
+```json
+{
+  "success": false,
+  "code": "VALIDATION_ERROR",
+  "message": "参数校验失败",
+  "timestamp": "2024-12-23T12:30:00.123",
+  "traceId": "a1b2c3d4e5f6g7h8",
+  "errors": [
+    {
+      "field": "productId",
+      "code": "REQUIRED",
+      "message": "商品ID不能为空",
+      "rejectedValue": null
+    }
+  ]
+}
+```
+
+#### 使用方式
+
+```java
+// 成功响应（无数据）
+return Result.success();
+
+// 成功响应（带数据）
+return Result.success(data);
+
+// 成功响应（自定义消息）
+return Result.success("保存成功", data);
+
+// 错误响应（使用预定义状态码）
+return Result.error(ResponseCode.PRODUCT_NOT_FOUND);
+
+// 错误响应（自定义消息）
+return Result.error("库存不足");
+
+// 抛出业务异常
+throw new BusinessException(ResponseCode.PRODUCT_OUT_OF_STOCK, "商品库存不足");
+```
+
+#### 标准业务状态码
+
+| 状态码 | HTTP状态 | 说明 |
+|--------|----------|------|
+| SUCCESS | 200 | 操作成功 |
+| ERROR | 500 | 操作失败 |
+| VALIDATION_ERROR | 400 | 参数校验失败 |
+| NOT_FOUND | 404 | 资源不存在 |
+| UNAUTHORIZED | 401 | 未授权 |
+| FORBIDDEN | 403 | 无权访问 |
+| PRODUCT_NOT_FOUND | 404 | 商品不存在 |
+| PRODUCT_OUT_OF_STOCK | 400 | 商品库存不足 |
+| ORDER_NOT_FOUND | 404 | 订单不存在 |
+| USER_NOT_FOUND | 404 | 用户不存在 |
+
 ---
 
 

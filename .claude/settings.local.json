@@ -5,7 +5,8 @@
       "Bash(openspec list:*)",
       "Bash(openspec validate:*)",
       "Skill(openspec:proposal)",
-      "Skill(openspec:archive)"
+      "Skill(openspec:archive)",
+      "Skill(openspec:apply)"
     ]
   }
 }
