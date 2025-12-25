@@ -44,6 +44,25 @@
         ORDER BY p.create_time DESC
     </select>
 
+    <!-- 使用全文索引搜索，性能更好 -->
+    <select id="selectProductPageWithFullText" resultMap="ProductWithCategoryMap">
+        SELECT p.*, c.name as category_name,
+               MATCH(p.name, p.subtitle) AGAINST(#{keyword} IN BOOLEAN MODE) as relevance
+        FROM product p
+        LEFT JOIN category c ON p.category_id = c.id
+        WHERE p.deleted = 0
+        <if test="categoryId != null">
+            AND p.category_id = #{categoryId}
+        </if>
+        <if test="keyword != null and keyword != ''">
+            AND MATCH(p.name, p.subtitle) AGAINST(#{keyword} IN BOOLEAN MODE)
+        </if>
+        <if test="status != null">
+            AND p.status = #{status}
+        </if>
+        ORDER BY relevance DESC, p.create_time DESC
+    </select>
+
     <select id="selectHotProducts" resultMap="BaseResultMap">
         SELECT * FROM product
         WHERE deleted = 0 AND status = 1

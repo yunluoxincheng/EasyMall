@@ -14,6 +14,12 @@ public interface ProductMapper extends BaseMapper<Product> {
     IPage<Product> selectProductPage(Page<Product> page, @Param("categoryId") Long categoryId,
                                      @Param("keyword") String keyword, @Param("status") Integer status);
 
+    /**
+     * 使用全文索引搜索商品（性能更好）
+     */
+    IPage<Product> selectProductPageWithFullText(Page<Product> page, @Param("categoryId") Long categoryId,
+                                                  @Param("keyword") String keyword, @Param("status") Integer status);
+
     List<Product> selectHotProducts(@Param("limit") Integer limit);
 
     List<Product> selectNewProducts(@Param("limit") Integer limit);
