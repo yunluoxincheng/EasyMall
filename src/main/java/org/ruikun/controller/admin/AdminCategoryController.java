@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
 import org.ruikun.common.PageResult;
 import org.ruikun.common.Result;
+import org.ruikun.common.ResponseCode;
 import org.ruikun.dto.admin.CategoryQueryDTO;
 import org.ruikun.dto.admin.CategorySaveDTO;
 import org.ruikun.dto.CategoryDTO;
@@ -100,7 +101,7 @@ public class AdminCategoryController {
     public Result<AdminCategoryVO> getCategoryById(@PathVariable Long id) {
         Category category = categoryMapper.selectById(id);
         if (category == null || category.getDeleted() == 1) {
-            return Result.error("分类不存在");
+            return Result.error(ResponseCode.CATEGORY_NOT_FOUND);
         }
 
         // 获取父分类名称
@@ -148,7 +149,7 @@ public class AdminCategoryController {
     public Result<?> updateCategoryStatus(@PathVariable Long id, @RequestParam Integer status) {
         Category category = categoryMapper.selectById(id);
         if (category == null) {
-            return Result.error("分类不存在");
+            return Result.error(ResponseCode.CATEGORY_NOT_FOUND);
         }
 
         Category update = new Category();
@@ -169,7 +170,7 @@ public class AdminCategoryController {
         wrapper.eq(Category::getParentId, id);
         Long count = categoryMapper.selectCount(wrapper);
         if (count > 0) {
-            return Result.error("该分类下存在子分类，无法删除");
+            return Result.error(ResponseCode.CATEGORY_HAS_CHILDREN);
         }
 
         categoryService.deleteCategory(id);

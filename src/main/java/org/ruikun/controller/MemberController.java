@@ -3,6 +3,7 @@ package org.ruikun.controller;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.ruikun.common.Result;
+import org.ruikun.common.ResponseCode;
 import org.ruikun.service.IMemberService;
 import org.ruikun.vo.MemberLevelVO;
 import org.springframework.web.bind.annotation.*;
@@ -35,7 +36,7 @@ public class MemberController {
     public Result<MemberLevelVO> getMemberLevel(HttpServletRequest request) {
         Long userId = (Long) request.getAttribute("userId");
         if (userId == null) {
-            return Result.error("用户未登录");
+            return Result.error(ResponseCode.UNAUTHORIZED);
         }
         MemberLevelVO memberLevel = memberService.getMemberLevelByUserId(userId);
         return Result.success(memberLevel);
@@ -48,7 +49,7 @@ public class MemberController {
     public Result<Double> getMemberDiscount(HttpServletRequest request) {
         Long userId = (Long) request.getAttribute("userId");
         if (userId == null) {
-            return Result.error("用户未登录");
+            return Result.error(ResponseCode.UNAUTHORIZED);
         }
         Double discount = memberService.getMemberDiscount(userId);
         return Result.success(discount);

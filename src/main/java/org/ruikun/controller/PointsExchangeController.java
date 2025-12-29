@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.ruikun.common.Result;
+import org.ruikun.common.ResponseCode;
 import org.ruikun.dto.PointsExchangeDTO;
 import org.ruikun.service.IPointsExchangeService;
 import org.ruikun.vo.PointsExchangeVO;
@@ -30,7 +31,7 @@ public class PointsExchangeController {
     public Result<List<PointsProductVO>> getAvailableProducts(HttpServletRequest request) {
         Long userId = (Long) request.getAttribute("userId");
         if (userId == null) {
-            return Result.error("用户未登录");
+            return Result.error(ResponseCode.UNAUTHORIZED);
         }
         List<PointsProductVO> products = pointsExchangeService.getAvailableProducts(userId);
         return Result.success(products);
@@ -44,7 +45,7 @@ public class PointsExchangeController {
                                           HttpServletRequest request) {
         Long userId = (Long) request.getAttribute("userId");
         if (userId == null) {
-            return Result.error("用户未登录");
+            return Result.error(ResponseCode.UNAUTHORIZED);
         }
         String exchangeNo = pointsExchangeService.exchangeProduct(userId, exchangeDTO);
         return Result.success(exchangeNo);
@@ -60,7 +61,7 @@ public class PointsExchangeController {
             @RequestParam(defaultValue = "10") Integer pageSize) {
         Long userId = (Long) request.getAttribute("userId");
         if (userId == null) {
-            return Result.error("用户未登录");
+            return Result.error(ResponseCode.UNAUTHORIZED);
         }
         Page<PointsExchangeVO> records = pointsExchangeService.getExchangeRecords(userId, pageNum, pageSize);
         return Result.success(records);
@@ -74,7 +75,7 @@ public class PointsExchangeController {
                                                       HttpServletRequest request) {
         Long userId = (Long) request.getAttribute("userId");
         if (userId == null) {
-            return Result.error("用户未登录");
+            return Result.error(ResponseCode.UNAUTHORIZED);
         }
         PointsExchangeVO detail = pointsExchangeService.getExchangeDetail(userId, exchangeId);
         return Result.success(detail);

@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
 import org.ruikun.common.PageResult;
 import org.ruikun.common.Result;
+import org.ruikun.common.ResponseCode;
 import org.ruikun.dto.admin.OrderQueryDTO;
 import org.ruikun.entity.Order;
 import org.ruikun.entity.OrderItem;
@@ -105,7 +106,7 @@ public class AdminOrderController {
     public Result<AdminOrderVO> getOrderById(@PathVariable Long id) {
         Order order = orderMapper.selectById(id);
         if (order == null || order.getDeleted() == 1) {
-            return Result.error("订单不存在");
+            return Result.error(ResponseCode.ORDER_NOT_FOUND);
         }
 
         // 获取用户信息
@@ -150,19 +151,19 @@ public class AdminOrderController {
     public Result<?> updateOrderStatus(@PathVariable Long id, @RequestParam Integer status) {
         Order order = orderMapper.selectById(id);
         if (order == null || order.getDeleted() == 1) {
-            return Result.error("订单不存在");
+            return Result.error(ResponseCode.ORDER_NOT_FOUND);
         }
 
         // 订单状态流转校验
         int currentStatus = order.getStatus();
         if (currentStatus == 4) {
-            return Result.error("已取消的订单不能修改状态");
+            return Result.error(ResponseCode.ORDER_STATUS_ERROR);
         }
         if (currentStatus == 3) {
-            return Result.error("已完成的订单不能修改状态");
+            return Result.error(ResponseCode.ORDER_STATUS_ERROR);
         }
         if (currentStatus == 0 && status == 3) {
-            return Result.error("待支付订单不能直接完成");
+            return Result.error(ResponseCode.ORDER_STATUS_ERROR);
         }
 
         Order update = new Order();
@@ -180,14 +181,14 @@ public class AdminOrderController {
     public Result<?> cancelOrder(@PathVariable Long id) {
         Order order = orderMapper.selectById(id);
         if (order == null || order.getDeleted() == 1) {
-            return Result.error("订单不存在");
+            return Result.error(ResponseCode.ORDER_NOT_FOUND);
         }
 
         if (order.getStatus() == 4) {
-            return Result.error("订单已取消");
+            return Result.error(ResponseCode.ORDER_ALREADY_CANCELLED);
         }
         if (order.getStatus() == 3) {
-            return Result.error("已完成的订单不能取消");
+            return Result.error(ResponseCode.ORDER_STATUS_ERROR);
         }
 
         Order update = new Order();

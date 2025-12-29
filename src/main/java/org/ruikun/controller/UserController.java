@@ -41,7 +41,7 @@ public class UserController {
         // 从JWT过滤器中获取已验证的用户ID
         Long userId = (Long) request.getAttribute("userId");
         if (userId == null) {
-            return Result.error("用户未登录");
+            return Result.error(ResponseCode.UNAUTHORIZED);
         }
         UserVO userVO = userService.getUserInfo(userId);
         return Result.success(userVO);
@@ -53,7 +53,7 @@ public class UserController {
         // 从JWT过滤器获取用户ID
         Long userId = (Long) request.getAttribute("userId");
         if (userId == null) {
-            return Result.error("用户未登录");
+            return Result.error(ResponseCode.UNAUTHORIZED);
         }
         userService.updateUserInfo(userId, updateDTO);
         return Result.success(ResponseCode.UPDATE_SUCCESS, null);
@@ -66,7 +66,7 @@ public class UserController {
         // 从JWT过滤器获取用户ID
         Long userId = (Long) request.getAttribute("userId");
         if (userId == null) {
-            return Result.error("用户未登录");
+            return Result.error(ResponseCode.UNAUTHORIZED);
         }
         userService.updatePassword(userId, oldPassword, newPassword);
         return Result.success(ResponseCode.UPDATE_SUCCESS, null);

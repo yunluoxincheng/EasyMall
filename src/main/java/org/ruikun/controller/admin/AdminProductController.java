@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
 import org.ruikun.common.PageResult;
 import org.ruikun.common.Result;
+import org.ruikun.common.ResponseCode;
 import org.ruikun.dto.admin.ProductQueryDTO;
 import org.ruikun.dto.admin.ProductSaveDTO;
 import org.ruikun.dto.ProductDTO;
@@ -100,7 +101,7 @@ public class AdminProductController {
     public Result<AdminProductVO> getProductById(@PathVariable Long id) {
         Product product = productMapper.selectById(id);
         if (product == null || product.getDeleted() == 1) {
-            return Result.error("商品不存在");
+            return Result.error(ResponseCode.PRODUCT_NOT_FOUND);
         }
 
         // 获取分类名称
@@ -149,7 +150,7 @@ public class AdminProductController {
     public Result<?> updateProductStatus(@PathVariable Long id, @RequestParam Integer status) {
         Product product = productMapper.selectById(id);
         if (product == null) {
-            return Result.error("商品不存在");
+            return Result.error(ResponseCode.PRODUCT_NOT_FOUND);
         }
 
         Product update = new Product();
@@ -166,12 +167,12 @@ public class AdminProductController {
     @PutMapping("/{id}/stock")
     public Result<?> updateProductStock(@PathVariable Long id, @RequestParam Integer stock) {
         if (stock < 0) {
-            return Result.error("库存不能为负数");
+            return Result.error(ResponseCode.STOCK_INVALID);
         }
 
         Product product = productMapper.selectById(id);
         if (product == null) {
-            return Result.error("商品不存在");
+            return Result.error(ResponseCode.PRODUCT_NOT_FOUND);
         }
 
         Product update = new Product();

@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.ruikun.common.Result;
+import org.ruikun.common.ResponseCode;
 import org.ruikun.service.IFavoriteService;
 import org.ruikun.vo.FavoriteVO;
 import org.springframework.web.bind.annotation.*;
@@ -26,7 +27,7 @@ public class FavoriteController {
                                  HttpServletRequest request) {
         Long userId = (Long) request.getAttribute("userId");
         if (userId == null) {
-            return Result.error("用户未登录");
+            return Result.error(ResponseCode.UNAUTHORIZED);
         }
         favoriteService.addFavorite(userId, productId);
         return Result.success("收藏成功");
@@ -40,7 +41,7 @@ public class FavoriteController {
                                     HttpServletRequest request) {
         Long userId = (Long) request.getAttribute("userId");
         if (userId == null) {
-            return Result.error("用户未登录");
+            return Result.error(ResponseCode.UNAUTHORIZED);
         }
         favoriteService.removeFavorite(userId, productId);
         return Result.success("取消收藏成功");
@@ -54,7 +55,7 @@ public class FavoriteController {
                                          HttpServletRequest request) {
         Long userId = (Long) request.getAttribute("userId");
         if (userId == null) {
-            return Result.error("用户未登录");
+            return Result.error(ResponseCode.UNAUTHORIZED);
         }
         boolean isFavorited = favoriteService.toggleFavorite(userId, productId);
         return Result.success(isFavorited);
@@ -84,7 +85,7 @@ public class FavoriteController {
             @RequestParam(defaultValue = "10") Integer pageSize) {
         Long userId = (Long) request.getAttribute("userId");
         if (userId == null) {
-            return Result.error("用户未登录");
+            return Result.error(ResponseCode.UNAUTHORIZED);
         }
         Page<FavoriteVO> favorites = favoriteService.getFavoritePage(userId, pageNum, pageSize);
         return Result.success(favorites);

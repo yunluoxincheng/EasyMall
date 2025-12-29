@@ -27,6 +27,8 @@ services:
       - ./pom.xml:/app/pom.xml
       # Maven 仓库缓存（避免重复下载依赖）
       - ${HOME}/.m2:/root/.m2
+      # 排除 target 目录（避免编译产物触发文件监听事件）
+      - /app/target
     depends_on:
       - mysql
       - redis

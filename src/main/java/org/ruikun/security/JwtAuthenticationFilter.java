@@ -46,6 +46,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         String token = request.getHeader("Authorization");
+        boolean isAuthenticated = false;
+
         if (token != null && token.startsWith("Bearer ")) {
             token = token.substring(7);
 
@@ -77,11 +79,21 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         request.setAttribute("userId", userId);
                         request.setAttribute("username", username);
                         request.setAttribute("role", role);
+
+                        isAuthenticated = true;
                     }
                 }
             } catch (Exception e) {
                 log.error("Token验证失败: {}", e.getMessage());
             }
+        }
+
+        // 如果未认证且不是公开接口，返回 401
+        if (!isAuthenticated) {
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json;charset=UTF-8");
+            response.getWriter().write("{\"success\":false,\"code\":\"UNAUTHORIZED\",\"message\":\"未授权，请先登录\"}");
+            return;
         }
 
         filterChain.doFilter(request, response);

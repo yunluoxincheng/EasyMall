@@ -10,7 +10,12 @@
       "Bash(openspec archive add-docker-dev-environment:*)",
       "Bash(openspec show:*)",
       "Bash(docker logs:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(TOKEN=\"eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoxLCJ1c2VySWQiOjEsInN1YiI6ImFkbWluIiwiaWF0IjoxNzY2OTk4OTY3LCJleHAiOjE3NjcwODUzNjd9.QE-O8mRf1Lv6sQynvckmFmAZlfc1QsL2bRa_kr7GDTM\":*)",
+      "Bash(TOKEN=\"eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoxLCJ1c2VySWQiOjEsInN1YiI6ImFkbWluIiwiaWF0IjoxNzY3MDAwNTQzLCJleHAiOjE3NjcwODY5NDN9.6ZFOyWmQYQjTL0F0uenxYglTSnnBgILA9Cw1crEtXsQ\")",
+      "Bash(docker-compose up:*)",
+      "Bash(timeout:*)",
+      "Bash(docker-compose down:*)"
     ]
   }
 }

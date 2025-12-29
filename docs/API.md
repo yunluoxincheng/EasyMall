@@ -153,19 +153,46 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiJ9...
 | NOT_FOUND | 404 | 资源不存在 |
 | UNAUTHORIZED | 401 | 未授权，请先登录 |
 | FORBIDDEN | 403 | 无权访问 |
+| **用户相关** | | |
 | USER_NOT_FOUND | 404 | 用户不存在 |
 | USERNAME_EXISTS | 400 | 用户名已存在 |
 | PASSWORD_ERROR | 400 | 密码错误 |
+| **商品相关** | | |
 | PRODUCT_NOT_FOUND | 404 | 商品不存在 |
 | PRODUCT_OUT_OF_STOCK | 400 | 商品库存不足 |
 | PRODUCT_SHELF_ERROR | 400 | 商品已下架 |
+| STOCK_INVALID | 400 | 库存不能为负数 |
+| **分类相关** | | |
+| CATEGORY_NOT_FOUND | 404 | 分类不存在 |
+| CATEGORY_HAS_CHILDREN | 400 | 分类下存在子分类，无法删除 |
+| **订单相关** | | |
 | ORDER_NOT_FOUND | 404 | 订单不存在 |
 | ORDER_STATUS_ERROR | 400 | 订单状态不允许此操作 |
+| ORDER_ALREADY_CANCELLED | 400 | 订单已取消 |
 | CART_EMPTY | 400 | 购物车为空 |
+| CART_ITEM_NOT_FOUND | 404 | 购物车商品不存在 |
+| **评论相关** | | |
 | COMMENT_NOT_FOUND | 404 | 评论不存在 |
+| **会员等级相关** | | |
 | MEMBER_LEVEL_NOT_FOUND | 404 | 会员等级不存在 |
+| MEMBER_LEVEL_CONFLICT | 400 | 积分范围与其他等级冲突 |
+| **积分相关** | | |
 | POINTS_INSUFFICIENT | 400 | 积分不足 |
+| POINTS_PRODUCT_NOT_FOUND | 404 | 积分兑换商品不存在 |
 | POINTS_PRODUCT_OUT_OF_STOCK | 400 | 积分兑换商品库存不足 |
+| **收藏相关** | | |
+| FAVORITE_NOT_FOUND | 404 | 收藏记录不存在 |
+| **签到相关** | | |
+| SIGN_IN_ALREADY_DONE | 400 | 今日已签到 |
+| **优惠券相关** | | |
+| COUPON_NOT_FOUND | 404 | 优惠券不存在 |
+| COUPON_TEMPLATE_NOT_FOUND | 404 | 优惠券模板不存在 |
+| COUPON_ALREADY_RECEIVED | 400 | 已领取过该优惠券 |
+| COUPON_OUT_OF_STOCK | 400 | 优惠券已领完 |
+| COUPON_EXPIRED | 400 | 优惠券已过期 |
+| COUPON_ALREADY_USED | 400 | 优惠券已使用 |
+| COUPON_USAGE_LIMIT_EXCEEDED | 400 | 超过使用次数限制 |
+| COUPON_AMOUNT_THRESHOLD_NOT_MET | 400 | 不满足使用门槛 |
 
 ---
 
@@ -1253,7 +1280,7 @@ Authorization: Bearer {token}
 ```json
 {
   "success": false,
-  "code": "COUPON_CLAIMED_OUT",
+  "code": "COUPON_OUT_OF_STOCK",
   "message": "优惠券已领完",
   "errors": null
 }
@@ -1262,8 +1289,8 @@ Authorization: Bearer {token}
 ```json
 {
   "success": false,
-  "code": "COUPON_LIMIT_REACHED",
-  "message": "已达到个人领取上限",
+  "code": "COUPON_ALREADY_RECEIVED",
+  "message": "已领取过该优惠券",
   "errors": null
 }
 ```

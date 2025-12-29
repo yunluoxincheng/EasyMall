@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.ruikun.common.Result;
+import org.ruikun.common.ResponseCode;
 import org.ruikun.dto.CommentCreateDTO;
 import org.ruikun.service.ICommentService;
 import org.ruikun.vo.CommentVO;
@@ -28,7 +29,7 @@ public class CommentController {
                                       HttpServletRequest request) {
         Long userId = (Long) request.getAttribute("userId");
         if (userId == null) {
-            return Result.error("用户未登录");
+            return Result.error(ResponseCode.UNAUTHORIZED);
         }
         Long commentId = commentService.createComment(userId, commentDTO);
         return Result.success(commentId);
@@ -56,7 +57,7 @@ public class CommentController {
             @RequestParam(defaultValue = "10") Integer pageSize) {
         Long userId = (Long) request.getAttribute("userId");
         if (userId == null) {
-            return Result.error("用户未登录");
+            return Result.error(ResponseCode.UNAUTHORIZED);
         }
         Page<CommentVO> comments = commentService.getCommentsByUserId(userId, pageNum, pageSize);
         return Result.success(comments);
@@ -70,7 +71,7 @@ public class CommentController {
                                    HttpServletRequest request) {
         Long userId = (Long) request.getAttribute("userId");
         if (userId == null) {
-            return Result.error("用户未登录");
+            return Result.error(ResponseCode.UNAUTHORIZED);
         }
         commentService.deleteComment(userId, commentId);
         return Result.success("删除成功");

@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
 import org.ruikun.common.PageResult;
 import org.ruikun.common.Result;
+import org.ruikun.common.ResponseCode;
 import org.ruikun.dto.admin.PointsProductQueryDTO;
 import org.ruikun.dto.admin.PointsProductSaveDTO;
 import org.ruikun.entity.PointsProduct;
@@ -78,7 +79,7 @@ public class AdminPointsProductController {
     public Result<AdminPointsProductVO> getPointsProductById(@PathVariable Long id) {
         PointsProduct product = pointsProductMapper.selectById(id);
         if (product == null || product.getDeleted() == 1) {
-            return Result.error("积分兑换商品不存在");
+            return Result.error(ResponseCode.POINTS_PRODUCT_NOT_FOUND);
         }
 
         AdminPointsProductVO vo = new AdminPointsProductVO();
@@ -98,7 +99,7 @@ public class AdminPointsProductController {
         product.setExchangeCount(0);
 
         if (pointsProductMapper.insert(product) <= 0) {
-            return Result.error("新增积分兑换商品失败");
+            return Result.error(ResponseCode.POINTS_PRODUCT_CREATE_FAILED);
         }
 
         return Result.success("新增积分兑换商品成功");
@@ -111,7 +112,7 @@ public class AdminPointsProductController {
     public Result<?> updatePointsProduct(@PathVariable Long id, @RequestBody @Validated PointsProductSaveDTO saveDTO) {
         PointsProduct existProduct = pointsProductMapper.selectById(id);
         if (existProduct == null) {
-            return Result.error("积分兑换商品不存在");
+            return Result.error(ResponseCode.POINTS_PRODUCT_NOT_FOUND);
         }
 
         PointsProduct product = new PointsProduct();
@@ -119,7 +120,7 @@ public class AdminPointsProductController {
         BeanUtils.copyProperties(saveDTO, product);
 
         if (pointsProductMapper.updateById(product) <= 0) {
-            return Result.error("修改积分兑换商品失败");
+            return Result.error(ResponseCode.POINTS_PRODUCT_UPDATE_FAILED);
         }
 
         return Result.success("修改积分兑换商品成功");
@@ -132,7 +133,7 @@ public class AdminPointsProductController {
     public Result<?> updatePointsProductStatus(@PathVariable Long id, @RequestParam Integer status) {
         PointsProduct product = pointsProductMapper.selectById(id);
         if (product == null) {
-            return Result.error("积分兑换商品不存在");
+            return Result.error(ResponseCode.POINTS_PRODUCT_NOT_FOUND);
         }
 
         PointsProduct update = new PointsProduct();
@@ -149,12 +150,12 @@ public class AdminPointsProductController {
     @PutMapping("/{id}/stock")
     public Result<?> updatePointsProductStock(@PathVariable Long id, @RequestParam Integer stock) {
         if (stock < 0) {
-            return Result.error("库存不能为负数");
+            return Result.error(ResponseCode.STOCK_INVALID);
         }
 
         PointsProduct product = pointsProductMapper.selectById(id);
         if (product == null) {
-            return Result.error("积分兑换商品不存在");
+            return Result.error(ResponseCode.POINTS_PRODUCT_NOT_FOUND);
         }
 
         PointsProduct update = new PointsProduct();
@@ -172,7 +173,7 @@ public class AdminPointsProductController {
     public Result<?> deletePointsProduct(@PathVariable Long id) {
         PointsProduct product = pointsProductMapper.selectById(id);
         if (product == null) {
-            return Result.error("积分兑换商品不存在");
+            return Result.error(ResponseCode.POINTS_PRODUCT_NOT_FOUND);
         }
 
         pointsProductMapper.deleteById(id);

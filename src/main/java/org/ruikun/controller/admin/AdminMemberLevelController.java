@@ -3,6 +3,7 @@ package org.ruikun.controller.admin;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
 import org.ruikun.common.Result;
+import org.ruikun.common.ResponseCode;
 import org.ruikun.dto.admin.MemberLevelSaveDTO;
 import org.ruikun.entity.MemberLevel;
 import org.ruikun.mapper.MemberLevelMapper;
@@ -54,7 +55,7 @@ public class AdminMemberLevelController {
     public Result<AdminMemberLevelVO> getMemberLevelById(@PathVariable Long id) {
         MemberLevel level = memberLevelMapper.selectById(id);
         if (level == null || level.getDeleted() == 1) {
-            return Result.error("会员等级不存在");
+            return Result.error(ResponseCode.MEMBER_LEVEL_NOT_FOUND);
         }
 
         AdminMemberLevelVO vo = new AdminMemberLevelVO();
@@ -74,7 +75,7 @@ public class AdminMemberLevelController {
                 .ge(MemberLevel::getMaxPoints, saveDTO.getMinPoints()));
         Long count = memberLevelMapper.selectCount(wrapper);
         if (count > 0) {
-            return Result.error("积分范围与其他等级冲突");
+            return Result.error(ResponseCode.MEMBER_LEVEL_CONFLICT);
         }
 
         MemberLevel level = new MemberLevel();
@@ -82,7 +83,7 @@ public class AdminMemberLevelController {
         level.setStatus(1); // 默认启用
 
         if (memberLevelMapper.insert(level) <= 0) {
-            return Result.error("新增会员等级失败");
+            return Result.error(ResponseCode.MEMBER_LEVEL_CREATE_FAILED);
         }
 
         return Result.success("新增会员等级成功");
@@ -95,7 +96,7 @@ public class AdminMemberLevelController {
     public Result<?> updateMemberLevel(@PathVariable Long id, @RequestBody @Validated MemberLevelSaveDTO saveDTO) {
         MemberLevel existLevel = memberLevelMapper.selectById(id);
         if (existLevel == null) {
-            return Result.error("会员等级不存在");
+            return Result.error(ResponseCode.MEMBER_LEVEL_NOT_FOUND);
         }
 
         // 检查积分范围是否冲突（排除自身）
@@ -105,7 +106,7 @@ public class AdminMemberLevelController {
                         .ge(MemberLevel::getMaxPoints, saveDTO.getMinPoints()));
         Long count = memberLevelMapper.selectCount(wrapper);
         if (count > 0) {
-            return Result.error("积分范围与其他等级冲突");
+            return Result.error(ResponseCode.MEMBER_LEVEL_CONFLICT);
         }
 
         MemberLevel level = new MemberLevel();
@@ -113,7 +114,7 @@ public class AdminMemberLevelController {
         BeanUtils.copyProperties(saveDTO, level);
 
         if (memberLevelMapper.updateById(level) <= 0) {
-            return Result.error("修改会员等级失败");
+            return Result.error(ResponseCode.MEMBER_LEVEL_UPDATE_FAILED);
         }
 
         return Result.success("修改会员等级成功");
@@ -126,7 +127,7 @@ public class AdminMemberLevelController {
     public Result<?> updateMemberLevelStatus(@PathVariable Long id, @RequestParam Integer status) {
         MemberLevel level = memberLevelMapper.selectById(id);
         if (level == null) {
-            return Result.error("会员等级不存在");
+            return Result.error(ResponseCode.MEMBER_LEVEL_NOT_FOUND);
         }
 
         MemberLevel update = new MemberLevel();
@@ -144,7 +145,7 @@ public class AdminMemberLevelController {
     public Result<?> deleteMemberLevel(@PathVariable Long id) {
         MemberLevel level = memberLevelMapper.selectById(id);
         if (level == null) {
-            return Result.error("会员等级不存在");
+            return Result.error(ResponseCode.MEMBER_LEVEL_NOT_FOUND);
         }
 
         memberLevelMapper.deleteById(id);

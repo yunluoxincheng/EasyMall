@@ -3,6 +3,7 @@ package org.ruikun.controller;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.ruikun.common.Result;
+import org.ruikun.common.ResponseCode;
 import org.ruikun.service.ISignInService;
 import org.ruikun.vo.SignInResultVO;
 import org.springframework.web.bind.annotation.*;
@@ -24,7 +25,7 @@ public class SignInController {
     public Result<SignInResultVO> signIn(HttpServletRequest request) {
         Long userId = (Long) request.getAttribute("userId");
         if (userId == null) {
-            return Result.error("用户未登录");
+            return Result.error(ResponseCode.UNAUTHORIZED);
         }
         SignInResultVO result = signInService.signIn(userId);
         return Result.success(result);
@@ -37,7 +38,7 @@ public class SignInController {
     public Result<Boolean> hasSignedToday(HttpServletRequest request) {
         Long userId = (Long) request.getAttribute("userId");
         if (userId == null) {
-            return Result.error("用户未登录");
+            return Result.error(ResponseCode.UNAUTHORIZED);
         }
         boolean hasSigned = signInService.hasSignedToday(userId);
         return Result.success(hasSigned);
@@ -50,7 +51,7 @@ public class SignInController {
     public Result<Integer> getContinuousDays(HttpServletRequest request) {
         Long userId = (Long) request.getAttribute("userId");
         if (userId == null) {
-            return Result.error("用户未登录");
+            return Result.error(ResponseCode.UNAUTHORIZED);
         }
         Integer days = signInService.getContinuousDays(userId);
         return Result.success(days);

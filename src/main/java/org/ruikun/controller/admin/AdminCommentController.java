@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
 import org.ruikun.common.PageResult;
 import org.ruikun.common.Result;
+import org.ruikun.common.ResponseCode;
 import org.ruikun.dto.admin.CommentQueryDTO;
 import org.ruikun.entity.Comment;
 import org.ruikun.mapper.CommentMapper;
@@ -103,7 +104,7 @@ public class AdminCommentController {
     public Result<AdminCommentVO> getCommentById(@PathVariable Long id) {
         Comment comment = commentMapper.selectById(id);
         if (comment == null || comment.getDeleted() == 1) {
-            return Result.error("评论不存在");
+            return Result.error(ResponseCode.COMMENT_NOT_FOUND);
         }
 
         // 获取用户信息
@@ -137,7 +138,7 @@ public class AdminCommentController {
     public Result<?> approveComment(@PathVariable Long id) {
         Comment comment = commentMapper.selectById(id);
         if (comment == null) {
-            return Result.error("评论不存在");
+            return Result.error(ResponseCode.COMMENT_NOT_FOUND);
         }
 
         Comment update = new Comment();
@@ -155,7 +156,7 @@ public class AdminCommentController {
     public Result<?> rejectComment(@PathVariable Long id) {
         Comment comment = commentMapper.selectById(id);
         if (comment == null) {
-            return Result.error("评论不存在");
+            return Result.error(ResponseCode.COMMENT_NOT_FOUND);
         }
 
         Comment update = new Comment();
@@ -173,12 +174,12 @@ public class AdminCommentController {
     public Result<?> replyComment(@PathVariable Long id, @RequestBody Map<String, String> request) {
         String reply = request.get("reply");
         if (reply == null || reply.trim().isEmpty()) {
-            return Result.error("回复内容不能为空");
+            return Result.error(ResponseCode.VALIDATION_ERROR);
         }
 
         Comment comment = commentMapper.selectById(id);
         if (comment == null) {
-            return Result.error("评论不存在");
+            return Result.error(ResponseCode.COMMENT_NOT_FOUND);
         }
 
         Comment update = new Comment();
@@ -197,7 +198,7 @@ public class AdminCommentController {
     public Result<?> deleteComment(@PathVariable Long id) {
         Comment comment = commentMapper.selectById(id);
         if (comment == null) {
-            return Result.error("评论不存在");
+            return Result.error(ResponseCode.COMMENT_NOT_FOUND);
         }
 
         commentMapper.deleteById(id);

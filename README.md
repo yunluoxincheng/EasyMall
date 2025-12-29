@@ -420,14 +420,56 @@ docker-compose -f docker-compose.yml -f docker-dev.yml up -d
 1. 打包项目：`mvn clean package`
 2. 运行jar包：`java -jar target/EasyMall-0.0.1-SNAPSHOT.jar`
 
-### Docker部署（可选）
+### Docker部署（生产环境）
+
+项目提供生产环境专用的 Dockerfile，使用多阶段构建，镜像轻量且安全。
+
+**构建镜像**
+
 ```bash
-# 构建镜像
-docker build -t easymall:latest .
+# 1. 登录 Docker Hub
+docker login
+
+# 2. 使用生产版 Dockerfile 构建镜像
+docker build -f Dockerfile.production -t yunluoxincheng/easymall:latest .
+
+# 3. （可选）添加版本标签
+docker build -f Dockerfile.production -t yunluoxincheng/easymall:v1.0 .
+```
+
+**推送到 Docker Hub**
+
+```bash
+# 推送 latest 标签
+docker push yunluoxincheng/easymall:latest
+
+# 推送版本标签
+docker push yunluoxincheng/easymall:v1.0
+```
+
+**拉取并运行镜像**
+
+```bash
+# 拉取镜像
+docker pull yunluoxincheng/easymall:latest
 
 # 运行容器
-docker run -d -p 8080:8080 easymall:latest
+docker run -d -p 8080:8080 \
+  -e SPRING_DATASOURCE_URL=jdbc:mysql://host:3306/easymall \
+  -e SPRING_DATASOURCE_USERNAME=root \
+  -e SPRING_DATASOURCE_PASSWORD=password \
+  yunluoxincheng/easymall:latest
 ```
+
+**生产版 Dockerfile 特点**
+
+| 特性 | 说明 |
+|------|------|
+| 多阶段构建 | 构建和运行分离，最终镜像只包含 JRE 和 jar 包 |
+| 镜像体积 | 使用 Alpine 基础镜像，体积更小 |
+| 安全性 | 使用非 root 用户运行应用 |
+| 时区设置 | 预设为上海时区 |
+| JVM 优化 | 支持通过环境变量自定义 JVM 参数 |
 
 ## 待完善功能
 

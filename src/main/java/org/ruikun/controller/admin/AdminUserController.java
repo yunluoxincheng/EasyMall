@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
 import org.ruikun.common.PageResult;
 import org.ruikun.common.Result;
+import org.ruikun.common.ResponseCode;
 import org.ruikun.dto.admin.UserQueryDTO;
 import org.ruikun.entity.User;
 import org.ruikun.mapper.UserMapper;
@@ -83,7 +84,7 @@ public class AdminUserController {
     public Result<AdminUserVO> getUserById(@PathVariable Long id) {
         User user = userMapper.selectById(id);
         if (user == null || user.getDeleted() == 1) {
-            return Result.error("用户不存在");
+            return Result.error(ResponseCode.USER_NOT_FOUND);
         }
 
         AdminUserVO vo = new AdminUserVO();
@@ -99,7 +100,7 @@ public class AdminUserController {
     public Result<?> updateUserStatus(@PathVariable Long id, @RequestParam Integer status) {
         User user = userMapper.selectById(id);
         if (user == null) {
-            return Result.error("用户不存在");
+            return Result.error(ResponseCode.USER_NOT_FOUND);
         }
 
         User update = new User();
@@ -117,7 +118,7 @@ public class AdminUserController {
     public Result<?> updateUserRole(@PathVariable Long id, @RequestParam Integer role) {
         User user = userMapper.selectById(id);
         if (user == null) {
-            return Result.error("用户不存在");
+            return Result.error(ResponseCode.USER_NOT_FOUND);
         }
 
         User update = new User();
@@ -135,12 +136,12 @@ public class AdminUserController {
     public Result<?> updateUserPoints(@PathVariable Long id, @RequestParam Integer points) {
         User user = userMapper.selectById(id);
         if (user == null) {
-            return Result.error("用户不存在");
+            return Result.error(ResponseCode.USER_NOT_FOUND);
         }
 
         // 扣减积分时检查余额
         if (points < 0 && user.getPoints() + points < 0) {
-            return Result.error("积分不足");
+            return Result.error(ResponseCode.POINTS_INSUFFICIENT);
         }
 
         // 使用 PointsService 记录积分变动
