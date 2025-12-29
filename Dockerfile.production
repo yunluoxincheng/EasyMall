@@ -9,6 +9,7 @@ WORKDIR /app
 COPY pom.xml .
 RUN mvn dependency:go-offline
 
+
 # 复制源代码
 COPY src ./src
 
