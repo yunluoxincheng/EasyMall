@@ -22,4 +22,9 @@ public class OrderCreateDTO {
     private String receiverAddress;
 
     private String remark;
+
+    /**
+     * 使用的用户优惠券ID（可选）
+     */
+    private Long userCouponId;
 }

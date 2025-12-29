@@ -8,7 +8,9 @@
       "Skill(openspec:archive)",
       "Skill(openspec:apply)",
       "Bash(openspec archive add-docker-dev-environment:*)",
-      "Bash(openspec show:*)"
+      "Bash(openspec show:*)",
+      "Bash(docker logs:*)",
+      "Bash(curl:*)"
     ]
   }
 }

@@ -3,6 +3,7 @@ package org.ruikun.controller;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.ruikun.common.Result;
+import org.ruikun.common.ResponseCode;
 import org.ruikun.dto.UserLoginDTO;
 import org.ruikun.dto.UserRegisterDTO;
 import org.ruikun.dto.UserUpdateDTO;
@@ -26,13 +27,13 @@ public class UserController {
     @PostMapping("/login")
     public Result<LoginVO> login(@RequestBody @Validated UserLoginDTO loginDTO) {
         LoginVO loginVO = userService.login(loginDTO);
-        return Result.success(loginVO);
+        return Result.success(ResponseCode.LOGIN_SUCCESS, loginVO);
     }
 
     @PostMapping("/register")
     public Result<?> register(@RequestBody @Validated UserRegisterDTO registerDTO) {
         userService.register(registerDTO);
-        return Result.success("注册成功");
+        return Result.success(ResponseCode.REGISTER_SUCCESS, null);
     }
 
     @GetMapping("/info")
@@ -55,7 +56,7 @@ public class UserController {
             return Result.error("用户未登录");
         }
         userService.updateUserInfo(userId, updateDTO);
-        return Result.success("更新成功");
+        return Result.success(ResponseCode.UPDATE_SUCCESS, null);
     }
 
     @PutMapping("/password")
@@ -68,7 +69,7 @@ public class UserController {
             return Result.error("用户未登录");
         }
         userService.updatePassword(userId, oldPassword, newPassword);
-        return Result.success("密码修改成功");
+        return Result.success(ResponseCode.UPDATE_SUCCESS, null);
     }
 
     @PostMapping("/logout")
@@ -79,6 +80,6 @@ public class UserController {
             // 清除Redis中的token
             userService.logout(userId);
         }
-        return Result.success("退出成功");
+        return Result.success(ResponseCode.LOGOUT_SUCCESS, null);
     }
 }

@@ -3,6 +3,7 @@ package org.ruikun.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
+import org.ruikun.common.ResponseCode;
 import org.ruikun.entity.Favorite;
 import org.ruikun.entity.Product;
 import org.ruikun.exception.BusinessException;
@@ -33,7 +34,7 @@ public class FavoriteServiceImpl implements IFavoriteService {
         // 检查商品是否存在
         Product product = productMapper.selectById(productId);
         if (product == null) {
-            throw new BusinessException("商品不存在");
+            throw new BusinessException(ResponseCode.PRODUCT_NOT_FOUND, "商品不存在");
         }
 
         // 检查是否已收藏
@@ -41,7 +42,7 @@ public class FavoriteServiceImpl implements IFavoriteService {
         wrapper.eq(Favorite::getUserId, userId)
                .eq(Favorite::getProductId, productId);
         if (favoriteMapper.selectCount(wrapper) > 0) {
-            throw new BusinessException("已收藏该商品");
+            throw new BusinessException(ResponseCode.PRODUCT_ALREADY_FAVORITED, "已收藏该商品");
         }
 
         // 添加收藏

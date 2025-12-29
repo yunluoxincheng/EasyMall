@@ -3,6 +3,7 @@ package org.ruikun.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
+import org.ruikun.common.ResponseCode;
 import org.ruikun.dto.CommentCreateDTO;
 import org.ruikun.entity.Comment;
 import org.ruikun.entity.Order;
@@ -41,16 +42,16 @@ public class CommentServiceImpl implements ICommentService {
     public Long createComment(Long userId, CommentCreateDTO commentDTO) {
         // 验证评分范围
         if (commentDTO.getRating() < 1 || commentDTO.getRating() > 5) {
-            throw new BusinessException("评分必须在1-5星之间");
+            throw new BusinessException(ResponseCode.COMMENT_RATING_INVALID, "评分必须在1-5星之间");
         }
 
         // 验证订单是否属于该用户且已完成
         Order order = orderMapper.selectById(commentDTO.getOrderId());
         if (order == null || !order.getUserId().equals(userId)) {
-            throw new BusinessException("订单不存在");
+            throw new BusinessException(ResponseCode.ORDER_NOT_FOUND, "订单不存在");
         }
         if (order.getStatus() != 3) {
-            throw new BusinessException("只能评论已完成的订单");
+            throw new BusinessException(ResponseCode.ORDER_NOT_COMPLETED, "只能评论已完成的订单");
         }
 
         // 验证订单中是否包含该商品
@@ -59,7 +60,7 @@ public class CommentServiceImpl implements ICommentService {
                .eq(org.ruikun.entity.OrderItem::getProductId, commentDTO.getProductId());
         OrderItem orderItem = orderItemMapper.selectOne(wrapper);
         if (orderItem == null) {
-            throw new BusinessException("订单中不包含该商品");
+            throw new BusinessException(ResponseCode.PRODUCT_NOT_IN_ORDER, "订单中不包含该商品");
         }
 
         // 检查是否已评论过
@@ -68,7 +69,7 @@ public class CommentServiceImpl implements ICommentService {
                     .eq(Comment::getOrderId, commentDTO.getOrderId())
                     .eq(Comment::getProductId, commentDTO.getProductId());
         if (commentMapper.selectCount(existWrapper) > 0) {
-            throw new BusinessException("您已评论过该商品");
+            throw new BusinessException(ResponseCode.COMMENT_ALREADY_EXISTS, "您已评论过该商品");
         }
 
         // 创建评论
@@ -135,10 +136,10 @@ public class CommentServiceImpl implements ICommentService {
     public void deleteComment(Long userId, Long commentId) {
         Comment comment = commentMapper.selectById(commentId);
         if (comment == null) {
-            throw new BusinessException("评论不存在");
+            throw new BusinessException(ResponseCode.COMMENT_NOT_FOUND, "评论不存在");
         }
         if (!comment.getUserId().equals(userId)) {
-            throw new BusinessException("无权删除该评论");
+            throw new BusinessException(ResponseCode.COMMENT_DELETE_FORBIDDEN, "无权删除该评论");
         }
         commentMapper.deleteById(commentId);
     }

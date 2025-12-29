@@ -2,6 +2,7 @@ package org.ruikun.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
+import org.ruikun.common.ResponseCode;
 import org.ruikun.dto.CartAddDTO;
 import org.ruikun.dto.CartUpdateDTO;
 import org.ruikun.entity.Cart;
@@ -35,11 +36,11 @@ public class CartServiceImpl implements ICartService {
     public void addToCart(Long userId, CartAddDTO cartAddDTO) {
         Product product = productMapper.selectById(cartAddDTO.getProductId());
         if (product == null || product.getStatus() != 1) {
-            throw new BusinessException("商品不存在或已下架");
+            throw new BusinessException(ResponseCode.PRODUCT_SHELF_EMPTY, "商品不存在或已下架");
         }
 
         if (product.getStock() < cartAddDTO.getQuantity()) {
-            throw new BusinessException("商品库存不足");
+            throw new BusinessException(ResponseCode.PRODUCT_OUT_OF_STOCK, "商品库存不足");
         }
 
         Cart existCart = cartMapper.getCartByUserIdAndProductId(userId, cartAddDTO.getProductId());
@@ -63,13 +64,13 @@ public class CartServiceImpl implements ICartService {
     public void updateCartItem(Long userId, Long cartId, CartUpdateDTO cartUpdateDTO) {
         Cart cart = cartMapper.selectById(cartId);
         if (cart == null || !cart.getUserId().equals(userId)) {
-            throw new BusinessException("购物车记录不存在");
+            throw new BusinessException(ResponseCode.CART_ITEM_NOT_FOUND, "购物车记录不存在");
         }
 
         if (cartUpdateDTO.getQuantity() != null) {
             Product product = productMapper.selectById(cart.getProductId());
             if (product.getStock() < cartUpdateDTO.getQuantity()) {
-                throw new BusinessException("商品库存不足");
+                throw new BusinessException(ResponseCode.PRODUCT_OUT_OF_STOCK, "商品库存不足");
             }
             cart.setQuantity(cartUpdateDTO.getQuantity());
             cart.setTotalPrice(cart.getProductPrice().multiply(new BigDecimal(cartUpdateDTO.getQuantity())));
@@ -86,7 +87,7 @@ public class CartServiceImpl implements ICartService {
     public void deleteCartItem(Long userId, Long cartId) {
         Cart cart = cartMapper.selectById(cartId);
         if (cart == null || !cart.getUserId().equals(userId)) {
-            throw new BusinessException("购物车记录不存在");
+            throw new BusinessException(ResponseCode.CART_ITEM_NOT_FOUND, "购物车记录不存在");
         }
         cartMapper.deleteById(cartId);
     }

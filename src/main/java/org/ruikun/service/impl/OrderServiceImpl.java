@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
 import org.ruikun.common.PageRequest;
 import org.ruikun.common.PageResult;
+import org.ruikun.common.ResponseCode;
 import org.ruikun.dto.OrderCreateDTO;
 import org.ruikun.entity.*;
 import org.ruikun.exception.BusinessException;
@@ -31,6 +32,7 @@ public class OrderServiceImpl implements IOrderService {
     private final ProductMapper productMapper;
     private final org.ruikun.service.IPointsService pointsService;
     private final org.ruikun.service.IPriceService priceService;
+    private final org.ruikun.service.ICouponService couponService;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -43,15 +45,29 @@ public class OrderServiceImpl implements IOrderService {
         );
 
         if (cartItems.isEmpty()) {
-            throw new BusinessException("请选择要购买的商品");
+            throw new BusinessException(ResponseCode.CART_ITEM_EMPTY, "请选择要购买的商品");
         }
 
         BigDecimal totalAmount = cartItems.stream()
                 .map(Cart::getTotalPrice)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        // 应用会员折扣
+        // 先应用会员折扣
         BigDecimal payAmount = priceService.applyMemberDiscountToOrder(userId, totalAmount);
+
+        // 再应用优惠券优惠（优惠券在会员折扣后的金额基础上计算）
+        BigDecimal couponDiscount = BigDecimal.ZERO;
+        Long userCouponId = orderCreateDTO.getUserCouponId();
+
+        if (userCouponId != null) {
+            // 使用优惠券
+            couponDiscount = couponService.useCoupon(userId, userCouponId, null, null, payAmount);
+            payAmount = payAmount.subtract(couponDiscount);
+            // 确保支付金额不为负
+            if (payAmount.compareTo(BigDecimal.ZERO) < 0) {
+                payAmount = BigDecimal.ZERO;
+            }
+        }
 
         Order order = new Order();
         order.setOrderNo(generateOrderNo());
@@ -59,6 +75,8 @@ public class OrderServiceImpl implements IOrderService {
         order.setTotalAmount(totalAmount);
         order.setPayAmount(payAmount);
         order.setStatus(0);
+        order.setUserCouponId(userCouponId);
+        order.setCouponDiscount(couponDiscount);
         order.setReceiverName(orderCreateDTO.getReceiverName());
         order.setReceiverPhone(orderCreateDTO.getReceiverPhone());
         order.setReceiverAddress(orderCreateDTO.getReceiverAddress());
@@ -104,23 +122,29 @@ public class OrderServiceImpl implements IOrderService {
     public OrderVO getOrderDetail(Long userId, Long orderId) {
         Order order = orderMapper.selectById(orderId);
         if (order == null || !order.getUserId().equals(userId)) {
-            throw new BusinessException("订单不存在");
+            throw new BusinessException(ResponseCode.ORDER_NOT_FOUND, "订单不存在");
         }
         return convertToVO(order);
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void cancelOrder(Long userId, Long orderId) {
         Order order = orderMapper.selectById(orderId);
         if (order == null || !order.getUserId().equals(userId)) {
-            throw new BusinessException("订单不存在");
+            throw new BusinessException(ResponseCode.ORDER_NOT_FOUND, "订单不存在");
         }
         if (order.getStatus() != 0) {
-            throw new BusinessException("订单状态不允许取消");
+            throw new BusinessException(ResponseCode.ORDER_CANNOT_CANCEL, "订单状态不允许取消");
         }
 
         order.setStatus(4);
         orderMapper.updateById(order);
+
+        // 返还优惠券
+        if (order.getUserCouponId() != null) {
+            couponService.returnCoupon(userId, order.getUserCouponId(), orderId);
+        }
 
         List<OrderItem> orderItems = orderItemMapper.getOrderItemsByOrderId(orderId);
         for (OrderItem orderItem : orderItems) {
@@ -132,10 +156,10 @@ public class OrderServiceImpl implements IOrderService {
     public void payOrder(Long userId, Long orderId, String paymentMethod) {
         Order order = orderMapper.selectById(orderId);
         if (order == null || !order.getUserId().equals(userId)) {
-            throw new BusinessException("订单不存在");
+            throw new BusinessException(ResponseCode.ORDER_NOT_FOUND, "订单不存在");
         }
         if (order.getStatus() != 0) {
-            throw new BusinessException("订单状态不允许支付");
+            throw new BusinessException(ResponseCode.ORDER_CANNOT_PAY, "订单状态不允许支付");
         }
 
         order.setStatus(1);
@@ -149,10 +173,10 @@ public class OrderServiceImpl implements IOrderService {
     public void confirmOrder(Long userId, Long orderId) {
         Order order = orderMapper.selectById(orderId);
         if (order == null || !order.getUserId().equals(userId)) {
-            throw new BusinessException("订单不存在");
+            throw new BusinessException(ResponseCode.ORDER_NOT_FOUND, "订单不存在");
         }
         if (order.getStatus() != 2) {
-            throw new BusinessException("订单状态不允许确认收货");
+            throw new BusinessException(ResponseCode.ORDER_CANNOT_CONFIRM, "订单状态不允许确认收货");
         }
 
         order.setStatus(3);

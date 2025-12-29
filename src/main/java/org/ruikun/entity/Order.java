@@ -22,6 +22,16 @@ public class Order {
 
     private Integer status; // 0-待支付 1-已支付 2-已发货 3-已完成 4-已取消
 
+    /**
+     * 使用的用户优惠券ID
+     */
+    private Long userCouponId;
+
+    /**
+     * 优惠券优惠金额
+     */
+    private BigDecimal couponDiscount;
+
     private String paymentMethod;
 
     private LocalDateTime payTime;

@@ -3,6 +3,7 @@ package org.ruikun.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
+import org.ruikun.common.ResponseCode;
 import org.ruikun.entity.PointsRecord;
 import org.ruikun.entity.User;
 import org.ruikun.enums.PointsTypeEnum;
@@ -41,12 +42,12 @@ public class PointsServiceImpl implements IPointsService {
         // 获取用户信息
         User user = userMapper.selectById(userId);
         if (user == null) {
-            throw new BusinessException("用户不存在");
+            throw new BusinessException(ResponseCode.USER_NOT_FOUND, "用户不存在");
         }
 
         // 验证积分值
         if (points <= 0) {
-            throw new BusinessException("积分值必须大于0");
+            throw new BusinessException(ResponseCode.POINTS_VALUE_INVALID, "积分值必须大于0");
         }
 
         // 记录变动前积分
@@ -77,17 +78,17 @@ public class PointsServiceImpl implements IPointsService {
         // 获取用户信息
         User user = userMapper.selectById(userId);
         if (user == null) {
-            throw new BusinessException("用户不存在");
+            throw new BusinessException(ResponseCode.USER_NOT_FOUND, "用户不存在");
         }
 
         // 验证积分值
         if (points <= 0) {
-            throw new BusinessException("积分值必须大于0");
+            throw new BusinessException(ResponseCode.POINTS_VALUE_INVALID, "积分值必须大于0");
         }
 
         // 检查积分是否足够
         if (user.getPoints() < points) {
-            throw new BusinessException("积分不足");
+            throw new BusinessException(ResponseCode.POINTS_INSUFFICIENT, "积分不足");
         }
 
         // 记录变动前积分
@@ -146,7 +147,7 @@ public class PointsServiceImpl implements IPointsService {
         // 获取用户信息
         User user = userMapper.selectById(userId);
         if (user == null) {
-            throw new BusinessException("用户不存在");
+            throw new BusinessException(ResponseCode.USER_NOT_FOUND, "用户不存在");
         }
 
         // 记录变动前积分
@@ -171,7 +172,7 @@ public class PointsServiceImpl implements IPointsService {
             // 扣减积分
             int deductAmount = -points;
             if (beforePoints < deductAmount) {
-                throw new BusinessException("积分不足");
+                throw new BusinessException(ResponseCode.POINTS_INSUFFICIENT, "积分不足");
             }
 
             user.setPoints(beforePoints - deductAmount);

@@ -2,6 +2,7 @@ package org.ruikun.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
+import org.ruikun.common.ResponseCode;
 import org.ruikun.dto.CategoryDTO;
 import org.ruikun.entity.Category;
 import org.ruikun.exception.BusinessException;
@@ -55,7 +56,7 @@ public class CategoryServiceImpl implements ICategoryService {
         if (categoryDTO.getParentId() != null && categoryDTO.getParentId() > 0) {
             Category parent = categoryMapper.selectById(categoryDTO.getParentId());
             if (parent == null) {
-                throw new BusinessException("父分类不存在");
+                throw new BusinessException(ResponseCode.CATEGORY_PARENT_NOT_FOUND, "父分类不存在");
             }
             categoryDTO.setLevel(parent.getLevel() + 1);
         } else {
@@ -67,7 +68,7 @@ public class CategoryServiceImpl implements ICategoryService {
         wrapper.eq(Category::getName, categoryDTO.getName())
                .eq(Category::getParentId, categoryDTO.getParentId());
         if (categoryMapper.selectCount(wrapper) > 0) {
-            throw new BusinessException("同级分类名称已存在");
+            throw new BusinessException(ResponseCode.CATEGORY_NAME_EXISTS, "同级分类名称已存在");
         }
 
         Category category = new Category();
@@ -79,21 +80,21 @@ public class CategoryServiceImpl implements ICategoryService {
     public void updateCategory(Long id, CategoryDTO categoryDTO) {
         Category category = categoryMapper.selectById(id);
         if (category == null) {
-            throw new BusinessException("分类不存在");
+            throw new BusinessException(ResponseCode.CATEGORY_NOT_FOUND, "分类不存在");
         }
 
         if (categoryDTO.getParentId() != null && categoryDTO.getParentId() > 0) {
             if (categoryDTO.getParentId().equals(id)) {
-                throw new BusinessException("父分类不能是自己");
+                throw new BusinessException(ResponseCode.CATEGORY_INVALID_PARENT, "父分类不能是自己");
             }
 
             Category parent = categoryMapper.selectById(categoryDTO.getParentId());
             if (parent == null) {
-                throw new BusinessException("父分类不存在");
+                throw new BusinessException(ResponseCode.CATEGORY_PARENT_NOT_FOUND, "父分类不存在");
             }
 
             if (isChildCategory(id, categoryDTO.getParentId())) {
-                throw new BusinessException("父分类不能是自己的子分类");
+                throw new BusinessException(ResponseCode.CATEGORY_PARENT_IS_CHILD, "父分类不能是自己的子分类");
             }
 
             categoryDTO.setLevel(parent.getLevel() + 1);
@@ -107,7 +108,7 @@ public class CategoryServiceImpl implements ICategoryService {
                .eq(Category::getParentId, categoryDTO.getParentId())
                .ne(Category::getId, id);
         if (categoryMapper.selectCount(wrapper) > 0) {
-            throw new BusinessException("同级分类名称已存在");
+            throw new BusinessException(ResponseCode.CATEGORY_NAME_EXISTS, "同级分类名称已存在");
         }
 
         BeanUtils.copyProperties(categoryDTO, category, "id");
@@ -136,14 +137,14 @@ public class CategoryServiceImpl implements ICategoryService {
     public void deleteCategory(Long id) {
         Category category = categoryMapper.selectById(id);
         if (category == null) {
-            throw new BusinessException("分类不存在");
+            throw new BusinessException(ResponseCode.CATEGORY_NOT_FOUND, "分类不存在");
         }
 
         LambdaQueryWrapper<Category> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Category::getParentId, id);
         Long childCount = categoryMapper.selectCount(wrapper);
         if (childCount > 0) {
-            throw new BusinessException("存在子分类，无法删除");
+            throw new BusinessException(ResponseCode.CATEGORY_HAS_CHILDREN, "存在子分类，无法删除");
         }
 
         categoryMapper.deleteById(id);
@@ -153,7 +154,7 @@ public class CategoryServiceImpl implements ICategoryService {
     public CategoryVO getCategoryById(Long id) {
         Category category = categoryMapper.selectById(id);
         if (category == null) {
-            throw new BusinessException("分类不存在");
+            throw new BusinessException(ResponseCode.CATEGORY_NOT_FOUND, "分类不存在");
         }
 
         CategoryVO categoryVO = new CategoryVO();

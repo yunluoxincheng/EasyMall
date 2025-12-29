@@ -4,6 +4,7 @@ import cn.hutool.core.util.IdUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
+import org.ruikun.common.ResponseCode;
 import org.ruikun.dto.PointsExchangeDTO;
 import org.ruikun.entity.PointsExchange;
 import org.ruikun.entity.PointsProduct;
@@ -34,6 +35,7 @@ public class PointsExchangeServiceImpl implements IPointsExchangeService {
     private final PointsExchangeMapper pointsExchangeMapper;
     private final UserMapper userMapper;
     private final IPointsService pointsService;
+    private final org.ruikun.service.ICouponService couponService;
 
     @Override
     public List<PointsProductVO> getAvailableProducts(Long userId) {
@@ -64,51 +66,78 @@ public class PointsExchangeServiceImpl implements IPointsExchangeService {
         // 获取用户信息
         User user = userMapper.selectById(userId);
         if (user == null) {
-            throw new BusinessException("用户不存在");
+            throw new BusinessException(ResponseCode.USER_NOT_FOUND, "用户不存在");
         }
 
         // 获取兑换商品信息
         PointsProduct product = pointsProductMapper.selectById(exchangeDTO.getProductId());
         if (product == null) {
-            throw new BusinessException("商品不存在");
+            throw new BusinessException(ResponseCode.PRODUCT_NOT_FOUND, "商品不存在");
         }
         if (product.getStatus() != 1) {
-            throw new BusinessException("商品已下架");
+            throw new BusinessException(ResponseCode.PRODUCT_SHELF_ERROR, "商品已下架");
         }
         if (product.getStock() <= 0) {
-            throw new BusinessException("商品库存不足");
+            throw new BusinessException(ResponseCode.POINTS_PRODUCT_OUT_OF_STOCK, "商品库存不足");
         }
 
         // 检查用户积分是否足够
         if (user.getPoints() < product.getPointsRequired()) {
-            throw new BusinessException("积分不足，当前积分：" + user.getPoints() + "，所需积分：" + product.getPointsRequired());
+            throw new BusinessException(ResponseCode.POINTS_INSUFFICIENT, "积分不足，当前积分：" + user.getPoints() + "，所需积分：" + product.getPointsRequired());
         }
 
-        // 扣除积分
-        pointsService.deductPoints(userId, product.getPointsRequired(),
-                                  org.ruikun.enums.PointsTypeEnum.EXCHANGE.getCode(),
-                                  product.getId(), "兑换商品：" + product.getName());
+        // 判断商品类型：1-实物商品，2-优惠券
+        Integer productType = product.getProductType() != null ? product.getProductType() : 1;
 
-        // 扣减库存
-        product.setStock(product.getStock() - 1);
-        product.setExchangeCount(product.getExchangeCount() + 1);
-        pointsProductMapper.updateById(product);
+        if (productType == 2) {
+            // 兑换优惠券
+            if (product.getRelationId() == null) {
+                throw new BusinessException(ResponseCode.VALIDATION_ERROR, "优惠券配置错误");
+            }
 
-        // 创建兑换记录
-        PointsExchange exchange = new PointsExchange();
-        exchange.setUserId(userId);
-        exchange.setProductId(product.getId());
-        exchange.setProductName(product.getName());
-        exchange.setPointsUsed(product.getPointsRequired());
-        exchange.setExchangeNo(generateExchangeNo());
-        exchange.setStatus(0);
-        exchange.setReceiverName(exchangeDTO.getReceiverName());
-        exchange.setReceiverPhone(exchangeDTO.getReceiverPhone());
-        exchange.setReceiverAddress(exchangeDTO.getReceiverAddress());
-        exchange.setRemark(exchangeDTO.getRemark());
-        pointsExchangeMapper.insert(exchange);
+            // 扣除积分
+            pointsService.deductPoints(userId, product.getPointsRequired(),
+                    org.ruikun.enums.PointsTypeEnum.EXCHANGE.getCode(),
+                    product.getId(), "兑换优惠券：" + product.getName());
 
-        return exchange.getExchangeNo();
+            // 扣减库存
+            product.setStock(product.getStock() - 1);
+            product.setExchangeCount(product.getExchangeCount() + 1);
+            pointsProductMapper.updateById(product);
+
+            // 发放优惠券
+            Long userCouponId = couponService.issueCoupon(userId, product.getRelationId());
+
+            // 返回优惠券ID作为兑换编号
+            return "CPN" + userCouponId;
+        } else {
+            // 兑换实物商品（原有逻辑）
+            // 扣除积分
+            pointsService.deductPoints(userId, product.getPointsRequired(),
+                    org.ruikun.enums.PointsTypeEnum.EXCHANGE.getCode(),
+                    product.getId(), "兑换商品：" + product.getName());
+
+            // 扣减库存
+            product.setStock(product.getStock() - 1);
+            product.setExchangeCount(product.getExchangeCount() + 1);
+            pointsProductMapper.updateById(product);
+
+            // 创建兑换记录
+            PointsExchange exchange = new PointsExchange();
+            exchange.setUserId(userId);
+            exchange.setProductId(product.getId());
+            exchange.setProductName(product.getName());
+            exchange.setPointsUsed(product.getPointsRequired());
+            exchange.setExchangeNo(generateExchangeNo());
+            exchange.setStatus(0);
+            exchange.setReceiverName(exchangeDTO.getReceiverName());
+            exchange.setReceiverPhone(exchangeDTO.getReceiverPhone());
+            exchange.setReceiverAddress(exchangeDTO.getReceiverAddress());
+            exchange.setRemark(exchangeDTO.getRemark());
+            pointsExchangeMapper.insert(exchange);
+
+            return exchange.getExchangeNo();
+        }
     }
 
     @Override
@@ -136,7 +165,7 @@ public class PointsExchangeServiceImpl implements IPointsExchangeService {
     public PointsExchangeVO getExchangeDetail(Long userId, Long exchangeId) {
         PointsExchange exchange = pointsExchangeMapper.selectById(exchangeId);
         if (exchange == null || !exchange.getUserId().equals(userId)) {
-            throw new BusinessException("兑换记录不存在");
+            throw new BusinessException(ResponseCode.POINTS_PRODUCT_NOT_FOUND, "兑换记录不存在");
         }
         return convertToVO(exchange);
     }

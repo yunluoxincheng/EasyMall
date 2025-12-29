@@ -1,6 +1,6 @@
 # 规格文档: README 项目文档
 
-## MODIFIED Requirements
+## ADDED Requirements
 
 ### Requirement: 技术栈文档准确性
 README 中的技术栈部分 SHALL 准确反映项目当前使用的技术和版本，移除未使用的 Elasticsearch 依赖。
@@ -99,8 +99,6 @@ README 中的"待完善功能"部分 SHALL 移除已完成的功能。
 - **AND** 应该只包含实际待开发的功能（支付接口集成、优惠券系统、商品图片上传等）
 
 ---
-
-## ADDED Requirements
 
 ### Requirement: 数据库迁移脚本文档
 README SHALL 说明数据库迁移脚本的版本和内容。

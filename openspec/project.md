@@ -9,9 +9,8 @@ EasyMall 是一个基于 B2C 模式的电子商城系统，面向普通消费者
 - Spring MVC + RESTful API
 - Spring Security + JWT 认证
 - MyBatis Plus
-- MySQL 8
+- MySQL 8（数据库 + 搜索）
 - Redis（缓存）
-- Elasticsearch（商品搜索）
 
 ## Project Conventions
 
@@ -60,5 +59,4 @@ EasyMall 是一个基于 B2C 模式的电子商城系统，面向普通消费者
 
 ## External Dependencies
 - Redis：存储登录态、缓存热点数据
-- Elasticsearch：商品名称与关键字搜索
 - MinIO：商品图片对象存储（可选）

@@ -3,6 +3,7 @@ package org.ruikun.service.impl;
 import cn.hutool.crypto.digest.BCrypt;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
+import org.ruikun.common.ResponseCode;
 import org.ruikun.dto.UserLoginDTO;
 import org.ruikun.dto.UserRegisterDTO;
 import org.ruikun.dto.UserUpdateDTO;
@@ -27,6 +28,8 @@ public class UserServiceImpl implements IUserService {
     private final UserMapper userMapper;
     private final JwtUtil jwtUtil;
     private final StringRedisTemplate redisTemplate;
+    private final org.ruikun.service.ICouponService couponService;
+    private final org.ruikun.mapper.CouponTemplateMapper couponTemplateMapper;
 
     @Override
     public LoginVO login(UserLoginDTO loginDTO) {
@@ -35,15 +38,15 @@ public class UserServiceImpl implements IUserService {
         User user = userMapper.selectOne(wrapper);
 
         if (user == null) {
-            throw new BusinessException("用户不存在");
+            throw new BusinessException(ResponseCode.USER_NOT_FOUND, "用户不存在");
         }
 
         if (user.getStatus() == 0) {
-            throw new BusinessException("账号已被禁用");
+            throw new BusinessException(ResponseCode.USER_DISABLED, "账号已被禁用");
         }
 
         if (!BCrypt.checkpw(loginDTO.getPassword(), user.getPassword())) {
-            throw new BusinessException("密码错误");
+            throw new BusinessException(ResponseCode.PASSWORD_ERROR, "密码错误");
         }
 
         String token = jwtUtil.generateToken(user.getUsername(), user.getId(), user.getRole());
@@ -64,25 +67,25 @@ public class UserServiceImpl implements IUserService {
     @Override
     public void register(UserRegisterDTO registerDTO) {
         if (!registerDTO.getPassword().equals(registerDTO.getConfirmPassword())) {
-            throw new BusinessException("两次密码输入不一致");
+            throw new BusinessException(ResponseCode.PASSWORD_MISMATCH, "两次密码输入不一致");
         }
 
         LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(User::getUsername, registerDTO.getUsername());
         if (userMapper.selectCount(wrapper) > 0) {
-            throw new BusinessException("用户名已存在");
+            throw new BusinessException(ResponseCode.USERNAME_EXISTS, "用户名已存在");
         }
 
         wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(User::getPhone, registerDTO.getPhone());
         if (StringUtils.hasText(registerDTO.getPhone()) && userMapper.selectCount(wrapper) > 0) {
-            throw new BusinessException("手机号已被注册");
+            throw new BusinessException(ResponseCode.PHONE_EXISTS, "手机号已被注册");
         }
 
         wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(User::getEmail, registerDTO.getEmail());
         if (StringUtils.hasText(registerDTO.getEmail()) && userMapper.selectCount(wrapper) > 0) {
-            throw new BusinessException("邮箱已被注册");
+            throw new BusinessException(ResponseCode.EMAIL_EXISTS, "邮箱已被注册");
         }
 
         User user = new User();
@@ -97,13 +100,29 @@ public class UserServiceImpl implements IUserService {
         user.setLevel(1);
 
         userMapper.insert(user);
+
+        // 自动发放新人专享券
+        try {
+            LambdaQueryWrapper<org.ruikun.entity.CouponTemplate> couponWrapper = new LambdaQueryWrapper<>();
+            couponWrapper.eq(org.ruikun.entity.CouponTemplate::getType, 3) // 3-新人专享券
+                    .eq(org.ruikun.entity.CouponTemplate::getStatus, 1) // 上架中
+                    .orderByAsc(org.ruikun.entity.CouponTemplate::getSortOrder)
+                    .last("LIMIT 1");
+            org.ruikun.entity.CouponTemplate newbieCoupon = couponTemplateMapper.selectOne(couponWrapper);
+            if (newbieCoupon != null) {
+                couponService.issueCoupon(user.getId(), newbieCoupon.getId());
+            }
+        } catch (Exception e) {
+            // 发放优惠券失败不影响注册流程
+            // 记录日志即可（实际项目中应使用日志框架）
+        }
     }
 
     @Override
     public UserVO getUserInfo(Long userId) {
         User user = userMapper.selectById(userId);
         if (user == null) {
-            throw new BusinessException("用户不存在");
+            throw new BusinessException(ResponseCode.USER_NOT_FOUND, "用户不存在");
         }
 
         UserVO userVO = new UserVO();
@@ -115,7 +134,7 @@ public class UserServiceImpl implements IUserService {
     public void updateUserInfo(Long userId, UserUpdateDTO updateDTO) {
         User user = userMapper.selectById(userId);
         if (user == null) {
-            throw new BusinessException("用户不存在");
+            throw new BusinessException(ResponseCode.USER_NOT_FOUND, "用户不存在");
         }
 
         if (StringUtils.hasText(updateDTO.getPhone())) {
@@ -123,7 +142,7 @@ public class UserServiceImpl implements IUserService {
             wrapper.eq(User::getPhone, updateDTO.getPhone())
                    .ne(User::getId, userId);
             if (userMapper.selectCount(wrapper) > 0) {
-                throw new BusinessException("手机号已被使用");
+                throw new BusinessException(ResponseCode.PHONE_EXISTS, "手机号已被使用");
             }
         }
 
@@ -132,7 +151,7 @@ public class UserServiceImpl implements IUserService {
             wrapper.eq(User::getEmail, updateDTO.getEmail())
                    .ne(User::getId, userId);
             if (userMapper.selectCount(wrapper) > 0) {
-                throw new BusinessException("邮箱已被使用");
+                throw new BusinessException(ResponseCode.EMAIL_EXISTS, "邮箱已被使用");
             }
         }
 
@@ -144,11 +163,11 @@ public class UserServiceImpl implements IUserService {
     public void updatePassword(Long userId, String oldPassword, String newPassword) {
         User user = userMapper.selectById(userId);
         if (user == null) {
-            throw new BusinessException("用户不存在");
+            throw new BusinessException(ResponseCode.USER_NOT_FOUND, "用户不存在");
         }
 
         if (!BCrypt.checkpw(oldPassword, user.getPassword())) {
-            throw new BusinessException("原密码错误");
+            throw new BusinessException(ResponseCode.OLD_PASSWORD_ERROR, "原密码错误");
         }
 
         user.setPassword(BCrypt.hashpw(newPassword, BCrypt.gensalt()));

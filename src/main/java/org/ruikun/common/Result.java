@@ -38,6 +38,17 @@ public class Result<T> {
         return result;
     }
 
+    public static <T> Result<T> success(ResponseCode responseCode, T data) {
+        Result<T> result = new Result<>();
+        result.setSuccess(true);
+        result.setCode(responseCode.getCode());
+        result.setMessage(responseCode.getMessage());
+        result.setTimestamp(LocalDateTime.now());
+        result.setTraceId(TraceIdUtil.getOrCreate());
+        result.setData(data);
+        return result;
+    }
+
     public static <T> Result<T> error() {
         Result<T> result = new Result<>();
         result.setSuccess(false);

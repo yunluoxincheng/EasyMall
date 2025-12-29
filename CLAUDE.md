@@ -74,9 +74,11 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 
 \* MyBatis Plus（ORM 框架）
 
-\* MySQL 8（关系型数据库，包含商品搜索功能）
+\* MySQL 8（关系型数据库）
 
 \* Redis（缓存热点数据、登录态信息）
+
+\* Elasticsearch（商品名称与关键字搜索）
 
 
 
@@ -287,7 +289,7 @@ throw new BusinessException(ResponseCode.PRODUCT_OUT_OF_STOCK, "商品库存不�
 
 \* 商品信息展示
 
-\* 商品搜索（基于 MySQL 全文索引 + LIKE 模糊查询）
+\* 商品搜索（基于 Elasticsearch）
 
 
 
@@ -297,13 +299,7 @@ throw new BusinessException(ResponseCode.PRODUCT_OUT_OF_STOCK, "商品库存不�
 
 \* 商品基础信息存储在 MySQL
 
-\* 商品搜索支持两种方式：
-  - FULLTEXT 全文索引搜索（默认，性能更好，按相关性排序）
-  - LIKE 模糊搜索（兼容性更好，作为备选）
-
-\* 使用 ngram 分词器支持中文全文搜索
-
-\* 配合 Redis 缓存热门搜索结果（5分钟过期）
+\* 商品名称及关键字段同步至 Elasticsearch
 
 \* 前端搜索请求直接调用搜索接口
 

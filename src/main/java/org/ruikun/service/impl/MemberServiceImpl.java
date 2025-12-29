@@ -2,6 +2,7 @@ package org.ruikun.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
+import org.ruikun.common.ResponseCode;
 import org.ruikun.entity.MemberLevel;
 import org.ruikun.entity.User;
 import org.ruikun.exception.BusinessException;
@@ -25,6 +26,8 @@ public class MemberServiceImpl implements IMemberService {
 
     private final MemberLevelMapper memberLevelMapper;
     private final UserMapper userMapper;
+    private final org.ruikun.service.ICouponService couponService;
+    private final org.ruikun.mapper.CouponTemplateMapper couponTemplateMapper;
 
     @Override
     public List<MemberLevelVO> getAllMemberLevels() {
@@ -62,7 +65,7 @@ public class MemberServiceImpl implements IMemberService {
         // 获取用户信息
         User user = userMapper.selectById(userId);
         if (user == null) {
-            throw new BusinessException("用户不存在");
+            throw new BusinessException(ResponseCode.USER_NOT_FOUND, "用户不存在");
         }
 
         // 获取当前积分对应的会员等级
@@ -76,6 +79,21 @@ public class MemberServiceImpl implements IMemberService {
             Integer oldLevel = user.getLevel();
             user.setLevel(targetLevel.getLevel());
             userMapper.updateById(user);
+
+            // 升级后自动发放该等级的专属优惠券
+            try {
+                LambdaQueryWrapper<org.ruikun.entity.CouponTemplate> wrapper = new LambdaQueryWrapper<>();
+                wrapper.eq(org.ruikun.entity.CouponTemplate::getType, 4) // 4-会员专属券
+                        .eq(org.ruikun.entity.CouponTemplate::getStatus, 1) // 上架中
+                        .eq(org.ruikun.entity.CouponTemplate::getMemberLevel, targetLevel.getLevel()) // 对应等级
+                        .last("LIMIT 1");
+                org.ruikun.entity.CouponTemplate memberCoupon = couponTemplateMapper.selectOne(wrapper);
+                if (memberCoupon != null) {
+                    couponService.issueCoupon(userId, memberCoupon.getId());
+                }
+            } catch (Exception e) {
+                // 发放优惠券失败不影响升级流程
+            }
         }
     }
 
@@ -84,7 +102,7 @@ public class MemberServiceImpl implements IMemberService {
         // 获取用户信息
         User user = userMapper.selectById(userId);
         if (user == null) {
-            throw new BusinessException("用户不存在");
+            throw new BusinessException(ResponseCode.USER_NOT_FOUND, "用户不存在");
         }
 
         // 获取当前积分对应的会员等级
@@ -116,7 +134,7 @@ public class MemberServiceImpl implements IMemberService {
         // 获取用户信息
         User user = userMapper.selectById(userId);
         if (user == null) {
-            throw new BusinessException("用户不存在");
+            throw new BusinessException(ResponseCode.USER_NOT_FOUND, "用户不存在");
         }
 
         // 获取会员等级

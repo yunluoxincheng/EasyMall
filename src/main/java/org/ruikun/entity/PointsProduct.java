@@ -20,6 +20,16 @@ public class PointsProduct {
     private String name;
 
     /**
+     * 商品类型 1-实物商品 2-优惠券
+     */
+    private Integer productType;
+
+    /**
+     * 关联ID（优惠券时关联优惠券模板ID）
+     */
+    private Long relationId;
+
+    /**
      * 商品描述
      */
     private String description;

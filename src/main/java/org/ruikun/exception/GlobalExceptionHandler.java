@@ -1,5 +1,6 @@
 package org.ruikun.exception;
 
+import jakarta.servlet.http.HttpServletResponse;
 import org.ruikun.common.ErrorDetail;
 import org.ruikun.common.ResponseCode;
 import org.ruikun.common.Result;
@@ -10,6 +11,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -24,8 +26,11 @@ public class GlobalExceptionHandler {
      * 处理业务异常
      */
     @ExceptionHandler(BusinessException.class)
-    public Result<?> handleBusinessException(BusinessException e) {
+    public void handleBusinessException(BusinessException e, HttpServletResponse response) throws IOException {
         logger.error("业务异常：{}", e.getMessage());
+
+        response.setStatus(e.getResponseCode().getHttpStatus());
+        response.setContentType("application/json;charset=UTF-8");
 
         Result<Void> result = Result.error(e.getResponseCode());
 
@@ -34,30 +39,86 @@ public class GlobalExceptionHandler {
             result.setErrors(e.getErrors());
         }
 
-        return result;
+        response.getWriter().write(convertToJson(result));
     }
 
     /**
      * 处理参数校验异常
      */
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public Result<?> handleValidException(MethodArgumentNotValidException e) {
+    public void handleValidException(MethodArgumentNotValidException e, HttpServletResponse response) throws IOException {
         logger.error("参数校验异常：{}", e.getMessage());
 
         List<ErrorDetail> errors = e.getBindingResult().getFieldErrors().stream()
                 .map(this::convertToErrorDetail)
                 .collect(Collectors.toList());
 
-        return Result.error(ResponseCode.VALIDATION_ERROR, errors);
+        response.setStatus(ResponseCode.VALIDATION_ERROR.getHttpStatus());
+        response.setContentType("application/json;charset=UTF-8");
+
+        Result<?> result = Result.error(ResponseCode.VALIDATION_ERROR, errors);
+        response.getWriter().write(convertToJson(result));
     }
 
     /**
      * 处理系统异常
      */
     @ExceptionHandler(Exception.class)
-    public Result<?> handleException(Exception e) {
+    public void handleException(Exception e, HttpServletResponse response) throws IOException {
         logger.error("系统异常：", e);
-        return Result.error(ResponseCode.ERROR, "系统异常，请联系管理员");
+
+        response.setStatus(ResponseCode.ERROR.getHttpStatus());
+        response.setContentType("application/json;charset=UTF-8");
+
+        Result<?> result = Result.error(ResponseCode.ERROR, "系统异常，请联系管理员");
+        response.getWriter().write(convertToJson(result));
+    }
+
+    /**
+     * 将 Result 对象转换为 JSON 字符串
+     */
+    private String convertToJson(Result<?> result) {
+        StringBuilder json = new StringBuilder("{");
+        json.append("\"success\":").append(result.getSuccess()).append(",");
+        json.append("\"code\":\"").append(result.getCode()).append("\",");
+        json.append("\"message\":\"").append(escapeJson(result.getMessage())).append("\",");
+        json.append("\"timestamp\":\"").append(result.getTimestamp()).append("\",");
+        json.append("\"traceId\":\"").append(result.getTraceId()).append("\"");
+
+        if (result.getData() != null) {
+            json.append(",\"data\":").append(result.getData());
+        }
+
+        if (result.getErrors() != null && !result.getErrors().isEmpty()) {
+            json.append(",\"errors\":[");
+            List<ErrorDetail> errors = result.getErrors();
+            for (int i = 0; i < errors.size(); i++) {
+                if (i > 0) json.append(",");
+                ErrorDetail error = errors.get(i);
+                json.append("{");
+                json.append("\"field\":\"").append(error.getField()).append("\",");
+                json.append("\"code\":\"").append(error.getCode()).append("\",");
+                json.append("\"message\":\"").append(escapeJson(error.getMessage())).append("\",");
+                json.append("\"rejectedValue\":\"").append(error.getRejectedValue()).append("\"");
+                json.append("}");
+            }
+            json.append("]");
+        }
+
+        json.append("}");
+        return json.toString();
+    }
+
+    /**
+     * 转义 JSON 字符串中的特殊字符
+     */
+    private String escapeJson(String str) {
+        if (str == null) return "";
+        return str.replace("\\", "\\\\")
+                  .replace("\"", "\\\"")
+                  .replace("\n", "\\n")
+                  .replace("\r", "\\r")
+                  .replace("\t", "\\t");
     }
 
     /**

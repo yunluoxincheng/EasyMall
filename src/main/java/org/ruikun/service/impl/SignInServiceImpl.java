@@ -2,6 +2,7 @@ package org.ruikun.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
+import org.ruikun.common.ResponseCode;
 import org.ruikun.entity.User;
 import org.ruikun.entity.UserSign;
 import org.ruikun.enums.PointsTypeEnum;
@@ -33,7 +34,7 @@ public class SignInServiceImpl implements ISignInService {
         // 检查用户是否存在
         User user = userMapper.selectById(userId);
         if (user == null) {
-            throw new BusinessException("用户不存在");
+            throw new BusinessException(ResponseCode.USER_NOT_FOUND, "用户不存在");
         }
 
         // 检查今日是否已签到
