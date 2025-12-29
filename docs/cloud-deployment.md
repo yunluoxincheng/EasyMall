@@ -8,6 +8,180 @@
 - 服务器防火墙已开放必要端口（8080 用于应用访问）
 - 有 Docker Hub 账户访问权限
 
+---
+
+## 构建和推送应用镜像（可选）
+
+如果你需要从源代码构建应用镜像并推送到 Docker Hub，请按以下步骤操作。
+
+### 准备工作
+
+1. **克隆项目源代码**
+   ```bash
+   git clone https://github.com/yunluoxincheng/EasyMall.git
+   cd EasyMall
+   ```
+
+2. **检查 Dockerfile**
+   项目根目录下应包含 `Dockerfile`，用于构建应用镜像。
+
+3. **登录 Docker Hub**
+   ```bash
+   docker login
+   # 输入你的 Docker Hub 用户名和密码
+   ```
+
+### 构建应用镜像
+
+使用项目提供的 Dockerfile 构建镜像：
+
+```bash
+# 从项目根目录构建
+docker build -t yunluoxincheng/easymall:latest .
+
+# 或添加版本标签
+docker build -t yunluoxincheng/easymall:v1.0.0 .
+```
+
+**构建参数说明**：
+
+| 参数 | 说明 |
+|------|------|
+| `-t` | 指定镜像名称和标签 |
+| `yunluoxincheng/easymall:latest` | 镜像名:标签格式 |
+| `.` | Dockerfile 所在路径（`.` 表示当前目录） |
+
+**自定义构建参数**：
+
+```bash
+# 指定 Dockerfile 路径
+docker build -f /path/to/Dockerfile -t yunluoxincheng/easymall:latest .
+
+# 添加构建参数（如果 Dockerfile 支持 ARG）
+docker build --build-arg JAR_FILE=target/EasyMall.jar -t yunluoxincheng/easymall:latest .
+```
+
+### 验证镜像
+
+```bash
+# 查看本地镜像
+docker images | grep easymall
+
+# 预期输出：
+# yunluoxincheng/easymall   latest   xxxxxxx   x minutes ago   xxxMB
+```
+
+### 推送到 Docker Hub
+
+```bash
+# 推送 latest 标签
+docker push yunluoxincheng/easymall:latest
+
+# 推送版本标签
+docker push yunluoxincheng/easymall:v1.0.0
+```
+
+**推送进度示例**：
+```
+The push refers to repository [docker.io/yunluoxincheng/easymall]
+xxxxxx: Pushed
+xxxxxx: Pushed
+xxxxxx: Pushed
+latest: digest: sha256:xxxxxxxxxxxxxxxx size: xxxx
+```
+
+### 验证推送结果
+
+```bash
+# 在 Docker Hub 网站查看
+# https://hub.docker.com/r/yunluoxincheng/easymall
+
+# 或在另一台机器拉取验证
+docker pull yunluoxincheng/easymall:latest
+```
+
+### 常见问题
+
+**问题 1: 构建失败 - 找不到 Dockerfile**
+```bash
+# 确保在项目根目录执行
+cd EasyMall
+ls Dockerfile  # 确认文件存在
+
+# 或指定 Dockerfile 路径
+docker build -f /path/to/EasyMall/Dockerfile -t yunluoxincheng/easymall:latest /path/to/EasyMall
+```
+
+**问题 2: 推送失败 - 权限不足**
+```bash
+# 重新登录
+docker logout
+docker login
+
+# 确保镜像名称前缀与你的 Docker Hub 用户名一致
+# 格式: username/imagename:tag
+```
+
+**问题 3: 镜像体积过大**
+```bash
+# 查看镜像大小
+docker images yunluoxincheng/easymall
+
+# 使用多阶段构建减小镜像体积（已在 Dockerfile 中实现）
+# 生产环境镜像通常应在 200-400MB 之间
+```
+
+**问题 4: 构建速度慢**
+```bash
+# 使用 Docker 构建缓存
+# 确保 .dockerignore 文件存在，排除不必要的文件
+cat .dockerignore
+
+# 典型内容：
+# target/
+# *.log
+# .git/
+# .idea/
+```
+
+### 自动化构建脚本
+
+创建一个构建脚本 `build-and-push.sh`：
+
+```bash
+#!/bin/bash
+set -e
+
+# 配置
+IMAGE_NAME="yunluoxincheng/easymall"
+VERSION=${1:-latest}
+
+echo "开始构建镜像: $IMAGE_NAME:$VERSION"
+
+# 构建镜像
+docker build -t "$IMAGE_NAME:$VERSION" .
+
+# 推送镜像
+echo "推送镜像到 Docker Hub..."
+docker push "$IMAGE_NAME:$VERSION"
+
+echo "构建和推送完成！"
+echo "镜像: $IMAGE_NAME:$VERSION"
+```
+
+使用方式：
+```bash
+chmod +x build-and-push.sh
+
+# 使用默认 latest 标签
+./build-and-push.sh
+
+# 或指定版本号
+./build-and-push.sh v1.0.0
+```
+
+---
+
 ## 快速开始
 
 **两种部署方式：**

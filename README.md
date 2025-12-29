@@ -505,11 +505,34 @@ docker run -d \
 #### 更多部署选项
 
 - 📘 **完整部署指南**: [docs/cloud-deployment.md](docs/cloud-deployment.md)
+  - 构建和推送应用镜像
+  - 快速部署（预初始化 MySQL）
   - WinSCP 图形化上传方法
   - 命令行部署详细步骤
   - 故障排查指南
   - 数据备份恢复
   - 防火墙配置
+
+#### 构建和推送镜像
+
+如果需要从源代码构建应用镜像：
+
+```bash
+# 1. 克隆项目
+git clone https://github.com/yunluoxincheng/EasyMall.git
+cd EasyMall
+
+# 2. 登录 Docker Hub
+docker login
+
+# 3. 构建镜像
+docker build -t yunluoxincheng/easymall:latest .
+
+# 4. 推送到 Docker Hub
+docker push yunluoxincheng/easymall:latest
+```
+
+详细步骤请查看：[构建和推送镜像](docs/cloud-deployment.md#构建和推送应用镜像可选)
 
 #### 生产版 Dockerfile 特点
 
