@@ -1127,12 +1127,616 @@ Authorization: Bearer {token}
 
 ---
 
+## 优惠券模块（用户端）
+
+### 获取可领取的优惠券列表
+
+**请求**: `GET /api/coupon/templates`
+
+**说明**: 获取当前用户可领取的优惠券模板列表（已上架、未过期、未达到领取上限）
+
+**权限**: 需认证
+
+**请求头**:
+
+```
+Authorization: Bearer {token}
+```
+
+**请求参数**:
+
+| 参数名 | 类型 | 必填 | 说明 |
+|--------|------|------|------|
+| pageNum | Integer | 否 | 页码，默认1 |
+| pageSize | Integer | 否 | 每页大小，默认10 |
+
+**响应示例**:
+
+```json
+{
+  "success": true,
+  "code": "SUCCESS",
+  "message": "操作成功",
+  "data": {
+    "total": 20,
+    "records": [
+      {
+        "id": 1,
+        "name": "新人专享券",
+        "type": "FIXED_AMOUNT",
+        "discountValue": 10.00,
+        "minAmount": 100.00,
+        "startTime": "2024-12-01T00:00:00",
+        "endTime": "2024-12-31T23:59:59",
+        "totalQuantity": 1000,
+        "claimedQuantity": 500,
+        "userLimit": 1,
+        "userClaimed": 0,
+        "description": "新用户专享，满100减10"
+      }
+    ],
+    "pageNum": 1,
+    "pageSize": 10,
+    "pages": 2
+  }
+}
+```
+
+**字段说明**:
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| type | String | 优惠券类型：FIXED_AMOUNT-固定金额，PERCENTAGE-百分比折扣 |
+| discountValue | BigDecimal | 优惠值（固定金额券为金额，折扣券为折扣比例，如0.85表示85折） |
+| minAmount | BigDecimal | 使用门槛（最低消费金额） |
+| userClaimed | Integer | 当前用户已领取数量 |
+
+**调用示例**:
+
+```bash
+# 使用 curl 调用
+curl -X GET "http://localhost:8080/api/coupon/templates?pageNum=1&pageSize=10" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9..."
+
+# 使用 JavaScript fetch
+fetch('http://localhost:8080/api/coupon/templates?pageNum=1&pageSize=10', {
+  headers: {
+    'Authorization': 'Bearer ' + token
+  }
+})
+```
+
+---
+
+### 领取优惠券
+
+**请求**: `POST /api/coupon/receive/{templateId}`
+
+**说明**: 领取指定的优惠券
+
+**权限**: 需认证
+
+**请求头**:
+
+```
+Authorization: Bearer {token}
+```
+
+**路径参数**:
+
+| 参数名 | 类型 | 说明 |
+|--------|------|------|
+| templateId | Long | 优惠券模板ID |
+
+**响应示例**:
+
+```json
+{
+  "success": true,
+  "code": "SUCCESS",
+  "message": "领取成功",
+  "data": {
+    "id": 100,
+    "couponName": "新人专享券",
+    "type": "FIXED_AMOUNT",
+    "discountValue": 10.00,
+    "minAmount": 100.00,
+    "startTime": "2024-12-01T00:00:00",
+    "endTime": "2024-12-31T23:59:59",
+    "status": "UNUSED"
+  }
+}
+```
+
+**错误响应**:
+
+```json
+{
+  "success": false,
+  "code": "COUPON_CLAIMED_OUT",
+  "message": "优惠券已领完",
+  "errors": null
+}
+```
+
+```json
+{
+  "success": false,
+  "code": "COUPON_LIMIT_REACHED",
+  "message": "已达到个人领取上限",
+  "errors": null
+}
+```
+
+**调用示例**:
+
+```bash
+# 使用 curl 调用
+curl -X POST "http://localhost:8080/api/coupon/receive/1" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9..."
+
+# 使用 JavaScript fetch
+fetch('http://localhost:8080/api/coupon/receive/1', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer ' + token
+  }
+})
+```
+
+---
+
+### 查看我的优惠券列表
+
+**请求**: `GET /api/coupon/my`
+
+**说明**: 查看当前用户的优惠券列表，支持按状态筛选
+
+**权限**: 需认证
+
+**请求头**:
+
+```
+Authorization: Bearer {token}
+```
+
+**请求参数**:
+
+| 参数名 | 类型 | 必填 | 说明 |
+|--------|------|------|------|
+| status | String | 否 | 状态筛选：UNUSED-未使用，USED-已使用，EXPIRED-已过期 |
+| pageNum | Integer | 否 | 页码，默认1 |
+| pageSize | Integer | 否 | 每页大小，默认10 |
+
+**响应示例**:
+
+```json
+{
+  "success": true,
+  "code": "SUCCESS",
+  "message": "操作成功",
+  "data": {
+    "total": 5,
+    "records": [
+      {
+        "id": 100,
+        "couponName": "新人专享券",
+        "type": "FIXED_AMOUNT",
+        "discountValue": 10.00,
+        "minAmount": 100.00,
+        "startTime": "2024-12-01T00:00:00",
+        "endTime": "2024-12-31T23:59:59",
+        "status": "UNUSED",
+        "receiveTime": "2024-12-23T12:00:00"
+      }
+    ],
+    "pageNum": 1,
+    "pageSize": 10,
+    "pages": 1
+  }
+}
+```
+
+**调用示例**:
+
+```bash
+# 查看未使用的优惠券
+curl -X GET "http://localhost:8080/api/coupon/my?status=UNUSED&pageNum=1&pageSize=10" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9..."
+
+# 查看已使用的优惠券
+curl -X GET "http://localhost:8080/api/coupon/my?status=USED" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9..."
+```
+
+---
+
+### 获取可用优惠券（下单时）
+
+**请求**: `GET /api/coupon/available`
+
+**说明**: 获取下单时可用的优惠券列表（根据订单金额和会员等级筛选）
+
+**权限**: 需认证
+
+**请求头**:
+
+```
+Authorization: Bearer {token}
+```
+
+**请求参数**:
+
+| 参数名 | 类型 | 必填 | 说明 |
+|--------|------|------|------|
+| amount | BigDecimal | 是 | 订单金额 |
+
+**响应示例**:
+
+```json
+{
+  "success": true,
+  "code": "SUCCESS",
+  "message": "操作成功",
+  "data": [
+    {
+      "id": 100,
+      "couponName": "满100减10券",
+      "type": "FIXED_AMOUNT",
+      "discountValue": 10.00,
+      "minAmount": 100.00,
+      "endTime": "2024-12-31T23:59:59",
+      "discountAmount": 10.00
+    },
+    {
+      "id": 101,
+      "couponName": "85折优惠券",
+      "type": "PERCENTAGE",
+      "discountValue": 0.85,
+      "minAmount": 50.00,
+      "endTime": "2024-12-31T23:59:59",
+      "discountAmount": 15.00
+    }
+  ]
+}
+```
+
+**调用示例**:
+
+```bash
+# 查询订单金额200元可用的优惠券
+curl -X GET "http://localhost:8080/api/coupon/available?amount=200" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9..."
+```
+
+---
+
+### 计算优惠金额
+
+**请求**: `POST /api/coupon/calculate`
+
+**说明**: 计算使用指定优惠券后的优惠金额和最终金额
+
+**权限**: 需认证
+
+**请求头**:
+
+```
+Authorization: Bearer {token}
+```
+
+**请求参数**:
+
+```json
+{
+  "userCouponId": 100,
+  "amount": 200.00
+}
+```
+
+| 参数名 | 类型 | 必填 | 说明 |
+|--------|------|------|------|
+| userCouponId | Long | 是 | 用户优惠券ID |
+| amount | BigDecimal | 是 | 订单金额（已应用会员折扣后的金额） |
+
+**响应示例**:
+
+```json
+{
+  "success": true,
+  "code": "SUCCESS",
+  "message": "操作成功",
+  "data": {
+    "canUse": true,
+    "discountAmount": 10.00,
+    "finalAmount": 190.00,
+    "message": "可以使用该优惠券"
+  }
+}
+```
+
+**错误响应**:
+
+```json
+{
+  "success": true,
+  "code": "SUCCESS",
+  "data": {
+    "canUse": false,
+    "discountAmount": 0,
+    "finalAmount": 200.00,
+    "message": "不满足使用门槛：订单金额需满100元"
+  }
+}
+```
+
+**调用示例**:
+
+```bash
+curl -X POST "http://localhost:8080/api/coupon/calculate" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "userCouponId": 100,
+    "amount": 200.00
+  }'
+```
+
+---
+
 ## 后台管理模块
 
 > 后台管理接口需要管理员权限，请在请求头中携带管理员 Token：
 > ```
 > Authorization: Bearer {adminToken}
 > ```
+
+### 优惠券管理
+
+#### 分页查询优惠券模板列表
+
+**请求**: `GET /api/admin/coupon/templates`
+
+**权限**: 管理员
+
+**请求参数**:
+
+| 参数名 | 类型 | 必填 | 说明 |
+|--------|------|------|------|
+| pageNum | Integer | 否 | 页码 |
+| pageSize | Integer | 否 | 每页大小 |
+| name | String | 否 | 优惠券名称 |
+| type | String | 否 | 优惠券类型 |
+| status | Integer | 否 | 状态 |
+
+**响应示例**:
+
+```json
+{
+  "success": true,
+  "code": "SUCCESS",
+  "message": "操作成功",
+  "data": {
+    "total": 10,
+    "records": [
+      {
+        "id": 1,
+        "name": "新人专享券",
+        "type": "FIXED_AMOUNT",
+        "discountValue": 10.00,
+        "minAmount": 100.00,
+        "totalQuantity": 1000,
+        "claimedQuantity": 500,
+        "usedQuantity": 200,
+        "startTime": "2024-12-01T00:00:00",
+        "endTime": "2024-12-31T23:59:59",
+        "status": 1,
+        "userLimit": 1,
+        "minLevel": 1
+      }
+    ],
+    "pageNum": 1,
+    "pageSize": 10,
+    "pages": 1
+  }
+}
+```
+
+**调用示例**:
+
+```bash
+curl -X GET "http://localhost:8080/api/admin/coupon/templates?pageNum=1&pageSize=10" \
+  -H "Authorization: Bearer {adminToken}"
+```
+
+#### 查询优惠券模板详情
+
+**请求**: `GET /api/admin/coupon/template/{id}`
+
+**权限**: 管理员
+
+**路径参数**:
+
+| 参数名 | 类型 | 说明 |
+|--------|------|------|
+| id | Long | 优惠券模板ID |
+
+#### 创建优惠券模板
+
+**请求**: `POST /api/admin/coupon/template`
+
+**权限**: 管理员
+
+**请求参数**:
+
+```json
+{
+  "name": "新人专享券",
+  "type": "FIXED_AMOUNT",
+  "discountValue": 10.00,
+  "minAmount": 100.00,
+  "totalQuantity": 1000,
+  "userLimit": 1,
+  "startTime": "2024-12-01T00:00:00",
+  "endTime": "2024-12-31T23:59:59",
+  "minLevel": 1,
+  "description": "新用户专享优惠券"
+}
+```
+
+| 参数名 | 类型 | 必填 | 说明 |
+|--------|------|------|------|
+| name | String | 是 | 优惠券名称 |
+| type | String | 是 | 类型：FIXED_AMOUNT-固定金额，PERCENTAGE-百分比折扣 |
+| discountValue | BigDecimal | 是 | 优惠值 |
+| minAmount | BigDecimal | 否 | 使用门槛，默认0 |
+| totalQuantity | Integer | 是 | 发行数量 |
+| userLimit | Integer | 否 | 每人限领数量，默认1 |
+| startTime | LocalDateTime | 是 | 有效期开始时间 |
+| endTime | LocalDateTime | 是 | 有效期结束时间 |
+| minLevel | Integer | 否 | 最低会员等级限制，默认1 |
+| description | String | 否 | 使用说明 |
+
+**调用示例**:
+
+```bash
+curl -X POST "http://localhost:8080/api/admin/coupon/template" \
+  -H "Authorization: Bearer {adminToken}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "新人专享券",
+    "type": "FIXED_AMOUNT",
+    "discountValue": 10.00,
+    "minAmount": 100.00,
+    "totalQuantity": 1000,
+    "userLimit": 1,
+    "startTime": "2024-12-01T00:00:00",
+    "endTime": "2024-12-31T23:59:59",
+    "minLevel": 1,
+    "description": "新用户专享优惠券"
+  }'
+```
+
+#### 更新优惠券模板
+
+**请求**: `PUT /api/admin/coupon/template`
+
+**权限**: 管理员
+
+**请求参数**: 同创建优惠券模板
+
+**说明**:
+- 未被领取的优惠券可修改所有字段
+- 已被领取的优惠券只能修改名称和上下架状态
+
+#### 上下架优惠券
+
+**请求**: `PUT /api/admin/coupon/template/{id}/status`
+
+**权限**: 管理员
+
+**路径参数**:
+
+| 参数名 | 类型 | 说明 |
+|--------|------|------|
+| id | Long | 优惠券模板ID |
+
+**请求参数**:
+
+```json
+{
+  "status": 0
+}
+```
+
+| 参数名 | 类型 | 必填 | 说明 |
+|--------|------|------|------|
+| status | Integer | 是 | 状态：0-下架，1-上架 |
+
+#### 删除优惠券模板
+
+**请求**: `DELETE /api/admin/coupon/template/{id}`
+
+**权限**: 管理员
+
+**说明**: 只能删除未被领取的优惠券模板
+
+#### 查询优惠券使用记录
+
+**请求**: `GET /api/admin/coupon/usage-logs`
+
+**权限**: 管理员
+
+**请求参数**:
+
+| 参数名 | 类型 | 必填 | 说明 |
+|--------|------|------|------|
+| pageNum | Integer | 否 | 页码 |
+| pageSize | Integer | 否 | 每页大小 |
+| templateId | Long | 否 | 优惠券模板ID |
+| userId | Long | 否 | 用户ID |
+| status | String | 否 | 使用状态 |
+
+**响应示例**:
+
+```json
+{
+  "success": true,
+  "code": "SUCCESS",
+  "message": "操作成功",
+  "data": {
+    "total": 100,
+    "records": [
+      {
+        "id": 1,
+        "userName": "testuser",
+        "couponName": "新人专享券",
+        "type": "FIXED_AMOUNT",
+        "discountAmount": 10.00,
+        "orderNo": "ORD202412230001",
+        "useTime": "2024-12-23T15:30:00",
+        "status": "USED"
+      }
+    ],
+    "pageNum": 1,
+    "pageSize": 10,
+    "pages": 10
+  }
+}
+```
+
+#### 获取优惠券统计数据
+
+**请求**: `GET /api/admin/coupon/statistics`
+
+**权限**: 管理员
+
+**响应示例**:
+
+```json
+{
+  "success": true,
+  "code": "SUCCESS",
+  "message": "操作成功",
+  "data": {
+    "totalTemplates": 10,
+    "totalClaimed": 5000,
+    "totalUsed": 2000,
+    "claimRate": 50.00,
+    "useRate": 40.00,
+    "totalDiscountAmount": 20000.00
+  }
+}
+```
+
+**调用示例**:
+
+```bash
+curl -X GET "http://localhost:8080/api/admin/coupon/statistics" \
+  -H "Authorization: Bearer {adminToken}"
+```
+
+---
 
 ### 商品管理
 
@@ -1551,4 +2155,4 @@ Authorization: Bearer {token}
 
 ---
 
-*文档最后更新时间: 2024-12-23*
+*文档最后更新时间: 2025-12-29*
