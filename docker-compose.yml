@@ -18,6 +18,9 @@ services:
       - SPRING_DATA_REDIS_HOST=redis
       - SPRING_DATA_REDIS_PORT=6379
       - SPRING_DATA_REDIS_PASSWORD=
+      # 文件上传配置
+      - FILE_UPLOAD_BASE_PATH=/data/easymall/uploads
+      - FILE_UPLOAD_BASE_URL=http://8.134.192.13/uploads
       # 开发工具配置
       - SPRING_DEVTOOLS_RESTART_ENABLED=true
       - SPRING_DEVTOOLS_LIVERELOAD_ENABLED=true
@@ -27,6 +30,8 @@ services:
       - ./pom.xml:/app/pom.xml
       # Maven 仓库缓存（避免重复下载依赖）
       - ${HOME}/.m2:/root/.m2
+      # 文件上传目录挂载
+      - ./uploads:/data/easymall/uploads
     depends_on:
       - mysql
       - redis

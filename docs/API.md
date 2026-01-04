@@ -193,6 +193,249 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiJ9...
 | COUPON_ALREADY_USED | 400 | 优惠券已使用 |
 | COUPON_USAGE_LIMIT_EXCEEDED | 400 | 超过使用次数限制 |
 | COUPON_AMOUNT_THRESHOLD_NOT_MET | 400 | 不满足使用门槛 |
+| **图片上传相关** | | |
+| FILE_EMPTY | 400 | 文件为空 |
+| FILE_TOO_LARGE | 400 | 文件大小超过 5MB 限制 |
+| INVALID_FILE_TYPE | 400 | 不支持的文件类型（仅支持 jpg/jpeg/png/gif） |
+| INVALID_FILE_CONTENT | 400 | 文件内容不合法（不是真实的图片文件） |
+| FILE_UPLOAD_FAILED | 500 | 文件上传失败 |
+| FILE_NOT_FOUND | 404 | 文件不存在 |
+| FILE_DELETE_FAILED | 500 | 文件删除失败 |
+
+---
+
+## 图片上传模块
+
+图片上传模块提供商品图片和用户头像的上传、管理功能。
+
+### 安全机制
+
+- **文件类型限制**：仅支持 jpg、jpeg、png、gif 格式
+- **文件大小限制**：单个文件不超过 5MB
+- **文件内容验证**：通过魔数检查验证文件真实性
+- **UUID 文件命名**：避免文件名冲突
+- **目录组织**：按年月自动组织目录结构
+
+### POST 单图上传
+
+上传单张图片（商品图片或用户头像）。
+
+**接口地址**：`POST /api/upload/image`
+
+**权限要求**：需登录（JWT 认证）
+
+**请求参数**：
+
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| file | File | 是 | 图片文件（form-data） |
+| type | String | 是 | 图片类型：`product`（商品）或 `avatar`（头像） |
+
+**请求示例**：
+
+```bash
+curl -X POST http://localhost:8080/api/upload/image \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -F "file=@product.jpg" \
+  -F "type=product"
+```
+
+**成功响应**：
+
+```json
+{
+  "success": true,
+  "code": "SUCCESS",
+  "message": "上传成功",
+  "timestamp": "2024-01-15T10:30:00.123",
+  "traceId": "abc123",
+  "data": {
+    "url": "http://localhost:8080/uploads/products/2024/01/a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6.jpg",
+    "filename": "product.jpg",
+    "size": 102400,
+    "relativePath": "products/2024/01/a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6.jpg"
+  }
+}
+```
+
+**字段说明**：
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| url | String | 图片访问 URL（可直接在浏览器中打开） |
+| filename | String | 原始文件名 |
+| size | Long | 文件大小（字节） |
+| relativePath | String | 相对路径（用于删除图片） |
+
+**错误响应**：
+
+```json
+{
+  "success": false,
+  "code": "FILE_TOO_LARGE",
+  "message": "文件大小不能超过 5MB",
+  "timestamp": "2024-01-15T10:30:00.123",
+  "traceId": "abc123"
+}
+```
+
+---
+
+### POST 多图上传
+
+上传多张商品图片（仅支持商品类型）。
+
+**接口地址**：`POST /api/upload/images`
+
+**权限要求**：需登录（JWT 认证）
+
+**请求参数**：
+
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| files | File[] | 是 | 多个图片文件（form-data） |
+| type | String | 是 | 图片类型：仅支持 `product` |
+
+**请求示例**：
+
+```bash
+curl -X POST http://localhost:8080/api/upload/images \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -F "files=@image1.jpg" \
+  -F "files=@image2.png" \
+  -F "type=product"
+```
+
+**成功响应**：
+
+```json
+{
+  "success": true,
+  "code": "SUCCESS",
+  "message": "成功上传 2 张图片",
+  "timestamp": "2024-01-15T10:30:00.123",
+  "traceId": "abc123",
+  "data": {
+    "urls": [
+      "http://localhost:8080/uploads/products/2024/01/uuid1.jpg",
+      "http://localhost:8080/uploads/products/2024/01/uuid2.png"
+    ],
+    "count": 2
+  }
+}
+```
+
+**字段说明**：
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| urls | String[] | 图片 URL 数组 |
+| count | Integer | 成功上传的图片数量 |
+
+---
+
+### DELETE 删除图片
+
+删除已上传的图片。
+
+**接口地址**：`DELETE /api/upload/image?path={relativePath}`
+
+**权限要求**：管理员（`ROLE_ADMIN`）
+
+**请求参数**：
+
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| path | String | 是 | 图片相对路径（从上传接口响应的 `relativePath` 字段获取） |
+
+**请求示例**：
+
+```bash
+curl -X DELETE "http://localhost:8080/api/upload/image?path=products/2024/01/uuid.jpg" \
+  -H "Authorization: Bearer YOUR_ADMIN_JWT_TOKEN"
+```
+
+**成功响应**：
+
+```json
+{
+  "success": true,
+  "code": "SUCCESS",
+  "message": "删除成功",
+  "timestamp": "2024-01-15T10:30:00.123",
+  "traceId": "abc123"
+}
+```
+
+**错误响应**：
+
+```json
+{
+  "success": false,
+  "code": "FILE_NOT_FOUND",
+  "message": "文件不存在",
+  "timestamp": "2024-01-15T10:30:00.123",
+  "traceId": "abc123"
+}
+```
+
+---
+
+### JavaScript/Axios 使用示例
+
+```javascript
+// 单图上传
+const uploadSingleImage = async (file, type = 'product') => {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('type', type);
+
+  const response = await axios.post('/api/upload/image', formData, {
+    headers: {
+      'Authorization': `Bearer ${localStorage.getItem('token')}`,
+      'Content-Type': 'multipart/form-data'
+    }
+  });
+
+  if (response.data.success) {
+    console.log('上传成功:', response.data.data.url);
+    return response.data.data.url;
+  }
+};
+
+// 多图上传
+const uploadMultipleImages = async (files) => {
+  const formData = new FormData();
+  files.forEach(file => formData.append('files', file));
+  formData.append('type', 'product');
+
+  const response = await axios.post('/api/upload/images', formData, {
+    headers: {
+      'Authorization': `Bearer ${localStorage.getItem('token')}`,
+      'Content-Type': 'multipart/form-data'
+    }
+  });
+
+  if (response.data.success) {
+    console.log('上传成功:', response.data.data.urls);
+    return response.data.data.urls;
+  }
+};
+
+// 删除图片（需管理员权限）
+const deleteImage = async (relativePath) => {
+  const response = await axios.delete('/api/upload/image', {
+    params: { path: relativePath },
+    headers: {
+      'Authorization': `Bearer ${localStorage.getItem('token')}`
+    }
+  });
+
+  if (response.data.success) {
+    console.log('删除成功');
+  }
+};
+```
 
 ---
 

@@ -11,6 +11,7 @@ EasyMall是一个基于Spring Boot开发的B2C电子商城系统，采用前后�
 - 缓存：Redis（商品搜索结果缓存、热门/新品商品缓存、登录态缓存）
 - ORM框架：MyBatis Plus
 - 认证授权：Spring Security + JWT
+- 文件存储：本地文件系统（商品图片、用户头像）
 - 工具类：Hutool、FastJSON2
 - 构建工具：Maven
 
@@ -27,6 +28,7 @@ EasyMall是一个基于Spring Boot开发的B2C电子商城系统，采用前后�
 - JWT认证
 - 个人信息管理
 - 密码修改
+- **用户头像上传**
 - **会员等级系统**（5个等级：普通、铜牌、银牌、金牌、钻石）
 - **会员积分系统**
   - 订单完成获得积分（每消费1元获得1积分）
@@ -41,6 +43,7 @@ EasyMall是一个基于Spring Boot开发的B2C电子商城系统，采用前后�
 - 商品信息展示
 - 商品搜索（基于 MySQL FULLTEXT 全文索引 + Redis 缓存）
 - 热门商品、新品推荐
+- **商品图片上传**（支持单图/多图上传，文件类型验证，本地存储）
 - **商品评价系统**（评分、评论、图片）
 - **商品收藏功能**
 
@@ -300,6 +303,7 @@ src/main/resources/
    - `./src:/app/src` - 源代码目录
    - `./pom.xml:/app/pom.xml` - Maven 配置文件
    - `${HOME}/.m2:/root/.m2` - Maven 仓库缓存
+   - `./uploads:/data/easymall/uploads` - 图片存储目录
 
 3. **热重载触发条件**
    - 修改 Java 源代码
@@ -405,6 +409,11 @@ docker-compose -f docker-compose.yml -f docker-dev.yml up -d
 - DELETE /api/admin/coupon/template/{id} - 删除优惠券模板
 - GET /api/admin/coupon/usage-logs - 查询优惠券使用记录
 
+#### 图片上传模块
+- POST /api/upload/image - 单图上传（商品图片/用户头像）
+- POST /api/upload/images - 多图上传（仅商品图片）
+- DELETE /api/upload/image - 删除图片（需管理员权限）
+
 #### 后台管理模块（需要管理员权限）
 - GET /api/admin/products - 商品管理
 - GET /api/admin/orders - 订单管理
@@ -413,6 +422,8 @@ docker-compose -f docker-compose.yml -f docker-dev.yml up -d
 - GET /api/admin/member-levels - 会员等级管理
 
 > 更多接口详情请查看 [docs/API.md](docs/API.md)
+>
+> 图片上传功能详细使用指南: [docs/image-upload-guide.md](docs/image-upload-guide.md)
 
 ## 部署说明
 
@@ -440,12 +451,12 @@ docker pull redis:7-alpine
 docker network create easymall-net
 
 # 3. 启动 MySQL（自动初始化数据库）
-docker run -d \
-  --name easymall-mysql \
-  --network easymall-net \
-  -e MYSQL_ROOT_PASSWORD=123456 \
-  -e MYSQL_DATABASE=easymall \
-  -e TZ=Asia/Shanghai \
+docker run -d `
+  --name easymall-mysql `
+  --network easymall-net `
+  -e MYSQL_ROOT_PASSWORD=123456 `
+  -e MYSQL_DATABASE=easymall `
+  -e TZ=Asia/Shanghai `
   yunluoxincheng/easymall-mysql:init
 
 # 4. 等待 30-60 秒让数据库初始化完成
@@ -454,15 +465,16 @@ docker run -d \
 docker run -d --name easymall-redis --network easymall-net redis:7-alpine
 
 # 6. 启动应用
-docker run -d \
-  --name easymall-app \
-  --network easymall-net \
-  -p 8080:8080 \
-  -e SPRING_DATASOURCE_URL=jdbc:mysql://easymall-mysql:3306/easymall?useUnicode=true&characterEncoding=UTF-8&useSSL=false&serverTimezone=UTC \
-  -e SPRING_DATASOURCE_USERNAME=root \
-  -e SPRING_DATASOURCE_PASSWORD=123456 \
-  -e SPRING_DATA_REDIS_HOST=easymall-redis \
-  -e SPRING_DATA_REDIS_PORT=6379 \
+docker run -d `
+  --name easymall-app `
+  --network easymall-net `
+  -p 8080:8080 `
+  -v /root/EasyMall/uploads:/data/easymall/uploads `
+  -e SPRING_DATASOURCE_URL="jdbc:mysql://easymall-mysql:3306/easymall?useUnicode=true&characterEncoding=UTF-8&useSSL=false&serverTimezone=UTC" `
+  -e SPRING_DATASOURCE_USERNAME=root `
+  -e SPRING_DATASOURCE_PASSWORD=123456 `
+  -e SPRING_DATA_REDIS_HOST=easymall-redis `
+  -e SPRING_DATA_REDIS_PORT=6379 `
   yunluoxincheng/easymall:latest
 
 # 7. 验证部署
@@ -473,6 +485,13 @@ curl http://localhost:8080/api/public/products
 - ✅ 预初始化 MySQL 镜像，无需手动导入 SQL
 - ✅ 启动即用，快速部署
 - ✅ 适合云服务器部署
+- ✅ 支持 Volume 挂载图片存储目录
+
+**注意**：首次运行前需创建图片存储目录：
+```bash
+mkdir -p /root/EasyMall/uploads
+chmod 755 /root/EasyMall/uploads
+```
 
 #### 方式二：标准部署
 
@@ -525,12 +544,17 @@ cd EasyMall
 # 2. 登录 Docker Hub
 docker login
 
-# 3. 构建镜像
-docker build -t yunluoxincheng/easymall:latest .
+# 3. 使用生产环境 Dockerfile 构建镜像
+docker build -f Dockerfile.production -t yunluoxincheng/easymall:latest .
 
 # 4. 推送到 Docker Hub
 docker push yunluoxincheng/easymall:latest
 ```
+
+**构建说明**：
+- 使用 `-f Dockerfile.production` 指定生产环境 Dockerfile
+- 多阶段构建，最终镜像只包含 JRE 和 jar 包，体积更小
+- 使用 Alpine 基础镜像和非 root 用户运行，安全性更高
 
 详细步骤请查看：[构建和推送镜像](docs/cloud-deployment.md#构建和推送应用镜像可选)
 
@@ -547,7 +571,6 @@ docker push yunluoxincheng/easymall:latest
 ## 待完善功能
 
 - [ ] 支付接口集成（支付宝/微信支付）
-- [ ] 商品图片上传（MinIO）
 - [ ] 会员生日礼包自动发放
 - [ ] 积分有效期管理
 - [ ] 会员专属活动

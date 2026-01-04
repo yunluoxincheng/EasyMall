@@ -15,7 +15,8 @@
       "Bash(TOKEN=\"eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoxLCJ1c2VySWQiOjEsInN1YiI6ImFkbWluIiwiaWF0IjoxNzY3MDAwNTQzLCJleHAiOjE3NjcwODY5NDN9.6ZFOyWmQYQjTL0F0uenxYglTSnnBgILA9Cw1crEtXsQ\")",
       "Bash(docker-compose up:*)",
       "Bash(timeout:*)",
-      "Bash(docker-compose down:*)"
+      "Bash(docker-compose down:*)",
+      "Bash(docker login:*)"
     ]
   }
 }

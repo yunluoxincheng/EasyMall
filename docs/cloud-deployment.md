@@ -10,6 +10,380 @@
 
 ---
 
+## 快速部署概览（推荐方式）
+
+### 一键部署脚本
+
+将以下脚本保存为 `deploy-easymall.sh`，然后在服务器上执行：
+
+```bash
+#!/bin/bash
+set -e
+
+echo "=== EasyMall 云服务器快速部署脚本 ==="
+echo ""
+
+# 配置变量
+MYSQL_PASSWORD="123456"
+IMAGE_TAG="latest"
+
+# 1. 创建图片存储目录
+echo "步骤 1: 创建图片存储目录..."
+mkdir -p /root/EasyMall/uploads/products
+mkdir -p /root/EasyMall/uploads/avatars
+chmod 755 /root/EasyMall/uploads
+echo "✓ 图片存储目录创建完成"
+
+# 2. 拉取镜像
+echo ""
+echo "步骤 2: 拉取 Docker 镜像..."
+docker pull yunluoxincheng/easymall:$IMAGE_TAG
+docker pull yunluoxincheng/easymall-mysql:init
+docker pull redis:7-alpine
+echo "✓ 镜像拉取完成"
+
+# 3. 创建网络
+echo ""
+echo "步骤 3: 创建 Docker 网络..."
+docker network create easymall-net 2>/dev/null || echo "网络已存在"
+echo "✓ 网络创建完成"
+
+# 4. 启动 MySQL
+echo ""
+echo "步骤 4: 启动 MySQL 容器..."
+docker run -d \
+  --name easymall-mysql \
+  --network easymall-net \
+  -e MYSQL_ROOT_PASSWORD=$MYSQL_PASSWORD \
+  -e MYSQL_DATABASE=easymall \
+  -e TZ=Asia/Shanghai \
+  yunluoxincheng/easymall-mysql:init
+
+echo "✓ MySQL 容器已启动"
+echo "等待数据库初始化（约 30 秒）..."
+sleep 30
+
+# 5. 验证数据库
+echo ""
+echo "步骤 5: 验证数据库初始化..."
+docker exec easymall-mysql mysql -uroot -p$MYSQL_PASSWORD -e "USE easymall; SHOW TABLES;" > /dev/null 2>&1
+if [ $? -eq 0 ]; then
+    echo "✓ 数据库初始化成功"
+else
+    echo "✗ 数据库初始化失败"
+    exit 1
+fi
+
+# 6. 启动 Redis
+echo ""
+echo "步骤 6: 启动 Redis 容器..."
+docker run -d \
+  --name easymall-redis \
+  --network easymall-net \
+  redis:7-alpine
+echo "✓ Redis 容器已启动"
+
+# 7. 启动应用
+echo ""
+echo "步骤 7: 启动应用容器..."
+docker run -d \
+  --name easymall-app \
+  --network easymall-net \
+  -p 8080:8080 \
+  -v /root/EasyMall/uploads:/data/easymall/uploads \
+  -e SPRING_DATASOURCE_URL="jdbc:mysql://easymall-mysql:3306/easymall?useUnicode=true&characterEncoding=UTF-8&useSSL=false&serverTimezone=UTC" \
+  -e SPRING_DATASOURCE_USERNAME=root \
+  -e SPRING_DATASOURCE_PASSWORD=$MYSQL_PASSWORD \
+  -e SPRING_DATA_REDIS_HOST=easymall-redis \
+  -e SPRING_DATA_REDIS_PORT=6379 \
+  yunluoxincheng/easymall:$IMAGE_TAG
+
+echo "✓ 应用容器已启动"
+
+# 8. 等待应用启动
+echo ""
+echo "等待应用启动（约 20 秒）..."
+sleep 20
+
+# 9. 验证部署
+echo ""
+echo "步骤 8: 验证部署..."
+docker ps | grep easymall-app > /dev/null
+if [ $? -eq 0 ]; then
+    echo "✓ 所有容器运行正常"
+else
+    echo "✗ 应用容器启动失败"
+    docker logs easymall-app
+    exit 1
+fi
+
+# 测试 API
+curl -s http://localhost:8080/api/public/products > /dev/null
+if [ $? -eq 0 ]; then
+    echo "✓ API 接口响应正常"
+else
+    echo "⚠ API 接口测试失败，请检查日志"
+fi
+
+echo ""
+echo "=== 部署完成！ ==="
+echo ""
+echo "访问地址："
+echo "  - HTTP: http://$(hostname -I | awk '{print $1}'):8080"
+echo ""
+echo "默认管理员账号："
+echo "  - 用户名: admin"
+echo "  - 密码: admin123"
+echo ""
+echo "常用命令："
+echo "  - 查看日志: docker logs -f easymall-app"
+echo "  - 查看状态: docker ps"
+echo "  - 停止服务: docker stop easymall-app easymall-mysql easymall-redis"
+echo "  - 启动服务: docker start easymall-mysql easymall-redis easymall-app"
+```
+
+**使用方法**：
+
+```bash
+# 在服务器上创建脚本
+cat > deploy-easymall.sh << 'EOF'
+# 将上面的脚本内容粘贴到这里
+EOF
+
+# 赋予执行权限
+chmod +x deploy-easymall.sh
+
+# 执行部署
+./deploy-easymall.sh
+```
+
+---
+
+### 手动部署步骤（分步详解）
+
+如果您希望手动执行每个步骤，请参考以下详细说明。
+
+#### 步骤 1：创建图片存储目录
+
+```bash
+# 创建上传文件存储目录
+mkdir -p /root/EasyMall/uploads/products
+mkdir -p /root/EasyMall/uploads/avatars
+
+# 设置目录权限
+chmod 755 /root/EasyMall/uploads
+
+# 验证目录创建
+ls -la /root/EasyMall/uploads/
+```
+
+**说明**：
+- `/root/EasyMall/uploads/products` - 存储商品图片
+- `/root/EasyMall/uploads/avatars` - 存储用户头像
+- 应用运行时会自动在该目录下按年月创建子目录（如 `products/2024/01/`）
+
+#### 步骤 2：拉取镜像
+
+```bash
+# 拉取应用镜像
+docker pull yunluoxincheng/easymall:latest
+
+# 拉取预初始化的 MySQL 镜像（已包含数据库结构）
+docker pull yunluoxincheng/easymall-mysql:init
+
+# 拉取 Redis 镜像
+docker pull redis:7-alpine
+```
+
+#### 步骤 3：创建 Docker 网络
+
+```bash
+# 创建网络（容器间通信）
+docker network create easymall-net
+
+# 验证网络创建
+docker network ls | grep easymall-net
+```
+
+#### 步骤 4：启动 MySQL 容器
+
+```bash
+docker run -d \
+  --name easymall-mysql \
+  --network easymall-net \
+  -e MYSQL_ROOT_PASSWORD=123456 \
+  -e MYSQL_DATABASE=easymall \
+  -e TZ=Asia/Shanghai \
+  yunluoxincheng/easymall-mysql:init
+```
+
+**等待 MySQL 初始化**：
+
+```bash
+# 等待 30-60 秒
+sleep 30
+
+# 查看日志确认初始化完成
+docker logs easymall-mysql | tail -20
+```
+
+**验证数据库**：
+
+```bash
+# 查看所有表
+docker exec easymall-mysql mysql -uroot -p123456 -e "USE easymall; SHOW TABLES;"
+
+# 预期输出包含 15 个表
+```
+
+#### 步骤 5：启动 Redis 容器
+
+```bash
+docker run -d \
+  --name easymall-redis \
+  --network easymall-net \
+  redis:7-alpine
+
+# 验证 Redis 运行
+docker ps | grep easymall-redis
+```
+
+#### 步骤 6：启动应用容器
+
+```bash
+docker run -d \
+  --name easymall-app \
+  --network easymall-net \
+  -p 8080:8080 \
+  -v /root/EasyMall/uploads:/data/easymall/uploads \
+  -e SPRING_DATASOURCE_URL="jdbc:mysql://easymall-mysql:3306/easymall?useUnicode=true&characterEncoding=UTF-8&useSSL=false&serverTimezone=UTC" \
+  -e SPRING_DATASOURCE_USERNAME=root \
+  -e SPRING_DATASOURCE_PASSWORD=123456 \
+  -e SPRING_DATA_REDIS_HOST=easymall-redis \
+  -e SPRING_DATA_REDIS_PORT=6379 \
+  yunluoxincheng/easymall:latest
+```
+
+**参数说明**：
+
+| 参数 | 说明 |
+|------|------|
+| `-d` | 后台运行 |
+| `--name easymall-app` | 容器名称 |
+| `--network easymall-net` | 连接到网络 |
+| `-p 8080:8080` | 端口映射（主机:容器） |
+| `-v /root/EasyMall/uploads:/data/easymall/uploads` | 挂载图片存储目录 |
+| `-e SPRING_DATASOURCE_URL=...` | 数据库连接 URL |
+| `-e SPRING_DATASOURCE_USERNAME=root` | 数据库用户名 |
+| `-e SPRING_DATASOURCE_PASSWORD=123456` | 数据库密码 |
+| `-e SPRING_DATA_REDIS_HOST=easymall-redis` | Redis 主机 |
+| `-e SPRING_DATA_REDIS_PORT=6379` | Redis 端口 |
+
+#### 步骤 7：验证部署
+
+```bash
+# 检查所有容器状态
+docker ps
+
+# 应该看到三个容器在运行
+# easymall-app、easymall-mysql、easymall-redis
+
+# 测试 API 接口
+curl http://localhost:8080/api/public/products
+
+# 查看应用日志
+docker logs -f easymall-app
+```
+
+#### 步骤 8：配置 Nginx（可选）
+
+如果需要通过 Nginx 提供静态文件服务，添加以下配置：
+
+```nginx
+# /etc/nginx/conf.d/easymall.conf
+
+server {
+    listen 80;
+    server_name your-domain.com;
+
+    # API 代理
+    location /api/ {
+        proxy_pass http://localhost:8080/api/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+
+    # 图片静态文件服务
+    location /uploads/ {
+        alias /root/EasyMall/uploads/;
+        expires 30d;
+        add_header Cache-Control "public, immutable";
+
+        # 允许跨域访问（如果需要）
+        add_header Access-Control-Allow-Origin *;
+    }
+}
+```
+
+重启 Nginx：
+
+```bash
+# 测试配置
+nginx -t
+
+# 重新加载配置
+nginx -s reload
+```
+
+---
+
+## 常用管理命令
+
+### 查看状态
+
+```bash
+# 查看所有容器
+docker ps
+
+# 查看容器资源使用
+docker stats
+
+# 查看应用日志
+docker logs -f easymall-app
+```
+
+### 启动/停止服务
+
+```bash
+# 停止所有服务
+docker stop easymall-app easymall-mysql easymall-redis
+
+# 启动所有服务（注意顺序）
+docker start easymall-mysql easymall-redis easymall-app
+
+# 重启应用
+docker restart easymall-app
+```
+
+### 清理和重新部署
+
+```bash
+# 停止并删除所有容器
+docker stop easymall-app easymall-mysql easymall-redis
+docker rm easymall-app easymall-mysql easymall-redis
+
+# 删除网络
+docker network rm easymall-net
+
+# 重新执行部署脚本
+./deploy-easymall.sh
+```
+
+---
+
+--
+
 ## 构建和推送应用镜像（可选）
 
 如果你需要从源代码构建应用镜像并推送到 Docker Hub，请按以下步骤操作。
@@ -217,12 +591,12 @@ docker network create easymall-net
 #### 启动 MySQL（自动初始化数据库）
 
 ```bash
-docker run -d \
-  --name easymall-mysql \
-  --network easymall-net \
-  -e MYSQL_ROOT_PASSWORD=123456 \
-  -e MYSQL_DATABASE=easymall \
-  -e TZ=Asia/Shanghai \
+docker run -d `
+  --name easymall-mysql `
+  --network easymall-net `
+  -e MYSQL_ROOT_PASSWORD=123456 `
+  -e MYSQL_DATABASE=easymall `
+  -e TZ=Asia/Shanghai `
   yunluoxincheng/easymall-mysql:init
 ```
 
@@ -254,21 +628,18 @@ sudo docker exec easymall-mysql mysql -uroot -p123456 -e "USE easymall; SHOW TAB
 
 ```bash
 # 启动 Redis
-docker run -d \
-  --name easymall-redis \
-  --network easymall-net \
-  redis:7-alpine
+docker run -d --name easymall-redis --network easymall-net redis:7-alpine
 
 # 启动应用
-docker run -d \
-  --name easymall-app \
-  --network easymall-net \
-  -p 8080:8080 \
-  -e SPRING_DATASOURCE_URL=jdbc:mysql://easymall-mysql:3306/easymall?useUnicode=true&characterEncoding=UTF-8&useSSL=false&serverTimezone=UTC \
-  -e SPRING_DATASOURCE_USERNAME=root \
-  -e SPRING_DATASOURCE_PASSWORD=123456 \
-  -e SPRING_DATA_REDIS_HOST=easymall-redis \
-  -e SPRING_DATA_REDIS_PORT=6379 \
+docker run -d `
+  --name easymall-app `
+  --network easymall-net `
+  -p 8080:8080 `
+  -e SPRING_DATASOURCE_URL="jdbc:mysql://easymall-mysql:3306/easymall?useUnicode=true&characterEncoding=UTF-8&useSSL=false&serverTimezone=UTC" `
+  -e SPRING_DATASOURCE_USERNAME=root `
+  -e SPRING_DATASOURCE_PASSWORD=123456 `
+  -e SPRING_DATA_REDIS_HOST=easymall-redis `
+  -e SPRING_DATA_REDIS_PORT=6379 `
   yunluoxincheng/easymall:latest
 ```
 

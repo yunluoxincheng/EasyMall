@@ -7,7 +7,7 @@ spring:
 
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/easymall?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=UTC
+    url: jdbc:mysql://localhost:3306/easymall?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
     username: root
     password: 123456
 
@@ -51,6 +51,22 @@ mybatis-plus:
 jwt:
   secret: easymall-jwt-secret-key-2023-very-long-secret-key-for-hmac-sha256-algorithm-requirement-256-bits
   expiration: 86400000  # 24小时
+
+# 文件上传配置
+file:
+  upload:
+    # 基础存储路径(容器内路径)
+    base-path: /data/easymall/uploads
+    # 访问基础 URL
+    base-url: http://8.134.192.13/uploads
+    # 单个文件最大大小(字节) - 5MB
+    max-size: 5242880
+    # 允许的文件类型
+    allowed-types:
+      - image/jpeg
+      - image/jpg
+      - image/png
+      - image/gif
 
 # 日志配置
 logging:
