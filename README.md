@@ -367,8 +367,12 @@ docker-compose -f docker-compose.yml -f docker-dev.yml down -v
 docker-compose -f docker-compose.yml -f docker-dev.yml up -d
 ```
 
-## API接口文档
+## 项目文档
 
+### 包结构说明
+详细的包结构和各模块功能说明: [docs/PACKAGE_STRUCTURE.md](docs/PACKAGE_STRUCTURE.md)
+
+### API接口文档
 详细的 API 接口文档请查看: [docs/API.md](docs/API.md)
 
 ### 主要接口模块

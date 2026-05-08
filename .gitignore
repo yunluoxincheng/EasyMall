@@ -34,3 +34,18 @@ build/
 
 ### Uploads ###
 uploads/
+
+### Frontend (Vue/Vite) ###
+easymall-web/node_modules/
+easymall-web/dist/
+easymall-web/.vite/
+easymall-web/npm-debug.log*
+easymall-web/yarn-debug.log*
+easymall-web/yarn-error.log*
+easymall-web/pnpm-debug.log*
+
+### OpenSpec ###
+openspec/
+
+### Misc ###
+nul
