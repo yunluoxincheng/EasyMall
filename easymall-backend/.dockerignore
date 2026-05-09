@@ -1,0 +1,44 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Maven
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+.DS_Store
+
+# Logs
+*.log
+logs/
+
+# Docker (now in docker/ directory, not here)
+.dockerignore
+
+# Documentation
+README.md
+HELP.md
+CLAUDE.md
+docs/
+openspec/
+
+# Test files
+test-api.http
+*.http
+
+# Build artifacts
+*.jar
+*.war
+*.class
+
+# OS
+Thumbs.db

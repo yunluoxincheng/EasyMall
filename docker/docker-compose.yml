@@ -1,0 +1,88 @@
+# Docker 基础配置（包含 MySQL + Redis + 应用服务）
+# 开发环境: docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+# 生产环境: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+
+services:
+  # EasyMall 应用服务
+  easymall-app:
+    build:
+      context: ../easymall-backend
+      dockerfile: ../docker/Dockerfile.production
+    container_name: easymall-app
+    ports:
+      - "${APP_PORT:-8080}:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-prod}
+      # 数据源配置
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/easymall?useUnicode=true&characterEncoding=UTF-8&useSSL=false&serverTimezone=UTC
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD}
+      # Redis 配置
+      - SPRING_DATA_REDIS_HOST=redis
+      - SPRING_DATA_REDIS_PORT=6379
+      - SPRING_DATA_REDIS_PASSWORD=${SPRING_DATA_REDIS_PASSWORD:-}
+      # JWT 配置
+      - JWT_SECRET=${JWT_SECRET:-easymall_default_jwt_secret_key_for_development_only_at_least_256_bits_long}
+      # 文件上传配置
+      - FILE_UPLOAD_BASE_PATH=/data/easymall/uploads
+      - FILE_UPLOAD_BASE_URL=${FILE_UPLOAD_BASE_URL:-http://localhost:8080/uploads}
+    volumes:
+      - upload-data:/data/easymall/uploads
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - easymall-network
+    restart: unless-stopped
+
+  # MySQL 数据库服务
+  mysql:
+    image: mysql:8.0
+    container_name: easymall-mysql
+    command: >
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+      --default-authentication-plugin=mysql_native_password
+      --init-connect="SET NAMES utf8mb4"
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_PASSWORD}
+      - MYSQL_DATABASE=easymall
+      - TZ=Asia/Shanghai
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ../easymall-backend/src/main/resources/db/migration:/docker-entrypoint-initdb.d:ro
+    networks:
+      - easymall-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis 缓存服务
+  redis:
+    image: redis:7-alpine
+    container_name: easymall-redis
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    networks:
+      - easymall-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  easymall-network:
+    driver: bridge
+
+volumes:
+  mysql-data:
+    driver: local
+  upload-data:
+    driver: local

@@ -6,14 +6,15 @@ B2C e-commerce: Spring Boot 4.0.1 (JDK 17) backend + Vue 3 / TypeScript frontend
 ## Build & Run
 
 ```bash
-# Backend (from easymall/)
+# Backend (from easymall-backend/)
+cd easymall-backend
 mvn compile                         # compile
 mvn test                            # all tests
 mvn test -Dtest=ClassName#method    # single test
 mvn spring-boot:run                 # run app (needs MySQL + Redis running)
 mvn clean package -DskipTests       # package jar
 
-# Frontend (from easymall-web/)
+# Frontend (from easymall-frontend/)
 npm install
 npm run dev                         # dev server on :5173, proxies /api → :8080
 npm run typecheck                   # vue-tsc --noEmit (run before build)
@@ -25,24 +26,53 @@ npm run build                       # vue-tsc && vite build
 ## Architecture
 
 Two separate projects in one repo:
-- **`easymall/`** — Spring Boot backend. Package: `org.ruikun`. Port 8080.
-- **`easymall-web/`** — Vue 3 + Vite + TypeScript + **Naive UI** (not Element Plus) + Pinia. Port 5173.
+- **`easymall-backend/`** — Spring Boot backend. Package: `org.ruikun`. Port 8080.
+- **`easymall-frontend/`** — Vue 3 + Vite + TypeScript + **Naive UI** (not Element Plus) + Pinia. Port 5173.
 
-Backend layers: `controller/` → `service/` → `mapper/` (MyBatis Plus). Entities → `entity/`, response DTOs → `vo/`, request DTOs → `dto/`.
+Backend uses **module-based package structure** under `org.ruikun.modules.{module}/`:
 
-**Quirk:** Two util packages exist — `org.ruikun.util` (TraceIdUtil) and `org.ruikun.utils` (JwtUtil).
+```
+modules/
+├── user/         # controller, dto, entity, mapper, service, vo
+├── product/      # controller, dto, entity, mapper, service, vo
+├── order/        # controller, dto, entity, mapper, service, vo
+├── coupon/       # controller, dto, entity, mapper, service, task, vo
+├── points/       # controller, dto, entity, mapper, service, vo
+├── comment/      # controller, dto, entity, mapper, service, vo
+├── favorite/     # controller, entity, mapper, service, vo
+├── upload/       # controller, service, vo
+└── admin/        # controller, dto, vo
+```
+
+Each module contains: `controller/` → `service/` → `mapper/` (MyBatis Plus). Entities → `entity/`, response DTOs → `vo/`, request DTOs → `dto/`.
+
+Shared packages:
+- `common/` — Result, ResponseCode, ErrorDetail, PageRequest, PageResult
+- `enums/` — UserRole, OrderStatus, CouponType, etc.
+- `exception/` — BusinessException, GlobalExceptionHandler
+- `infrastructure/` — config (FileUploadProperties, MyBatisPlusConfig), security (SecurityConfig, JwtAuthenticationFilter, JwtUtil), TraceIdUtil
+
+### Configuration
+
+Three Spring profiles:
+- `application.yml` — base config only (no env-specific values)
+- `application-dev.yml` — dev defaults (localhost MySQL/Redis, SQL logging, devtools)
+- `application-prod.yml` — env variable references only (no hardcoded secrets)
+
+Activate via `SPRING_PROFILES_ACTIVE` env var (defaults to `dev`).
 
 ### Docker
 
-`docker-compose.yml` is in **`easymall/`**, not repo root. `.env` is also there.
+All Docker files are in **`docker/`**:
 
 ```bash
-cd easymall
-docker-compose up -d                           # MySQL :3307, Redis :6379, App :8080
-docker-compose -f docker-compose.yml -f docker-dev.yml up -d  # with hot reload
+cd docker
+docker compose up -d                           # MySQL + Redis
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d  # with app + hot reload
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d  # production
 ```
 
-Production Dockerfile: `easymall/Dockerfile.production`. Docker Hub: `yunluoxincheng/easymall:latest`, `yunluoxincheng/easymall-mysql:init`.
+Production Dockerfile: `docker/Dockerfile.production`. Docker Hub: `yunluoxincheng/easymall:latest`, `yunluoxincheng/easymall-mysql:init`.
 
 ## Conventions
 
@@ -50,11 +80,13 @@ Production Dockerfile: `easymall/Dockerfile.production`. Docker Hub: `yunluoxinc
 
 - All API responses wrapped in `Result<T>` (`org.ruikun.common.Result`)
 - Error codes: `ResponseCode` enum. Throw `BusinessException` for business errors.
-- Service interfaces named `I*Service`, implementations `*ServiceImpl`
+- Service interfaces named `I*Service`, implementations `*ServiceImpl` (in same `service/` package)
 - Constructor injection via Lombok `@RequiredArgsConstructor`
 - Entities: `@Data`, `@TableName`, `@TableId(type = IdType.AUTO)`, `@TableLogic` for soft delete
 - All tables have `id`, `create_time`, `update_time`, `deleted`
 - DB migrations are plain SQL in `src/main/resources/db/migration/` — loaded by Docker init, **not** Flyway
+- `@MapperScan` lists all module mapper packages explicitly
+- `type-aliases-package` lists all module entity packages
 
 ### API paths & security
 
@@ -65,7 +97,7 @@ Production Dockerfile: `easymall/Dockerfile.production`. Docker Hub: `yunluoxinc
 | `/api/admin/**` | ADMIN role (`@PreAuthorize("hasRole('ADMIN')")`) |
 | Everything else | JWT required |
 
-Admin controllers live in `controller/admin/` subpackage.
+Admin controllers live in `modules/admin/controller/` package.
 
 ### Frontend
 
@@ -80,18 +112,24 @@ Admin controllers live in `controller/admin/` subpackage.
 
 | File | Purpose |
 |---|---|
-| `easymall/pom.xml` | Dependencies (Spring Boot 4.0.1, MyBatis Plus 3.5.15, jjwt 0.11.5) |
-| `easymall/src/main/resources/application.yml` | Config (env vars for DB/Redis/JWT/file upload) |
-| `easymall/src/main/java/org/ruikun/common/Result.java` | API response wrapper |
-| `easymall/src/main/java/org/ruikun/common/ResponseCode.java` | Error codes enum |
-| `easymall/src/main/java/org/ruikun/security/SecurityConfig.java` | Auth rules |
-| `easymall-web/vite.config.ts` | Vite config with proxy |
+| `easymall-backend/pom.xml` | Dependencies (Spring Boot 4.0.1, MyBatis Plus 3.5.15, jjwt 0.11.5) |
+| `easymall-backend/src/main/resources/application.yml` | Base config (no env-specific values) |
+| `easymall-backend/src/main/resources/application-dev.yml` | Dev defaults |
+| `easymall-backend/src/main/resources/application-prod.yml` | Prod config (env vars only) |
+| `easymall-backend/src/main/java/org/ruikun/common/Result.java` | API response wrapper |
+| `easymall-backend/src/main/java/org/ruikun/common/ResponseCode.java` | Error codes enum |
+| `easymall-backend/src/main/java/org/ruikun/infrastructure/security/SecurityConfig.java` | Auth rules |
+| `docker/docker-compose.yml` | Base Docker Compose (MySQL + Redis) |
+| `docker/docker-compose.dev.yml` | Dev Docker Compose override |
+| `docker/docker-compose.prod.yml` | Prod Docker Compose |
+| `.env.example` | Environment variable reference |
+| `easymall-frontend/vite.config.ts` | Vite config with proxy |
 
 ## Gotchas
 
 - Default admin credentials: `admin` / `admin123`
-- Default MySQL password: `123456` (dev only)
+- Default MySQL password: `123456` (dev only, in `application-dev.yml`)
 - Search uses **MySQL FULLTEXT index + Redis cache** (5 min TTL), not Elasticsearch
-- File uploads go to local filesystem (`/data/easymall/uploads`), configured via `FILE_UPLOAD_PATH` / `FILE_UPLOAD_URL` env vars
-- `application.yml` uses env var fallbacks extensively (e.g. `${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/...}`)
+- File uploads go to local filesystem (`/data/easymall/uploads`), configured via `FILE_UPLOAD_BASE_PATH` / `FILE_UPLOAD_BASE_URL` env vars
+- `application-prod.yml` has **no default values** for secrets — all must come from environment variables
 - All responses and error messages are in Chinese

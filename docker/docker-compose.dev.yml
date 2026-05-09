@@ -1,0 +1,25 @@
+# Docker 开发环境配置
+# 使用方式: docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+
+services:
+  easymall-app:
+    build:
+      context: ../easymall-backend
+      dockerfile: ../docker/Dockerfile
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+      # 启用 Spring Boot DevTools
+      - SPRING_DEVTOOLS_RESTART_ENABLED=true
+      - SPRING_DEVTOOLS_LIVERELOAD_ENABLED=true
+      # 日志级别
+      - LOG_LEVEL=debug
+      - LOG_LEVEL_SECURITY=debug
+    volumes:
+      # 挂载源代码（热重载）
+      - ../easymall-backend/src:/app/src:cached
+      - ../easymall-backend/pom.xml:/app/pom.xml:cached
+      # Maven 本地仓库缓存
+      - ${HOME}/.m2:/root/.m2:cached
+    restart: unless-stopped
+    stdin_open: true
+    tty: true
