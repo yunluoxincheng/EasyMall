@@ -44,6 +44,9 @@ easymall-web/yarn-debug.log*
 easymall-web/yarn-error.log*
 easymall-web/pnpm-debug.log*
 
+### Claude ###
+.claude/settings.local.json
+
 ### OpenSpec ###
 openspec/
 
