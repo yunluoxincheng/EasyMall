@@ -39,6 +39,7 @@ public class OrderServiceImpl implements IOrderService {
     private final org.ruikun.modules.points.service.IPointsService pointsService;
     private final org.ruikun.modules.user.service.IPriceService priceService;
     private final org.ruikun.modules.coupon.service.ICouponService couponService;
+    private final OrderStateMachine stateMachine;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -140,19 +141,20 @@ public class OrderServiceImpl implements IOrderService {
         if (order == null || !order.getUserId().equals(userId)) {
             throw new BusinessException(ResponseCode.ORDER_NOT_FOUND, "订单不存在");
         }
-if (!OrderStatus.PENDING_PAYMENT.getCode().equals(order.getStatus())) {
-            throw new BusinessException(ResponseCode.ORDER_CANNOT_CANCEL, "订单状态不允许取消");
-        }
 
-        order.setStatus(OrderStatus.CANCELLED.getCode());
+        stateMachine.transit(order, OrderStatus.CANCELLED);
+        cancelOrderInternal(order);
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public void cancelOrderInternal(Order order) {
         orderMapper.updateById(order);
 
-        // 返还优惠券
         if (order.getUserCouponId() != null) {
-            couponService.returnCoupon(userId, order.getUserCouponId(), orderId);
+            couponService.returnCoupon(order.getUserId(), order.getUserCouponId(), order.getId());
         }
 
-        List<OrderItem> orderItems = orderItemMapper.getOrderItemsByOrderId(orderId);
+        List<OrderItem> orderItems = orderItemMapper.getOrderItemsByOrderId(order.getId());
         for (OrderItem orderItem : orderItems) {
             productMapper.increaseStock(orderItem.getProductId(), orderItem.getQuantity());
         }
@@ -164,11 +166,8 @@ if (!OrderStatus.PENDING_PAYMENT.getCode().equals(order.getStatus())) {
         if (order == null || !order.getUserId().equals(userId)) {
             throw new BusinessException(ResponseCode.ORDER_NOT_FOUND, "订单不存在");
         }
-if (!OrderStatus.PENDING_PAYMENT.getCode().equals(order.getStatus())) {
-            throw new BusinessException(ResponseCode.ORDER_CANNOT_PAY, "订单状态不允许支付");
-        }
 
-        order.setStatus(OrderStatus.PAID.getCode());
+        stateMachine.transit(order, OrderStatus.PAID);
         order.setPaymentMethod(paymentMethod);
         order.setPayTime(LocalDateTime.now());
         orderMapper.updateById(order);
@@ -181,11 +180,8 @@ if (!OrderStatus.PENDING_PAYMENT.getCode().equals(order.getStatus())) {
         if (order == null || !order.getUserId().equals(userId)) {
             throw new BusinessException(ResponseCode.ORDER_NOT_FOUND, "订单不存在");
         }
-if (!OrderStatus.SHIPPED.getCode().equals(order.getStatus())) {
-            throw new BusinessException(ResponseCode.ORDER_CANNOT_CONFIRM, "订单状态不允许确认收货");
-        }
 
-        order.setStatus(OrderStatus.COMPLETED.getCode());
+        stateMachine.transit(order, OrderStatus.COMPLETED);
         orderMapper.updateById(order);
 
         // 订单完成后增加积分

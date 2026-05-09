@@ -106,6 +106,9 @@ public enum ResponseCode {
     ORDER_ALREADY_CANCELLED(400, "ORDER_ALREADY_CANCELLED", "订单已取消"),
     ORDER_ALREADY_SHIPPED(400, "ORDER_ALREADY_SHIPPED", "订单已发货，无法取消"),
 
+    // ========== 状态机相关 ==========
+    ORDER_STATUS_TRANSITION_INVALID(400, "ORDER_STATUS_TRANSITION_INVALID", "订单状态流转不合法"),
+
     // ========== 管理操作相关 ==========
     OPERATION_FAILED(500, "OPERATION_FAILED", "操作失败"),
     CATEGORY_CREATE_FAILED(500, "CATEGORY_CREATE_FAILED", "分类创建失败"),

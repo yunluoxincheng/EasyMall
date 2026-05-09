@@ -20,7 +20,7 @@ public class Order {
 
     private BigDecimal payAmount;
 
-    private Integer status; // 0-待支付 1-已支付 2-已发货 3-已完成 4-已取消
+    private Integer status; // 0-待支付 1-已支付 2-已发货 3-已完成 4-已取消 5-待发货 6-退款中 7-已退款
 
     /**
      * 使用的用户优惠券ID

@@ -5,14 +5,17 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
 import org.ruikun.common.PageResult;
-import org.ruikun.common.Result;
 import org.ruikun.common.ResponseCode;
+import org.ruikun.enums.OrderStatus;
 import org.ruikun.modules.admin.dto.OrderQueryDTO;
 import org.ruikun.modules.order.entity.Order;
 import org.ruikun.modules.order.entity.OrderItem;
 import org.ruikun.modules.user.entity.User;
 import org.ruikun.modules.order.mapper.OrderItemMapper;
 import org.ruikun.modules.order.mapper.OrderMapper;
+import org.ruikun.common.Result;
+import org.ruikun.modules.order.service.IOrderService;
+import org.ruikun.modules.order.service.OrderStateMachine;
 import org.ruikun.modules.user.mapper.UserMapper;
 import org.ruikun.modules.admin.vo.AdminOrderPageVO;
 import org.ruikun.modules.admin.vo.AdminOrderVO;
@@ -37,6 +40,8 @@ public class AdminOrderController {
     private final OrderMapper orderMapper;
     private final OrderItemMapper orderItemMapper;
     private final UserMapper userMapper;
+    private final IOrderService orderService;
+    private final OrderStateMachine stateMachine;
 
     /**
      * 分页查询订单列表
@@ -154,22 +159,15 @@ public class AdminOrderController {
             return Result.error(ResponseCode.ORDER_NOT_FOUND);
         }
 
-        // 订单状态流转校验
-        int currentStatus = order.getStatus();
-        if (currentStatus == 4) {
-            return Result.error(ResponseCode.ORDER_STATUS_ERROR);
-        }
-        if (currentStatus == 3) {
-            return Result.error(ResponseCode.ORDER_STATUS_ERROR);
-        }
-        if (currentStatus == 0 && status == 3) {
-            return Result.error(ResponseCode.ORDER_STATUS_ERROR);
+        // 目标状态参数校验
+        OrderStatus targetStatus = OrderStatus.fromCode(status);
+        if (targetStatus == null) {
+            return Result.error(ResponseCode.VALIDATION_ERROR, "无效的订单状态值");
         }
 
-        Order update = new Order();
-        update.setId(id);
-        update.setStatus(status);
-        orderMapper.updateById(update);
+        // 状态机校验并转换
+        stateMachine.transit(order, targetStatus);
+        orderMapper.updateById(order);
 
         return Result.success("修改订单状态成功");
     }
@@ -184,19 +182,13 @@ public class AdminOrderController {
             return Result.error(ResponseCode.ORDER_NOT_FOUND);
         }
 
-        if (order.getStatus() == 4) {
-            return Result.error(ResponseCode.ORDER_ALREADY_CANCELLED);
-        }
-        if (order.getStatus() == 3) {
-            return Result.error(ResponseCode.ORDER_STATUS_ERROR);
-        }
+        // 状态机校验：仅 PENDING_PAYMENT、PAID、WAITING_SHIPMENT 可取消
+        stateMachine.transit(order, OrderStatus.CANCELLED);
 
-        Order update = new Order();
-        update.setId(id);
-        update.setStatus(4); // 已取消
-        orderMapper.updateById(update);
+        // 执行取消：更新状态 + 恢复库存 + 返还优惠券
+        orderService.cancelOrderInternal(order);
 
-        // TODO: 如果订单已支付，需要退款处理
+        // TODO: 阶段4 — 如果订单已支付(PAID/WAITING_SHIPMENT)，退款逻辑预留位置
 
         return Result.success("取消订单成功");
     }

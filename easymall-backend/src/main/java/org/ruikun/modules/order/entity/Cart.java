@@ -34,6 +34,10 @@ public class Cart {
     @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updateTime;
 
+    /** 商品库存（查询时从 product 表 JOIN，非数据库字段） */
+    @TableField(exist = false)
+    private Integer stock;
+
     @TableLogic
     @TableField(fill = FieldFill.INSERT)
     private Integer deleted;
