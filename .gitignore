@@ -53,3 +53,4 @@ openspec/
 ### Misc ###
 nul
 .env
+.claude/settings.local.json
