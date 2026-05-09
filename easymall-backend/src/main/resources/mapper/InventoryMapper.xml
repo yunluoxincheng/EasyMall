@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.ruikun.modules.inventory.mapper.InventoryMapper">
+
+    <update id="lockStock">
+        UPDATE inventory
+        SET available_stock = available_stock - #{quantity},
+            locked_stock = locked_stock + #{quantity},
+            version = version + 1
+        WHERE product_id = #{productId}
+          AND available_stock >= #{quantity}
+          AND version = #{version}
+    </update>
+
+    <update id="releaseLockedStock">
+        UPDATE inventory
+        SET locked_stock = locked_stock - #{quantity},
+            available_stock = available_stock + #{quantity},
+            version = version + 1
+        WHERE product_id = #{productId}
+          AND locked_stock >= #{quantity}
+          AND version = #{version}
+    </update>
+
+    <update id="confirmSoldStock">
+        UPDATE inventory
+        SET locked_stock = locked_stock - #{quantity},
+            sold_stock = sold_stock + #{quantity},
+            version = version + 1
+        WHERE product_id = #{productId}
+          AND locked_stock >= #{quantity}
+          AND version = #{version}
+    </update>
+
+    <update id="adjustStock">
+        UPDATE inventory
+        SET total_stock = total_stock + #{quantity},
+            available_stock = available_stock + #{quantity},
+            version = version + 1
+        WHERE product_id = #{productId}
+          AND available_stock + #{quantity} >= 0
+          AND version = #{version}
+    </update>
+
+</mapper>

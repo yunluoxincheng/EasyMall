@@ -15,6 +15,7 @@ import org.ruikun.modules.product.entity.Product;
 import org.ruikun.modules.product.mapper.CategoryMapper;
 import org.ruikun.modules.product.mapper.ProductMapper;
 import org.ruikun.modules.product.service.IProductService;
+import org.ruikun.modules.inventory.service.IInventoryService;
 import org.ruikun.modules.admin.vo.AdminProductPageVO;
 import org.ruikun.modules.admin.vo.AdminProductVO;
 import org.ruikun.modules.product.vo.ProductVO;
@@ -40,6 +41,7 @@ import java.util.stream.Collectors;
 public class AdminProductController {
 
     private final IProductService productService;
+    private final IInventoryService inventoryService;
     private final ProductMapper productMapper;
     private final CategoryMapper categoryMapper;
 
@@ -175,10 +177,7 @@ public class AdminProductController {
             return Result.error(ResponseCode.PRODUCT_NOT_FOUND);
         }
 
-        Product update = new Product();
-        update.setId(id);
-        update.setStock(stock);
-        productMapper.updateById(update);
+        inventoryService.setStock(id, stock, "管理员调整库存");
 
         return Result.success("修改商品库存成功");
     }

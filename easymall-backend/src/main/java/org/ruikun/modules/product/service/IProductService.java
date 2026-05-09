@@ -24,6 +24,7 @@ public interface IProductService {
 
     List<ProductVO> getRelatedProducts(Long categoryId, Long productId, Integer limit);
 
+    @Deprecated
     void updateSales(Long productId, Integer quantity);
 
     boolean checkStock(Long productId, Integer quantity);

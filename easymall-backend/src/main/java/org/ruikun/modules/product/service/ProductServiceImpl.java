@@ -12,6 +12,7 @@ import org.ruikun.modules.product.entity.Product;
 import org.ruikun.exception.BusinessException;
 import org.ruikun.modules.product.mapper.CategoryMapper;
 import org.ruikun.modules.product.mapper.ProductMapper;
+import org.ruikun.modules.inventory.service.IInventoryService;
 import org.ruikun.modules.product.service.IProductService;
 import org.ruikun.modules.product.vo.ProductVO;
 import org.springframework.beans.BeanUtils;
@@ -28,6 +29,7 @@ public class ProductServiceImpl implements IProductService {
 
     private final ProductMapper productMapper;
     private final CategoryMapper categoryMapper;
+    private final IInventoryService inventoryService;
 
     @Override
     public PageResult<ProductVO> getProductPage(PageRequest pageRequest) {
@@ -63,6 +65,8 @@ public class ProductServiceImpl implements IProductService {
         if (productMapper.insert(product) <= 0) {
             throw new BusinessException(ResponseCode.PRODUCT_CREATE_FAILED, "商品添加失败");
         }
+
+        inventoryService.initializeInventory(product.getId(), product.getStock());
     }
 
     @Override
@@ -72,7 +76,7 @@ public class ProductServiceImpl implements IProductService {
             throw new BusinessException(ResponseCode.PRODUCT_NOT_FOUND, "商品不存在");
         }
 
-        BeanUtils.copyProperties(productDTO, product, "id", "sales");
+        BeanUtils.copyProperties(productDTO, product, "id", "sales", "stock");
         if (productMapper.updateById(product) <= 0) {
             throw new BusinessException(ResponseCode.PRODUCT_UPDATE_FAILED, "商品更新失败");
         }
@@ -112,6 +116,7 @@ public class ProductServiceImpl implements IProductService {
                 .collect(Collectors.toList());
     }
 
+    @Deprecated
     @Override
     public void updateSales(Long productId, Integer quantity) {
         Product product = productMapper.selectById(productId);
@@ -134,8 +139,8 @@ public class ProductServiceImpl implements IProductService {
 
     @Override
     public boolean checkStock(Long productId, Integer quantity) {
-        Product product = productMapper.selectById(productId);
-        return product != null && product.getStock() >= quantity;
+        var inventory = inventoryService.getByProductId(productId);
+        return inventory != null && inventory.getAvailableStock() >= quantity;
     }
 
     private ProductVO convertToVO(Product product) {

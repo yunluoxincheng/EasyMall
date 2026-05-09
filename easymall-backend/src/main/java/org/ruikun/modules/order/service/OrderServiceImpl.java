@@ -17,6 +17,7 @@ import org.ruikun.modules.order.mapper.CartMapper;
 import org.ruikun.modules.order.mapper.OrderItemMapper;
 import org.ruikun.modules.order.mapper.OrderMapper;
 import org.ruikun.modules.product.mapper.ProductMapper;
+import org.ruikun.modules.inventory.service.IInventoryService;
 import org.ruikun.modules.order.service.IOrderService;
 import org.ruikun.modules.order.vo.OrderItemVO;
 import org.ruikun.modules.order.vo.OrderVO;
@@ -36,6 +37,7 @@ public class OrderServiceImpl implements IOrderService {
     private final OrderItemMapper orderItemMapper;
     private final CartMapper cartMapper;
     private final ProductMapper productMapper;
+    private final IInventoryService inventoryService;
     private final org.ruikun.modules.points.service.IPointsService pointsService;
     private final org.ruikun.modules.user.service.IPriceService priceService;
     private final org.ruikun.modules.coupon.service.ICouponService couponService;
@@ -101,7 +103,7 @@ public class OrderServiceImpl implements IOrderService {
             orderItem.setTotalPrice(cartItem.getTotalPrice());
             orderItemMapper.insert(orderItem);
 
-            productMapper.decreaseStock(cartItem.getProductId(), cartItem.getQuantity());
+            inventoryService.lockStock(cartItem.getProductId(), cartItem.getQuantity(), order.getId());
         }
 
         cartMapper.deleteBatchIds(orderCreateDTO.getCartIds());
@@ -156,11 +158,12 @@ public class OrderServiceImpl implements IOrderService {
 
         List<OrderItem> orderItems = orderItemMapper.getOrderItemsByOrderId(order.getId());
         for (OrderItem orderItem : orderItems) {
-            productMapper.increaseStock(orderItem.getProductId(), orderItem.getQuantity());
+            inventoryService.releaseLockedStock(orderItem.getProductId(), orderItem.getQuantity(), order.getId());
         }
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void payOrder(Long userId, Long orderId, String paymentMethod) {
         Order order = orderMapper.selectById(orderId);
         if (order == null || !order.getUserId().equals(userId)) {
@@ -171,6 +174,11 @@ public class OrderServiceImpl implements IOrderService {
         order.setPaymentMethod(paymentMethod);
         order.setPayTime(LocalDateTime.now());
         orderMapper.updateById(order);
+
+        List<OrderItem> orderItems = orderItemMapper.getOrderItemsByOrderId(order.getId());
+        for (OrderItem orderItem : orderItems) {
+            inventoryService.confirmSoldStock(orderItem.getProductId(), orderItem.getQuantity(), order.getId());
+        }
     }
 
     @Override
