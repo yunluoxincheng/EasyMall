@@ -50,6 +50,8 @@ easymall-web/pnpm-debug.log*
 ### OpenSpec ###
 openspec/
 
+.agents/
+
 ### Misc ###
 nul
 .env
