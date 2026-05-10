@@ -18,6 +18,13 @@ spring:
           min-idle: 0
       timeout: 30000ms
 
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+    virtual-host: /
+
   devtools:
     restart:
       enabled: true
@@ -40,3 +47,7 @@ file:
 payment:
   mock:
     signature: easymall-mock-signature-2024
+
+easymall:
+  order:
+    timeout-minutes: 30

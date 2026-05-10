@@ -18,6 +18,13 @@ spring:
           max-idle: ${SPRING_DATA_REDIS_LETTUCE_POOL_MAX_IDLE:8}
           min-idle: ${SPRING_DATA_REDIS_LETTUCE_POOL_MIN_IDLE:0}
 
+  rabbitmq:
+    host: ${SPRING_RABBITMQ_HOST}
+    port: ${SPRING_RABBITMQ_PORT:5672}
+    username: ${SPRING_RABBITMQ_USERNAME}
+    password: ${SPRING_RABBITMQ_PASSWORD}
+    virtual-host: ${SPRING_RABBITMQ_VIRTUAL_HOST:/}
+
 jwt:
   secret: ${JWT_SECRET}
   expiration: ${JWT_EXPIRATION:86400000}
@@ -30,3 +37,7 @@ file:
 payment:
   mock:
     signature: ${PAYMENT_MOCK_SIGNATURE}
+
+easymall:
+  order:
+    timeout-minutes: ${EASYMALL_ORDER_TIMEOUT_MINUTES:30}

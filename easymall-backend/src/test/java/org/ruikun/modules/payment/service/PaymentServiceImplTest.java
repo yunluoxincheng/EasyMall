@@ -320,11 +320,13 @@ class PaymentServiceImplTest {
             when(paymentOrderMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(po);
             when(paymentCallbackLogService.saveLog(anyString(), anyString(), anyString(), eq("RECEIVED"))).thenReturn(1L);
 
-            // CAS 更新成功
+            // CAS 更新 payment_order PAYING → PAID 成功
             when(paymentOrderMapper.update(isNull(), any(LambdaUpdateWrapper.class))).thenReturn(1);
 
             Order order = createOrder(10L, "ORD123", 100L, OrderStatus.PENDING_PAYMENT.getCode(), new BigDecimal("199.00"));
             when(orderMapper.selectById(10L)).thenReturn(order);
+            // CAS 订单 PENDING_PAYMENT → PAID 成功
+            when(orderMapper.casUpdateStatus(10L, OrderStatus.PENDING_PAYMENT.getCode(), OrderStatus.PAID.getCode())).thenReturn(1);
             when(orderMapper.updateById(any(Order.class))).thenReturn(1);
 
             OrderItem item = createOrderItem(5L, 2);
@@ -332,7 +334,7 @@ class PaymentServiceImplTest {
 
             paymentService.processCallback("PAY123", new BigDecimal("199.00"), "MOCK");
 
-            verify(orderStateMachine).transit(order, OrderStatus.PAID);
+            verify(orderMapper).casUpdateStatus(10L, OrderStatus.PENDING_PAYMENT.getCode(), OrderStatus.PAID.getCode());
             verify(inventoryService).confirmSoldStock(5L, 2, 10L);
             verify(paymentCallbackLogService).updateResult(1L, "SUCCESS");
         }

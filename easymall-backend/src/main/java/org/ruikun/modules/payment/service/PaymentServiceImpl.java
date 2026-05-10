@@ -241,12 +241,28 @@ public class PaymentServiceImpl implements IPaymentService {
                     "支付单状态已变更: " + (finalStatus != null ? finalStatus.getDescription() : "未知"));
         }
 
-        // 7. 触发订单已支付流程
+        // 7. CAS 订单状态 PENDING_PAYMENT → PAID，防止与超时取消竞争
         Order order = orderMapper.selectById(paymentOrder.getOrderId());
         if (order != null) {
-            orderStateMachine.transit(order, OrderStatus.PAID);
+            int orderRows = orderMapper.casUpdateStatus(
+                    order.getId(),
+                    OrderStatus.PENDING_PAYMENT.getCode(),
+                    OrderStatus.PAID.getCode());
+            if (orderRows == 0) {
+                Order freshOrder = orderMapper.selectById(order.getId());
+                OrderStatus currentStatus = OrderStatus.fromCode(freshOrder.getStatus());
+                if (currentStatus == OrderStatus.PAID) {
+                    safeUpdateLogResult(logId, "IDEMPOTENT_SUCCESS");
+                    return;
+                }
+                safeUpdateLogResult(logId, "ORDER_STATUS_CHANGED");
+                throw new BusinessException(ResponseCode.ORDER_STATUS_TRANSITION_INVALID,
+                        "订单状态已变更: " + (currentStatus != null ? currentStatus.getDescription() : "未知"));
+            }
+
             order.setPaymentMethod(channel);
             order.setPayTime(LocalDateTime.now());
+            order.setStatus(OrderStatus.PAID.getCode());
             orderMapper.updateById(order);
 
             // 确认库存

@@ -22,4 +22,6 @@ public interface IOrderService {
     void confirmOrder(Long userId, Long orderId);
 
     void cancelOrderInternal(Order order);
+
+    boolean cancelOrderByTimeout(Long orderId);
 }

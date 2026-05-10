@@ -14,7 +14,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
     "org.ruikun.modules.comment.mapper",
     "org.ruikun.modules.favorite.mapper",
     "org.ruikun.modules.inventory.mapper",
-    "org.ruikun.modules.payment.mapper"
+    "org.ruikun.modules.payment.mapper",
+    "org.ruikun.infrastructure.mq.consumelog"
 })
 public class EasyMallApplication {
 

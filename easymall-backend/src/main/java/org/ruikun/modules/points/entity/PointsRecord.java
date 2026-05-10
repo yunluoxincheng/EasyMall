@@ -49,6 +49,11 @@ public class PointsRecord {
      */
     private String description;
 
+    /**
+     * 幂等键（仅订单积分使用，格式 order_points:{orderId}）
+     */
+    private String idempotencyKey;
+
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
 }

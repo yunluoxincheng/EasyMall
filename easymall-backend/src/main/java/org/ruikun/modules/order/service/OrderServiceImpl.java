@@ -26,6 +26,12 @@ import org.ruikun.modules.order.vo.OrderVO;
 import org.ruikun.modules.payment.entity.PaymentOrder;
 import org.ruikun.modules.payment.service.IPaymentService;
 import org.ruikun.modules.payment.vo.PaymentVO;
+import org.ruikun.infrastructure.mq.DomainEvent;
+import org.ruikun.infrastructure.mq.DomainEventPublisher;
+import org.ruikun.infrastructure.mq.MqConstants;
+import org.ruikun.infrastructure.mq.event.OrderCreatedPayload;
+import org.ruikun.infrastructure.mq.event.OrderCompletedPayload;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -49,6 +55,10 @@ public class OrderServiceImpl implements IOrderService {
     private final org.ruikun.modules.coupon.service.ICouponService couponService;
     private final OrderStateMachine stateMachine;
     private final IPaymentService paymentService;
+    private final DomainEventPublisher eventPublisher;
+
+    @Value("${easymall.order.timeout-minutes:30}")
+    private int orderTimeoutMinutes;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -122,6 +132,21 @@ public class OrderServiceImpl implements IOrderService {
         createVO.setOrderNo(order.getOrderNo());
         createVO.setPaymentNo(paymentOrder.getPaymentNo());
 
+        // 发布延迟关单消息（事务提交后）
+        OrderCreatedPayload payload = new OrderCreatedPayload();
+        payload.setOrderId(order.getId());
+        payload.setOrderNo(order.getOrderNo());
+        payload.setUserId(userId);
+        DomainEvent<OrderCreatedPayload> event = DomainEvent.of(
+                MqConstants.ORDER_CREATED_EVENT,
+                MqConstants.AGGREGATE_TYPE_ORDER,
+                order.getId(), payload);
+        long expirationMillis = orderTimeoutMinutes * 60L * 1000L;
+        eventPublisher.publishDelayedAfterCommit(
+                MqConstants.ORDER_EXCHANGE,
+                MqConstants.ORDER_CREATED_ROUTING_KEY,
+                event, expirationMillis);
+
         return createVO;
     }
 
@@ -180,6 +205,43 @@ public class OrderServiceImpl implements IOrderService {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean cancelOrderByTimeout(Long orderId) {
+        // CAS: only transition from PENDING_PAYMENT to CANCELLED
+        int rows = orderMapper.casUpdateStatus(
+                orderId,
+                OrderStatus.PENDING_PAYMENT.getCode(),
+                OrderStatus.CANCELLED.getCode());
+        if (rows == 0) {
+            log.info("Order timeout cancel skipped, order {} is no longer PENDING_PAYMENT", orderId);
+            return false;
+        }
+
+        Order order = orderMapper.selectById(orderId);
+        if (order == null) {
+            log.warn("Order {} not found after CAS cancel", orderId);
+            return false;
+        }
+
+        // Release inventory
+        List<OrderItem> orderItems = orderItemMapper.getOrderItemsByOrderId(orderId);
+        for (OrderItem orderItem : orderItems) {
+            inventoryService.releaseLockedStock(orderItem.getProductId(), orderItem.getQuantity(), orderId);
+        }
+
+        // Return coupon
+        if (order.getUserCouponId() != null) {
+            couponService.returnCoupon(order.getUserId(), order.getUserCouponId(), orderId);
+        }
+
+        // Close active payment order
+        paymentService.closeByOrderId(orderId);
+
+        log.info("Order {} cancelled by timeout successfully", orderId);
+        return true;
+    }
+
+    @Override
     public PaymentVO getPaymentInfo(Long userId, Long orderId) {
         Order order = orderMapper.selectById(orderId);
         if (order == null || !order.getUserId().equals(userId)) {
@@ -199,8 +261,19 @@ public class OrderServiceImpl implements IOrderService {
         stateMachine.transit(order, OrderStatus.COMPLETED);
         orderMapper.updateById(order);
 
-        // 订单完成后增加积分
-        pointsService.addPointsForOrder(userId, orderId, order.getPayAmount().doubleValue());
+        // 异步积分：发布 OrderCompletedEvent，由 MQ 消费者发放积分
+        OrderCompletedPayload payload = new OrderCompletedPayload();
+        payload.setOrderId(orderId);
+        payload.setUserId(userId);
+        payload.setPayAmount(order.getPayAmount().doubleValue());
+        DomainEvent<OrderCompletedPayload> event = DomainEvent.of(
+                MqConstants.ORDER_COMPLETED_EVENT,
+                MqConstants.AGGREGATE_TYPE_ORDER,
+                orderId, payload);
+        eventPublisher.publishAfterCommit(
+                MqConstants.ORDER_EXCHANGE,
+                MqConstants.ORDER_COMPLETED_ROUTING_KEY,
+                event);
     }
 
     private String generateOrderNo() {

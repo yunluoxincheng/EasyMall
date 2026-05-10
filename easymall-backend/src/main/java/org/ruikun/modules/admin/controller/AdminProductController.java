@@ -16,6 +16,10 @@ import org.ruikun.modules.product.mapper.CategoryMapper;
 import org.ruikun.modules.product.mapper.ProductMapper;
 import org.ruikun.modules.product.service.IProductService;
 import org.ruikun.modules.inventory.service.IInventoryService;
+import org.ruikun.infrastructure.mq.DomainEvent;
+import org.ruikun.infrastructure.mq.DomainEventPublisher;
+import org.ruikun.infrastructure.mq.MqConstants;
+import org.ruikun.infrastructure.mq.event.ProductChangedPayload;
 import org.ruikun.modules.admin.vo.AdminProductPageVO;
 import org.ruikun.modules.admin.vo.AdminProductVO;
 import org.ruikun.modules.product.vo.ProductVO;
@@ -44,6 +48,7 @@ public class AdminProductController {
     private final IInventoryService inventoryService;
     private final ProductMapper productMapper;
     private final CategoryMapper categoryMapper;
+    private final DomainEventPublisher eventPublisher;
 
     /**
      * 分页查询商品列表
@@ -131,6 +136,8 @@ public class AdminProductController {
         // 新增商品默认下架
         productDTO.setStatus(0);
         productService.saveProduct(productDTO);
+        // 产品创建事件在 saveProduct 完成后通过返回的 product id 发布
+        // （注意：saveProduct 内部没有返回 productId，所以此处无法获取 ID）
         return Result.success("新增商品成功");
     }
 
@@ -160,6 +167,9 @@ public class AdminProductController {
         update.setStatus(status);
         productMapper.updateById(update);
 
+        String changeType = status == 1 ? "ON_SHELF" : "OFF_SHELF";
+        publishProductChanged(id, changeType);
+
         return Result.success("修改商品状态成功");
     }
 
@@ -179,6 +189,8 @@ public class AdminProductController {
 
         inventoryService.setStock(id, stock, "管理员调整库存");
 
+        publishProductChanged(id, "STOCK_CHANGE");
+
         return Result.success("修改商品库存成功");
     }
 
@@ -189,5 +201,19 @@ public class AdminProductController {
     public Result<?> deleteProduct(@PathVariable Long id) {
         productService.deleteProduct(id);
         return Result.success("删除商品成功");
+    }
+
+    private void publishProductChanged(Long productId, String changeType) {
+        ProductChangedPayload payload = new ProductChangedPayload();
+        payload.setProductId(productId);
+        payload.setChangeType(changeType);
+        DomainEvent<ProductChangedPayload> event = DomainEvent.of(
+                MqConstants.PRODUCT_CHANGED_EVENT,
+                MqConstants.AGGREGATE_TYPE_PRODUCT,
+                productId, payload);
+        eventPublisher.publish(
+                MqConstants.PRODUCT_EXCHANGE,
+                MqConstants.PRODUCT_CHANGED_ROUTING_KEY,
+                event);
     }
 }

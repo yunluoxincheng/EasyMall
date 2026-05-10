@@ -197,12 +197,12 @@ public class PointsServiceImpl implements IPointsService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void addPointsForOrder(Long userId, Long orderId, Double amount) {
-        // 计算积分（每消费1元获得1积分）
         int points = (int) (amount * POINTS_PER_YUAN);
 
         if (points > 0) {
-            addPoints(userId, points, PointsTypeEnum.ORDER.getCode(), orderId,
-                     "订单完成，消费" + amount + "元获得" + points + "积分");
+            addPointsWithIdempotencyKey(userId, points, PointsTypeEnum.ORDER.getCode(), orderId,
+                     "订单完成，消费" + amount + "元获得" + points + "积分",
+                     "order_points:" + orderId);
         }
     }
 
@@ -214,11 +214,38 @@ public class PointsServiceImpl implements IPointsService {
                  "评价商品获得" + COMMENT_POINTS + "积分");
     }
 
-    /**
-     * 计算签到积分
-     */
     public static int calculateSignPoints(int continuousDays) {
         return SIGN_BASE_POINTS + (continuousDays < SIGN_BONUS_POINTS.length ?
                SIGN_BONUS_POINTS[continuousDays] : SIGN_BONUS_POINTS[SIGN_BONUS_POINTS.length - 1]);
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public void addPointsWithIdempotencyKey(Long userId, Integer points, Integer type,
+                                             Long sourceId, String description,
+                                             String idempotencyKey) {
+        User user = userMapper.selectById(userId);
+        if (user == null) {
+            throw new BusinessException(ResponseCode.USER_NOT_FOUND, "用户不存在");
+        }
+        if (points <= 0) {
+            throw new BusinessException(ResponseCode.POINTS_VALUE_INVALID, "积分值必须大于0");
+        }
+
+        Integer beforePoints = user.getPoints();
+        user.setPoints(beforePoints + points);
+        userMapper.updateById(user);
+
+        PointsRecord record = new PointsRecord();
+        record.setUserId(userId);
+        record.setPointsChange(points);
+        record.setBeforePoints(beforePoints);
+        record.setAfterPoints(beforePoints + points);
+        record.setType(type);
+        record.setSourceId(sourceId);
+        record.setDescription(description);
+        record.setIdempotencyKey(idempotencyKey);
+        pointsRecordMapper.insert(record);
+
+        memberService.checkAndUpgradeMember(userId);
     }
 }

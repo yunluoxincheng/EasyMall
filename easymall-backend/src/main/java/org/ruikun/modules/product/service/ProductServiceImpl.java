@@ -15,8 +15,13 @@ import org.ruikun.modules.product.mapper.ProductMapper;
 import org.ruikun.modules.inventory.service.IInventoryService;
 import org.ruikun.modules.product.service.IProductService;
 import org.ruikun.modules.product.vo.ProductVO;
+import org.ruikun.infrastructure.mq.DomainEvent;
+import org.ruikun.infrastructure.mq.DomainEventPublisher;
+import org.ruikun.infrastructure.mq.MqConstants;
+import org.ruikun.infrastructure.mq.event.ProductChangedPayload;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.util.Arrays;
@@ -30,6 +35,7 @@ public class ProductServiceImpl implements IProductService {
     private final ProductMapper productMapper;
     private final CategoryMapper categoryMapper;
     private final IInventoryService inventoryService;
+    private final DomainEventPublisher eventPublisher;
 
     @Override
     public PageResult<ProductVO> getProductPage(PageRequest pageRequest) {
@@ -57,6 +63,7 @@ public class ProductServiceImpl implements IProductService {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void saveProduct(ProductDTO productDTO) {
         Product product = new Product();
         BeanUtils.copyProperties(productDTO, product);
@@ -67,9 +74,12 @@ public class ProductServiceImpl implements IProductService {
         }
 
         inventoryService.initializeInventory(product.getId(), product.getStock());
+
+        publishProductChangedEvent(product.getId(), "CREATE");
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void updateProduct(Long id, ProductDTO productDTO) {
         Product product = productMapper.selectById(id);
         if (product == null) {
@@ -80,9 +90,12 @@ public class ProductServiceImpl implements IProductService {
         if (productMapper.updateById(product) <= 0) {
             throw new BusinessException(ResponseCode.PRODUCT_UPDATE_FAILED, "商品更新失败");
         }
+
+        publishProductChangedEvent(id, "UPDATE");
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void deleteProduct(Long id) {
         Product product = productMapper.selectById(id);
         if (product == null) {
@@ -90,6 +103,8 @@ public class ProductServiceImpl implements IProductService {
         }
 
         productMapper.deleteById(id);
+
+        publishProductChangedEvent(id, "DELETE");
     }
 
     @Override
@@ -152,5 +167,19 @@ public class ProductServiceImpl implements IProductService {
         }
 
         return productVO;
+    }
+
+    private void publishProductChangedEvent(Long productId, String changeType) {
+        ProductChangedPayload payload = new ProductChangedPayload();
+        payload.setProductId(productId);
+        payload.setChangeType(changeType);
+        DomainEvent<ProductChangedPayload> event = DomainEvent.of(
+                MqConstants.PRODUCT_CHANGED_EVENT,
+                MqConstants.AGGREGATE_TYPE_PRODUCT,
+                productId, payload);
+        eventPublisher.publishAfterCommit(
+                MqConstants.PRODUCT_EXCHANGE,
+                MqConstants.PRODUCT_CHANGED_ROUTING_KEY,
+                event);
     }
 }
