@@ -51,6 +51,7 @@ easymall-web/pnpm-debug.log*
 openspec/
 
 .agents/
+.codex/
 
 ### Misc ###
 nul
