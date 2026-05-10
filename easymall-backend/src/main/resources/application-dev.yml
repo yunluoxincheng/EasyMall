@@ -36,3 +36,7 @@ file:
   upload:
     base-path: /data/easymall/uploads
     base-url: http://localhost:8080/uploads
+
+payment:
+  mock:
+    signature: easymall-mock-signature-2024

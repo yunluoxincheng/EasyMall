@@ -35,12 +35,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                   FilterChain filterChain) throws ServletException, IOException {
 
         String requestURI = request.getRequestURI();
+        String method = request.getMethod();
 
         // 跳过不需要验证的路径
-if (requestURI.startsWith("/api/user/login") ||
-            requestURI.startsWith("/api/user/register") ||
-            requestURI.startsWith("/api/product/") ||
-            requestURI.startsWith("/api/category/")) {
+        if (requestURI.startsWith("/api/user/login") ||
+                requestURI.startsWith("/api/user/register") ||
+                requestURI.startsWith("/api/product/") ||
+                requestURI.startsWith("/api/category/") ||
+                ("POST".equals(method) && "/api/payment/callback".equals(requestURI))) {
             filterChain.doFilter(request, response);
             return;
         }

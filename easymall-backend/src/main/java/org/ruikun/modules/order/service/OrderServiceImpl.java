@@ -4,6 +4,7 @@ import cn.hutool.core.util.IdUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.ruikun.common.PageRequest;
 import org.ruikun.common.PageResult;
 import org.ruikun.common.ResponseCode;
@@ -19,8 +20,12 @@ import org.ruikun.modules.order.mapper.OrderMapper;
 import org.ruikun.modules.product.mapper.ProductMapper;
 import org.ruikun.modules.inventory.service.IInventoryService;
 import org.ruikun.modules.order.service.IOrderService;
+import org.ruikun.modules.order.vo.OrderCreateVO;
 import org.ruikun.modules.order.vo.OrderItemVO;
 import org.ruikun.modules.order.vo.OrderVO;
+import org.ruikun.modules.payment.entity.PaymentOrder;
+import org.ruikun.modules.payment.service.IPaymentService;
+import org.ruikun.modules.payment.vo.PaymentVO;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,6 +34,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class OrderServiceImpl implements IOrderService {
@@ -42,10 +48,11 @@ public class OrderServiceImpl implements IOrderService {
     private final org.ruikun.modules.user.service.IPriceService priceService;
     private final org.ruikun.modules.coupon.service.ICouponService couponService;
     private final OrderStateMachine stateMachine;
+    private final IPaymentService paymentService;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public String createOrder(Long userId, OrderCreateDTO orderCreateDTO) {
+    public OrderCreateVO createOrder(Long userId, OrderCreateDTO orderCreateDTO) {
         List<Cart> cartItems = cartMapper.selectList(
                 new LambdaQueryWrapper<Cart>()
                         .eq(Cart::getUserId, userId)
@@ -108,7 +115,14 @@ public class OrderServiceImpl implements IOrderService {
 
         cartMapper.deleteBatchIds(orderCreateDTO.getCartIds());
 
-        return order.getOrderNo();
+        // 创建支付单
+        PaymentOrder paymentOrder = paymentService.createPayment(order.getId(), order.getOrderNo(), userId, payAmount);
+
+        OrderCreateVO createVO = new OrderCreateVO();
+        createVO.setOrderNo(order.getOrderNo());
+        createVO.setPaymentNo(paymentOrder.getPaymentNo());
+
+        return createVO;
     }
 
     @Override
@@ -146,6 +160,9 @@ public class OrderServiceImpl implements IOrderService {
 
         stateMachine.transit(order, OrderStatus.CANCELLED);
         cancelOrderInternal(order);
+
+        // 同一事务内关闭关联的活跃支付单，保证强一致
+        paymentService.closeByOrderId(orderId);
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -163,22 +180,12 @@ public class OrderServiceImpl implements IOrderService {
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
-    public void payOrder(Long userId, Long orderId, String paymentMethod) {
+    public PaymentVO getPaymentInfo(Long userId, Long orderId) {
         Order order = orderMapper.selectById(orderId);
         if (order == null || !order.getUserId().equals(userId)) {
             throw new BusinessException(ResponseCode.ORDER_NOT_FOUND, "订单不存在");
         }
-
-        stateMachine.transit(order, OrderStatus.PAID);
-        order.setPaymentMethod(paymentMethod);
-        order.setPayTime(LocalDateTime.now());
-        orderMapper.updateById(order);
-
-        List<OrderItem> orderItems = orderItemMapper.getOrderItemsByOrderId(order.getId());
-        for (OrderItem orderItem : orderItems) {
-            inventoryService.confirmSoldStock(orderItem.getProductId(), orderItem.getQuantity(), order.getId());
-        }
+        return paymentService.getByOrderId(orderId, userId);
     }
 
     @Override

@@ -109,6 +109,12 @@ public enum ResponseCode {
     // ========== 状态机相关 ==========
     ORDER_STATUS_TRANSITION_INVALID(400, "ORDER_STATUS_TRANSITION_INVALID", "订单状态流转不合法"),
 
+    // ========== 支付相关 ==========
+    PAYMENT_NOT_FOUND(404, "PAYMENT_NOT_FOUND", "支付单不存在"),
+    PAYMENT_ALREADY_PAID(400, "PAYMENT_ALREADY_PAID", "支付单已支付"),
+    PAYMENT_STATUS_INVALID(400, "PAYMENT_STATUS_INVALID", "支付状态不允许此操作"),
+    PAYMENT_AMOUNT_MISMATCH(400, "PAYMENT_AMOUNT_MISMATCH", "支付金额不一致"),
+
     // ========== 管理操作相关 ==========
     OPERATION_FAILED(500, "OPERATION_FAILED", "操作失败"),
     CATEGORY_CREATE_FAILED(500, "CATEGORY_CREATE_FAILED", "分类创建失败"),

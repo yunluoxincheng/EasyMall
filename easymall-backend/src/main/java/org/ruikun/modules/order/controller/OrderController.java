@@ -8,7 +8,9 @@ import org.ruikun.common.Result;
 import org.ruikun.modules.order.dto.OrderCreateDTO;
 import org.ruikun.modules.order.service.IOrderService;
 import org.ruikun.infrastructure.security.JwtUtil;
+import org.ruikun.modules.order.vo.OrderCreateVO;
 import org.ruikun.modules.order.vo.OrderVO;
+import org.ruikun.modules.payment.vo.PaymentVO;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -23,11 +25,11 @@ public class OrderController {
     private final JwtUtil jwtUtil;
 
     @PostMapping("/create")
-    public Result<String> createOrder(@RequestBody @Validated OrderCreateDTO orderCreateDTO,
-                                      HttpServletRequest request) {
+    public Result<OrderCreateVO> createOrder(@RequestBody @Validated OrderCreateDTO orderCreateDTO,
+                                              HttpServletRequest request) {
         Long userId = getUserIdFromToken(request);
-        String orderNo = orderService.createOrder(userId, orderCreateDTO);
-        return Result.success(orderNo);
+        OrderCreateVO createVO = orderService.createOrder(userId, orderCreateDTO);
+        return Result.success(createVO);
     }
 
     @GetMapping("/page")
@@ -54,13 +56,12 @@ public class OrderController {
         return Result.success("订单已取消");
     }
 
-    @PutMapping("/{orderId}/pay")
-    public Result<?> payOrder(@PathVariable Long orderId,
-                              @RequestParam String paymentMethod,
-                              HttpServletRequest request) {
+    @GetMapping("/{orderId}/payment")
+    public Result<PaymentVO> getPaymentInfo(@PathVariable Long orderId,
+                                             HttpServletRequest request) {
         Long userId = getUserIdFromToken(request);
-        orderService.payOrder(userId, orderId, paymentMethod);
-        return Result.success("支付成功");
+        PaymentVO paymentVO = orderService.getPaymentInfo(userId, orderId);
+        return Result.success(paymentVO);
     }
 
     @PutMapping("/{orderId}/confirm")

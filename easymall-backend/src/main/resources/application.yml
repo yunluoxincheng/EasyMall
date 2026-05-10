@@ -17,7 +17,7 @@ server:
 
 mybatis-plus:
   mapper-locations: classpath:mapper/*.xml
-  type-aliases-package: org.ruikun.modules.user.entity,org.ruikun.modules.product.entity,org.ruikun.modules.order.entity,org.ruikun.modules.coupon.entity,org.ruikun.modules.points.entity,org.ruikun.modules.comment.entity,org.ruikun.modules.favorite.entity,org.ruikun.modules.inventory.entity
+  type-aliases-package: org.ruikun.modules.user.entity,org.ruikun.modules.product.entity,org.ruikun.modules.order.entity,org.ruikun.modules.coupon.entity,org.ruikun.modules.points.entity,org.ruikun.modules.comment.entity,org.ruikun.modules.favorite.entity,org.ruikun.modules.inventory.entity,org.ruikun.modules.payment.entity
   configuration:
     map-underscore-to-camel-case: true
   global-config:

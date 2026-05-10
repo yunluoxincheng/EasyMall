@@ -26,3 +26,7 @@ file:
   upload:
     base-path: ${FILE_UPLOAD_BASE_PATH}
     base-url: ${FILE_UPLOAD_BASE_URL}
+
+payment:
+  mock:
+    signature: ${PAYMENT_MOCK_SIGNATURE}
