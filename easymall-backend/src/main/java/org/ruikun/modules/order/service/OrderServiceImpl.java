@@ -81,19 +81,9 @@ public class OrderServiceImpl implements IOrderService {
         // 先应用会员折扣
         BigDecimal payAmount = priceService.applyMemberDiscountToOrder(userId, totalAmount);
 
-        // 再应用优惠券优惠（优惠券在会员折扣后的金额基础上计算）
+        // 优惠券在订单持久化后锁定，便于记录订单ID和订单号
         BigDecimal couponDiscount = BigDecimal.ZERO;
         Long userCouponId = orderCreateDTO.getUserCouponId();
-
-        if (userCouponId != null) {
-            // 使用优惠券
-            couponDiscount = couponService.useCoupon(userId, userCouponId, null, null, payAmount);
-            payAmount = payAmount.subtract(couponDiscount);
-            // 确保支付金额不为负
-            if (payAmount.compareTo(BigDecimal.ZERO) < 0) {
-                payAmount = BigDecimal.ZERO;
-            }
-        }
 
         Order order = new Order();
         order.setOrderNo(generateOrderNo());
@@ -108,6 +98,17 @@ public class OrderServiceImpl implements IOrderService {
         order.setReceiverAddress(orderCreateDTO.getReceiverAddress());
         order.setRemark(orderCreateDTO.getRemark());
         orderMapper.insert(order);
+
+        if (userCouponId != null) {
+            couponDiscount = couponService.lockCoupon(userId, userCouponId, order.getId(), order.getOrderNo(), payAmount);
+            payAmount = payAmount.subtract(couponDiscount);
+            if (payAmount.compareTo(BigDecimal.ZERO) < 0) {
+                payAmount = BigDecimal.ZERO;
+            }
+            order.setPayAmount(payAmount);
+            order.setCouponDiscount(couponDiscount);
+            orderMapper.updateById(order);
+        }
 
         for (Cart cartItem : cartItems) {
             OrderItem orderItem = new OrderItem();
@@ -195,7 +196,7 @@ public class OrderServiceImpl implements IOrderService {
         orderMapper.updateById(order);
 
         if (order.getUserCouponId() != null) {
-            couponService.returnCoupon(order.getUserId(), order.getUserCouponId(), order.getId());
+            couponService.returnLockedCoupon(order.getUserId(), order.getUserCouponId(), order.getId());
         }
 
         List<OrderItem> orderItems = orderItemMapper.getOrderItemsByOrderId(order.getId());
@@ -231,7 +232,7 @@ public class OrderServiceImpl implements IOrderService {
 
         // Return coupon
         if (order.getUserCouponId() != null) {
-            couponService.returnCoupon(order.getUserId(), order.getUserCouponId(), orderId);
+            couponService.returnLockedCoupon(order.getUserId(), order.getUserCouponId(), orderId);
         }
 
         // Close active payment order

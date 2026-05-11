@@ -11,6 +11,7 @@ import org.ruikun.enums.PaymentChannel;
 import org.ruikun.enums.PaymentStatus;
 import org.ruikun.exception.BusinessException;
 import org.ruikun.modules.inventory.service.IInventoryService;
+import org.ruikun.modules.coupon.service.ICouponService;
 import org.ruikun.modules.order.entity.Order;
 import org.ruikun.modules.order.entity.OrderItem;
 import org.ruikun.modules.order.mapper.OrderItemMapper;
@@ -41,6 +42,7 @@ public class PaymentServiceImpl implements IPaymentService {
     private final OrderItemMapper orderItemMapper;
     private final OrderStateMachine orderStateMachine;
     private final IInventoryService inventoryService;
+    private final ICouponService couponService;
 
     @Autowired
     @Lazy
@@ -51,13 +53,15 @@ public class PaymentServiceImpl implements IPaymentService {
                               OrderMapper orderMapper,
                               OrderItemMapper orderItemMapper,
                               OrderStateMachine orderStateMachine,
-                              IInventoryService inventoryService) {
+                              IInventoryService inventoryService,
+                              ICouponService couponService) {
         this.paymentOrderMapper = paymentOrderMapper;
         this.paymentCallbackLogService = paymentCallbackLogService;
         this.orderMapper = orderMapper;
         this.orderItemMapper = orderItemMapper;
         this.orderStateMachine = orderStateMachine;
         this.inventoryService = inventoryService;
+        this.couponService = couponService;
     }
 
     @Override
@@ -269,6 +273,10 @@ public class PaymentServiceImpl implements IPaymentService {
             List<OrderItem> orderItems = orderItemMapper.getOrderItemsByOrderId(order.getId());
             for (OrderItem orderItem : orderItems) {
                 inventoryService.confirmSoldStock(orderItem.getProductId(), orderItem.getQuantity(), order.getId());
+            }
+
+            if (order.getUserCouponId() != null) {
+                couponService.confirmCouponUsed(order.getUserId(), order.getUserCouponId(), order.getId());
             }
         }
 

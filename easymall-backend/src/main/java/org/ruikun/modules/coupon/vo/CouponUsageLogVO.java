@@ -67,7 +67,7 @@ public class CouponUsageLogVO {
     private BigDecimal discountAmount;
 
     /**
-     * 操作类型 1-使用 2-返还
+     * 操作类型 1-确认使用 2-返还 3-锁定 4-过期 5-失效
      */
     private Integer action;
 

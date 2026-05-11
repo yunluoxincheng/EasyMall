@@ -10,6 +10,7 @@ import org.ruikun.modules.coupon.entity.CouponTemplate;
 import org.ruikun.modules.coupon.entity.CouponUsageLog;
 import org.ruikun.modules.coupon.entity.UserCoupon;
 import org.ruikun.enums.CouponType;
+import org.ruikun.enums.CouponUsageAction;
 import org.ruikun.exception.BusinessException;
 import org.ruikun.modules.coupon.mapper.CouponTemplateMapper;
 import org.ruikun.modules.coupon.mapper.CouponUsageLogMapper;
@@ -222,7 +223,7 @@ public class CouponAdminServiceImpl implements ICouponAdminService {
             // 获取核销金额
             List<CouponUsageLog> logs = couponUsageLogMapper.selectList(new LambdaQueryWrapper<CouponUsageLog>()
                     .eq(CouponUsageLog::getTemplateId, templateId)
-                    .eq(CouponUsageLog::getAction, 1)); // 1-使用
+                    .eq(CouponUsageLog::getAction, CouponUsageAction.CONFIRM_USED.getCode()));
             double totalDiscount = logs.stream()
                     .map(log -> log.getDiscountAmount() != null ? log.getDiscountAmount().doubleValue() : 0.0)
                     .mapToDouble(Double::doubleValue)
@@ -292,7 +293,8 @@ public class CouponAdminServiceImpl implements ICouponAdminService {
 
         CouponType type = CouponType.getByCode(log.getCouponType());
         vo.setCouponTypeDesc(type != null ? type.getDesc() : "");
-        vo.setActionDesc(log.getAction() == 1 ? "使用" : "返还");
+        CouponUsageAction action = CouponUsageAction.getByCode(log.getAction());
+        vo.setActionDesc(action != null ? action.getDesc() : "未知");
 
         return vo;
     }

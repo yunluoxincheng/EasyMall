@@ -2,9 +2,11 @@ package org.ruikun.modules.coupon.service;
 
 import cn.hutool.core.util.IdUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
 import org.ruikun.common.ResponseCode;
+import org.ruikun.enums.CouponUsageAction;
 import org.ruikun.modules.coupon.dto.CouponCalculateDTO;
 import org.ruikun.modules.coupon.entity.CouponTemplate;
 import org.ruikun.modules.coupon.entity.CouponUsageLog;
@@ -276,94 +278,121 @@ public class CouponServiceImpl implements ICouponService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public BigDecimal useCoupon(Long userId, Long userCouponId, Long orderId, String orderNo, BigDecimal orderAmount) {
+    public BigDecimal lockCoupon(Long userId, Long userCouponId, Long orderId, String orderNo, BigDecimal orderAmount) {
         UserCoupon userCoupon = userCouponMapper.selectById(userCouponId);
-        if (userCoupon == null || !userCoupon.getUserId().equals(userId)) {
-            throw new BusinessException(ResponseCode.COUPON_NOT_FOUND);
-        }
-
-        // 检查状态
-        if (!CouponStatus.UNUSED.getCode().equals(userCoupon.getStatus())) {
-            throw new BusinessException(ResponseCode.COUPON_ALREADY_USED);
-        }
+        validateCouponForLock(userId, userCoupon, orderAmount);
 
         // 计算优惠金额
         BigDecimal discountAmount = calculateDiscountAmount(userCoupon, orderAmount);
 
-        // 更新优惠券状态
-        userCoupon.setStatus(CouponStatus.USED.getCode());
-        userCoupon.setUseTime(LocalDateTime.now());
-        userCoupon.setOrderId(orderId);
-        userCoupon.setOrderNo(orderNo);
-        userCouponMapper.updateById(userCoupon);
-
-        // 更新模板使用数量
-        CouponTemplate template = couponTemplateMapper.selectById(userCoupon.getTemplateId());
-        if (template != null) {
-            template.setUsedCount(template.getUsedCount() + 1);
-            couponTemplateMapper.updateById(template);
+        // UNUSED -> LOCKED，按当前状态做 CAS，避免同一张券被并发订单重复锁定
+        int rows = userCouponMapper.update(null,
+                new LambdaUpdateWrapper<UserCoupon>()
+                        .eq(UserCoupon::getId, userCouponId)
+                        .eq(UserCoupon::getUserId, userId)
+                        .eq(UserCoupon::getStatus, CouponStatus.UNUSED.getCode())
+                        .set(UserCoupon::getStatus, CouponStatus.LOCKED.getCode())
+                        .set(UserCoupon::getOrderId, orderId)
+                        .set(UserCoupon::getOrderNo, orderNo)
+                        .set(UserCoupon::getUseTime, null)
+        );
+        if (rows == 0) {
+            throw new BusinessException(ResponseCode.COUPON_ALREADY_USED, "优惠券已被使用或锁定");
         }
 
-        // 记录使用日志
-        CouponUsageLog log = new CouponUsageLog();
-        log.setUserId(userId);
-        log.setUserCouponId(userCouponId);
-        log.setTemplateId(userCoupon.getTemplateId());
-        log.setCouponName(userCoupon.getCouponName());
-        log.setCouponType(userCoupon.getType());
-        log.setOrderId(orderId);
-        log.setOrderNo(orderNo);
-        log.setOrderAmount(orderAmount);
-        log.setDiscountAmount(discountAmount);
-        log.setAction(1); // 1-使用
-        couponUsageLogMapper.insert(log);
+        insertUsageLog(userCoupon, userId, orderId, orderNo, orderAmount, discountAmount, CouponUsageAction.LOCK);
 
         return discountAmount;
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void returnCoupon(Long userId, Long userCouponId, Long orderId) {
+    public void confirmCouponUsed(Long userId, Long userCouponId, Long orderId) {
         UserCoupon userCoupon = userCouponMapper.selectById(userCouponId);
         if (userCoupon == null || !userCoupon.getUserId().equals(userId)) {
             throw new BusinessException(ResponseCode.COUPON_NOT_FOUND);
         }
 
-        // 检查订单是否匹配
-        if (!orderId.equals(userCoupon.getOrderId())) {
-            throw new BusinessException(ResponseCode.COUPON_CANNOT_RETURN, "优惠券与订单不匹配");
+        int rows = userCouponMapper.update(null,
+                new LambdaUpdateWrapper<UserCoupon>()
+                        .eq(UserCoupon::getId, userCouponId)
+                        .eq(UserCoupon::getUserId, userId)
+                        .eq(UserCoupon::getOrderId, orderId)
+                        .eq(UserCoupon::getStatus, CouponStatus.LOCKED.getCode())
+                        .set(UserCoupon::getStatus, CouponStatus.USED.getCode())
+                        .set(UserCoupon::getUseTime, LocalDateTime.now())
+        );
+        if (rows == 0) {
+            UserCoupon fresh = userCouponMapper.selectById(userCouponId);
+            if (fresh != null
+                    && userId.equals(fresh.getUserId())
+                    && orderId.equals(fresh.getOrderId())
+                    && CouponStatus.USED.getCode().equals(fresh.getStatus())) {
+                return;
+            }
+            throw new BusinessException(ResponseCode.COUPON_ALREADY_USED, "优惠券未处于锁定状态，无法确认使用");
         }
 
-        // 检查状态
-        if (!CouponStatus.USED.getCode().equals(userCoupon.getStatus())) {
-            throw new BusinessException(ResponseCode.COUPON_CANNOT_RETURN, "优惠券状态不正确");
+        couponTemplateMapper.update(null,
+                new LambdaUpdateWrapper<CouponTemplate>()
+                        .eq(CouponTemplate::getId, userCoupon.getTemplateId())
+                        .setSql("used_count = used_count + 1")
+        );
+
+        CouponUsageLog lockLog = findLockLog(userCouponId, orderId);
+        insertUsageLog(userCoupon, userId, orderId, userCoupon.getOrderNo(),
+                lockLog != null ? lockLog.getOrderAmount() : null,
+                lockLog != null ? lockLog.getDiscountAmount() : null,
+                CouponUsageAction.CONFIRM_USED);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void returnLockedCoupon(Long userId, Long userCouponId, Long orderId) {
+        UserCoupon userCoupon = userCouponMapper.selectById(userCouponId);
+        if (userCoupon == null || !userCoupon.getUserId().equals(userId)) {
+            throw new BusinessException(ResponseCode.COUPON_NOT_FOUND);
         }
 
-        // 恢复优惠券状态
-        userCoupon.setStatus(CouponStatus.UNUSED.getCode());
-        userCoupon.setUseTime(null);
-        userCoupon.setOrderId(null);
-        userCoupon.setOrderNo(null);
-        userCouponMapper.updateById(userCoupon);
-
-        // 更新模板使用数量
-        CouponTemplate template = couponTemplateMapper.selectById(userCoupon.getTemplateId());
-        if (template != null && template.getUsedCount() > 0) {
-            template.setUsedCount(template.getUsedCount() - 1);
-            couponTemplateMapper.updateById(template);
+        if (!orderId.equals(userCoupon.getOrderId()) || !CouponStatus.LOCKED.getCode().equals(userCoupon.getStatus())) {
+            return;
         }
 
-        // 记录返还日志
-        CouponUsageLog log = new CouponUsageLog();
-        log.setUserId(userId);
-        log.setUserCouponId(userCouponId);
-        log.setTemplateId(userCoupon.getTemplateId());
-        log.setCouponName(userCoupon.getCouponName());
-        log.setCouponType(userCoupon.getType());
-        log.setOrderId(orderId);
-        log.setOrderNo(userCoupon.getOrderNo());
-        log.setAction(2); // 2-返还
-        couponUsageLogMapper.insert(log);
+        LocalDateTime now = LocalDateTime.now();
+        boolean expired = userCoupon.getEndTime() != null && now.isAfter(userCoupon.getEndTime());
+        CouponStatus targetStatus = expired ? CouponStatus.EXPIRED : CouponStatus.UNUSED;
+
+        int rows = userCouponMapper.update(null,
+                new LambdaUpdateWrapper<UserCoupon>()
+                        .eq(UserCoupon::getId, userCouponId)
+                        .eq(UserCoupon::getUserId, userId)
+                        .eq(UserCoupon::getOrderId, orderId)
+                        .eq(UserCoupon::getStatus, CouponStatus.LOCKED.getCode())
+                        .set(UserCoupon::getStatus, targetStatus.getCode())
+                        .set(UserCoupon::getUseTime, null)
+                        .set(UserCoupon::getOrderId, null)
+                        .set(UserCoupon::getOrderNo, null)
+        );
+        if (rows == 0) {
+            return;
+        }
+
+        insertUsageLog(userCoupon, userId, orderId, userCoupon.getOrderNo(),
+                null, null, expired ? CouponUsageAction.EXPIRE : CouponUsageAction.RETURN);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    @Deprecated
+    public BigDecimal useCoupon(Long userId, Long userCouponId, Long orderId, String orderNo, BigDecimal orderAmount) {
+        return lockCoupon(userId, userCouponId, orderId, orderNo, orderAmount);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    @Deprecated
+    public void returnCoupon(Long userId, Long userCouponId, Long orderId) {
+        returnLockedCoupon(userId, userCouponId, orderId);
     }
 
     @Override
@@ -426,7 +455,61 @@ public class CouponServiceImpl implements ICouponService {
         for (UserCoupon coupon : expiredCoupons) {
             coupon.setStatus(CouponStatus.EXPIRED.getCode());
             userCouponMapper.updateById(coupon);
+            insertUsageLog(coupon, coupon.getUserId(), coupon.getOrderId(), coupon.getOrderNo(),
+                    null, null, CouponUsageAction.EXPIRE);
         }
+    }
+
+    private void validateCouponForLock(Long userId, UserCoupon userCoupon, BigDecimal orderAmount) {
+        if (userCoupon == null || !userCoupon.getUserId().equals(userId)) {
+            throw new BusinessException(ResponseCode.COUPON_NOT_FOUND);
+        }
+        if (!CouponStatus.UNUSED.getCode().equals(userCoupon.getStatus())) {
+            throw new BusinessException(ResponseCode.COUPON_ALREADY_USED, "优惠券不可用");
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        if (userCoupon.getEndTime() != null && now.isAfter(userCoupon.getEndTime())) {
+            throw new BusinessException(ResponseCode.COUPON_EXPIRED);
+        }
+        if (userCoupon.getStartTime() != null && now.isBefore(userCoupon.getStartTime())) {
+            throw new BusinessException(ResponseCode.COUPON_EXPIRED, "优惠券尚未生效");
+        }
+        if (userCoupon.getMinAmount() != null && orderAmount.compareTo(userCoupon.getMinAmount()) < 0) {
+            throw new BusinessException(ResponseCode.COUPON_AMOUNT_THRESHOLD_NOT_MET);
+        }
+
+        User user = userMapper.selectById(userId);
+        Integer memberLevel = user != null ? user.getLevel() : 1;
+        if (userCoupon.getMemberLevel() != null && userCoupon.getMemberLevel() > 0
+                && memberLevel < userCoupon.getMemberLevel()) {
+            throw new BusinessException(ResponseCode.COUPON_MEMBER_LEVEL_NOT_MET);
+        }
+    }
+
+    private void insertUsageLog(UserCoupon coupon, Long userId, Long orderId, String orderNo,
+                                BigDecimal orderAmount, BigDecimal discountAmount, CouponUsageAction action) {
+        CouponUsageLog log = new CouponUsageLog();
+        log.setUserId(userId);
+        log.setUserCouponId(coupon.getId());
+        log.setTemplateId(coupon.getTemplateId());
+        log.setCouponName(coupon.getCouponName());
+        log.setCouponType(coupon.getType());
+        log.setOrderId(orderId);
+        log.setOrderNo(orderNo);
+        log.setOrderAmount(orderAmount);
+        log.setDiscountAmount(discountAmount);
+        log.setAction(action.getCode());
+        couponUsageLogMapper.insert(log);
+    }
+
+    private CouponUsageLog findLockLog(Long userCouponId, Long orderId) {
+        return couponUsageLogMapper.selectOne(new LambdaQueryWrapper<CouponUsageLog>()
+                .eq(CouponUsageLog::getUserCouponId, userCouponId)
+                .eq(CouponUsageLog::getOrderId, orderId)
+                .eq(CouponUsageLog::getAction, CouponUsageAction.LOCK.getCode())
+                .orderByDesc(CouponUsageLog::getCreateTime)
+                .last("LIMIT 1"));
     }
 
     /**

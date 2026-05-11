@@ -20,6 +20,7 @@ import org.ruikun.common.ResponseCode;
 import org.ruikun.enums.OrderStatus;
 import org.ruikun.enums.PaymentStatus;
 import org.ruikun.exception.BusinessException;
+import org.ruikun.modules.coupon.service.ICouponService;
 import org.ruikun.modules.inventory.service.IInventoryService;
 import org.ruikun.modules.order.entity.Order;
 import org.ruikun.modules.order.entity.OrderItem;
@@ -76,6 +77,9 @@ class PaymentServiceImplTest {
 
     @Mock
     private IInventoryService inventoryService;
+
+    @Mock
+    private ICouponService couponService;
 
     @InjectMocks
     private PaymentServiceImpl paymentService;
@@ -272,6 +276,7 @@ class PaymentServiceImplTest {
             verify(paymentOrderMapper, never()).update(isNull(), any(LambdaUpdateWrapper.class));
             verify(orderStateMachine, never()).transit(any(), any());
             verify(inventoryService, never()).confirmSoldStock(anyLong(), anyInt(), anyLong());
+            verify(couponService, never()).confirmCouponUsed(anyLong(), anyLong(), anyLong());
             verify(paymentCallbackLogService).updateResult(1L, "IDEMPOTENT_SUCCESS");
         }
 
@@ -336,6 +341,28 @@ class PaymentServiceImplTest {
 
             verify(orderMapper).casUpdateStatus(10L, OrderStatus.PENDING_PAYMENT.getCode(), OrderStatus.PAID.getCode());
             verify(inventoryService).confirmSoldStock(5L, 2, 10L);
+            verify(couponService, never()).confirmCouponUsed(anyLong(), anyLong(), anyLong());
+            verify(paymentCallbackLogService).updateResult(1L, "SUCCESS");
+        }
+
+        @Test
+        @DisplayName("回调成功后确认锁定优惠券")
+        void normalCallbackConfirmsCoupon() {
+            PaymentOrder po = createPaymentOrder(1L, "PAY123", 10L, "ORD123", 100L, new BigDecimal("189.00"), PaymentStatus.PAYING.getCode());
+            when(paymentOrderMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(po);
+            when(paymentCallbackLogService.saveLog(anyString(), anyString(), anyString(), eq("RECEIVED"))).thenReturn(1L);
+            when(paymentOrderMapper.update(isNull(), any(LambdaUpdateWrapper.class))).thenReturn(1);
+
+            Order order = createOrder(10L, "ORD123", 100L, OrderStatus.PENDING_PAYMENT.getCode(), new BigDecimal("189.00"));
+            order.setUserCouponId(3001L);
+            when(orderMapper.selectById(10L)).thenReturn(order);
+            when(orderMapper.casUpdateStatus(10L, OrderStatus.PENDING_PAYMENT.getCode(), OrderStatus.PAID.getCode())).thenReturn(1);
+            when(orderMapper.updateById(any(Order.class))).thenReturn(1);
+            when(orderItemMapper.getOrderItemsByOrderId(10L)).thenReturn(Collections.emptyList());
+
+            paymentService.processCallback("PAY123", new BigDecimal("189.00"), "MOCK");
+
+            verify(couponService).confirmCouponUsed(100L, 3001L, 10L);
             verify(paymentCallbackLogService).updateResult(1L, "SUCCESS");
         }
 
@@ -357,6 +384,7 @@ class PaymentServiceImplTest {
 
             verify(orderStateMachine, never()).transit(any(), any());
             verify(inventoryService, never()).confirmSoldStock(anyLong(), anyInt(), anyLong());
+            verify(couponService, never()).confirmCouponUsed(anyLong(), anyLong(), anyLong());
             verify(paymentCallbackLogService).updateResult(1L, "IDEMPOTENT_SUCCESS");
         }
 

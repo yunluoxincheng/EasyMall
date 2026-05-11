@@ -61,7 +61,7 @@ public interface ICouponService {
     CouponCalculateResultVO calculateDiscount(Long userId, CouponCalculateDTO dto);
 
     /**
-     * 使用优惠券
+     * 锁定优惠券（订单创建）
      *
      * @param userId       用户ID
      * @param userCouponId 用户优惠券ID
@@ -70,15 +70,47 @@ public interface ICouponService {
      * @param orderAmount  订单金额
      * @return 优惠金额
      */
-    BigDecimal useCoupon(Long userId, Long userCouponId, Long orderId, String orderNo, BigDecimal orderAmount);
+    BigDecimal lockCoupon(Long userId, Long userCouponId, Long orderId, String orderNo, BigDecimal orderAmount);
 
     /**
-     * 返还优惠券（订单取消）
+     * 确认优惠券已使用（支付成功）
      *
      * @param userId       用户ID
      * @param userCouponId 用户优惠券ID
      * @param orderId      订单ID
      */
+    void confirmCouponUsed(Long userId, Long userCouponId, Long orderId);
+
+    /**
+     * 返还锁定优惠券（待支付订单取消）
+     *
+     * @param userId       用户ID
+     * @param userCouponId 用户优惠券ID
+     * @param orderId      订单ID
+     */
+    void returnLockedCoupon(Long userId, Long userCouponId, Long orderId);
+
+    /**
+     * 使用优惠券（兼容旧调用，实际执行锁定）
+     *
+     * @param userId       用户ID
+     * @param userCouponId 用户优惠券ID
+     * @param orderId      订单ID
+     * @param orderNo      订单号
+     * @param orderAmount  订单金额
+     * @return 优惠金额
+     */
+    @Deprecated
+    BigDecimal useCoupon(Long userId, Long userCouponId, Long orderId, String orderNo, BigDecimal orderAmount);
+
+    /**
+     * 返还优惠券（兼容旧调用，实际只返还锁定中的优惠券）
+     *
+     * @param userId       用户ID
+     * @param userCouponId 用户优惠券ID
+     * @param orderId      订单ID
+     */
+    @Deprecated
     void returnCoupon(Long userId, Long userCouponId, Long orderId);
 
     /**

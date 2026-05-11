@@ -21,7 +21,22 @@ public enum CouponStatus {
     /**
      * 已过期
      */
-    EXPIRED(2, "已过期");
+    EXPIRED(2, "已过期"),
+
+    /**
+     * 已锁定
+     */
+    LOCKED(3, "已锁定"),
+
+    /**
+     * 已返还
+     */
+    RETURNED(4, "已返还"),
+
+    /**
+     * 已失效
+     */
+    INVALID(5, "已失效");
 
     private final Integer code;
     private final String desc;
