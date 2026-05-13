@@ -44,16 +44,12 @@ easymall-web/yarn-debug.log*
 easymall-web/yarn-error.log*
 easymall-web/pnpm-debug.log*
 
-### Claude ###
-.claude/settings.local.json
-
-### OpenSpec ###
-openspec/
-
+### Claude / OpenSpec / Tools ###
 .agents/
+.claude/
 .codex/
+anthropic-skills/
 
 ### Misc ###
 nul
 .env
-.claude/settings.local.json
