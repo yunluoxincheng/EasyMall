@@ -90,36 +90,36 @@
 
 ## 10. 评论审核页面（admin-comment-moderation）
 
-- [ ] 10.1 创建 api/comment.ts（评论查询、审核、回复、删除接口封装）
-- [ ] 10.2 创建 types/comment.ts（评论相关类型定义）
-- [ ] 10.3 调用 ui-ux-pro-max skill 设计评论审核页面
-- [ ] 10.4 创建 views/comment/CommentList.vue（评论列表表格、状态筛选）
-- [ ] 10.5 实现审核通过/拒绝操作
-- [ ] 10.6 实现商家回复评论功能（回复输入框 + 提交）
-- [ ] 10.7 实现删除评论（确认对话框）
-- [ ] 10.8 验证：评论列表查询、审核、回复、删除功能正常
+- [x] 10.1 创建 api/comment.ts（评论查询、审核、回复、删除接口封装）
+- [x] 10.2 创建 types/comment.ts（评论相关类型定义）
+- [x] 10.3 调用 ui-ux-pro-max skill 设计评论审核页面
+- [x] 10.4 创建 views/comment/CommentList.vue（评论列表表格、状态筛选）
+- [x] 10.5 实现审核通过/拒绝操作
+- [x] 10.6 实现商家回复评论功能（回复输入框 + 提交）
+- [x] 10.7 实现删除评论（确认对话框）
+- [x] 10.8 验证：评论列表查询、审核、回复、删除功能正常
 
 ## 11. 会员等级管理页面（admin-member-level-management）
 
-- [ ] 11.1 创建 api/memberLevel.ts（会员等级 CRUD 接口封装，注意后端返回全量列表非分页）
-- [ ] 11.2 创建 types/memberLevel.ts（会员等级相关类型定义）
-- [ ] 11.3 调用 ui-ux-pro-max skill 设计会员等级管理页面
-- [ ] 11.4 创建 views/memberLevel/MemberLevelList.vue（全量列表表格 + 前端本地搜索过滤）
-- [ ] 11.5 创建 views/memberLevel/MemberLevelForm.vue（新增/编辑表单对话框：level、levelName、minPoints、maxPoints、discount、icon、benefits、sortOrder）
-- [ ] 11.6 实现等级启用/禁用状态切换
-- [ ] 11.7 实现等级删除（确认对话框）
-- [ ] 11.8 验证：会员等级 CRUD、状态管理功能正常
+- [x] 11.1 创建 api/memberLevel.ts（会员等级 CRUD 接口封装，注意后端返回全量列表非分页）
+- [x] 11.2 创建 types/memberLevel.ts（会员等级相关类型定义）
+- [x] 11.3 调用 ui-ux-pro-max skill 设计会员等级管理页面
+- [x] 11.4 创建 views/memberLevel/MemberLevelList.vue（全量列表表格 + 前端本地搜索过滤）
+- [x] 11.5 创建 views/memberLevel/MemberLevelForm.vue（新增/编辑表单对话框：level、levelName、minPoints、maxPoints、discount、icon、benefits、sortOrder）
+- [x] 11.6 实现等级启用/禁用状态切换
+- [x] 11.7 实现等级删除（确认对话框）
+- [x] 11.8 验证：会员等级 CRUD、状态管理功能正常
 
 ## 12. 积分兑换商品管理页面（admin-points-product-management）
 
-- [ ] 12.1 创建 api/pointsProduct.ts（积分兑换商品 CRUD 接口封装）
-- [ ] 12.2 创建 types/pointsProduct.ts（积分兑换商品相关类型定义）
-- [ ] 12.3 调用 ui-ux-pro-max skill 设计积分兑换商品管理页面
-- [ ] 12.4 创建 views/pointsProduct/PointsProductList.vue（商品列表表格、搜索）
-- [ ] 12.5 创建 views/pointsProduct/PointsProductForm.vue（新增/编辑表单对话框）
-- [ ] 12.6 实现积分商品上下架切换
-- [ ] 12.7 实现积分商品删除（确认对话框）
-- [ ] 12.8 验证：积分兑换商品 CRUD、上下架功能正常
+- [x] 12.1 创建 api/pointsProduct.ts（积分兑换商品 CRUD 接口封装）
+- [x] 12.2 创建 types/pointsProduct.ts（积分兑换商品相关类型定义）
+- [x] 12.3 调用 ui-ux-pro-max skill 设计积分兑换商品管理页面
+- [x] 12.4 创建 views/pointsProduct/PointsProductList.vue（商品列表表格、搜索）
+- [x] 12.5 创建 views/pointsProduct/PointsProductForm.vue（新增/编辑表单对话框）
+- [x] 12.6 实现积分商品上下架切换
+- [x] 12.7 实现积分商品删除（确认对话框）
+- [x] 12.8 验证：积分兑换商品 CRUD、上下架功能正常
 
 ## 13. 全局集成与验证
 
