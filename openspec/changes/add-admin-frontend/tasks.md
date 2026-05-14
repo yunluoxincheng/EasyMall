@@ -33,36 +33,36 @@
 
 ## 5. 商品管理页面（admin-product-management）
 
-- [ ] 5.1 创建 api/product.ts（商品 CRUD 接口封装）
-- [ ] 5.2 创建 types/product.ts（商品相关类型定义）
-- [ ] 5.3 调用 ui-ux-pro-max skill 设计商品管理页面
-- [ ] 5.4 创建 views/product/ProductList.vue（商品列表表格、分页、搜索筛选）
-- [ ] 5.5 创建 views/product/ProductForm.vue（新增/编辑表单对话框、表单验证）
-- [ ] 5.6 实现商品上下架切换操作
-- [ ] 5.7 实现商品删除（确认对话框）
-- [ ] 5.8 验证：商品列表查询、新增、编辑、上下架、删除功能正常
+- [x] 5.1 创建 api/product.ts（商品 CRUD 接口封装）
+- [x] 5.2 创建 types/product.ts（商品相关类型定义）
+- [x] 5.3 调用 ui-ux-pro-max skill 设计商品管理页面
+- [x] 5.4 创建 views/product/ProductList.vue（商品列表表格、分页、搜索筛选）
+- [x] 5.5 创建 views/product/ProductForm.vue（新增/编辑表单对话框、表单验证）
+- [x] 5.6 实现商品上下架切换操作
+- [x] 5.7 实现商品删除（确认对话框）
+- [x] 5.8 验证：商品列表查询、新增、编辑、上下架、删除功能正常
 
 ## 6. 分类管理页面（admin-category-management）
 
-- [ ] 6.1 创建 api/category.ts（分类 CRUD 接口封装）
-- [ ] 6.2 创建 types/category.ts（分类相关类型定义）
-- [ ] 6.3 调用 ui-ux-pro-max skill 设计分类管理页面
-- [ ] 6.4 创建 views/category/CategoryList.vue（分类列表表格、分页、搜索）
-- [ ] 6.5 创建 views/category/CategoryForm.vue（新增/编辑表单对话框）
-- [ ] 6.6 实现分类状态启用/禁用切换
-- [ ] 6.7 实现分类删除（确认对话框）
-- [ ] 6.8 验证：分类 CRUD、状态管理功能正常
+- [x] 6.1 创建 api/category.ts（分类 CRUD 接口封装）
+- [x] 6.2 创建 types/category.ts（分类相关类型定义）
+- [x] 6.3 调用 ui-ux-pro-max skill 设计分类管理页面
+- [x] 6.4 创建 views/category/CategoryList.vue（分类列表表格、分页、搜索）
+- [x] 6.5 创建 views/category/CategoryForm.vue（新增/编辑表单对话框）
+- [x] 6.6 实现分类状态启用/禁用切换
+- [x] 6.7 实现分类删除（确认对话框）
+- [x] 6.8 验证：分类 CRUD、状态管理功能正常
 
 ## 7. 订单管理页面（admin-order-management）
 
-- [ ] 7.1 创建 api/order.ts（订单查询、详情、状态变更接口封装）
-- [ ] 7.2 创建 types/order.ts（订单相关类型定义，含 OrderStatus 枚举）
-- [ ] 7.3 调用 ui-ux-pro-max skill 设计订单管理页面
-- [ ] 7.4 创建 views/order/OrderList.vue（订单列表表格、分页、按订单号/状态筛选）
-- [ ] 7.5 创建 views/order/OrderDetail.vue（订单详情抽屉/对话框：订单信息 + 明细列表）
-- [ ] 7.6 实现订单发货操作（状态流转确认对话框）
-- [ ] 7.7 实现取消订单操作（确认对话框）
-- [ ] 7.8 验证：订单列表查询、详情查看、发货、取消功能正常
+- [x] 7.1 创建 api/order.ts（订单查询、详情、状态变更接口封装）
+- [x] 7.2 创建 types/order.ts（订单相关类型定义，含 OrderStatus 枚举）
+- [x] 7.3 调用 ui-ux-pro-max skill 设计订单管理页面
+- [x] 7.4 创建 views/order/OrderList.vue（订单列表表格、分页、按订单号/状态筛选）
+- [x] 7.5 创建 views/order/OrderDetail.vue（订单详情抽屉/对话框：订单信息 + 明细列表）
+- [x] 7.6 实现订单发货操作（状态流转确认对话框）
+- [x] 7.7 实现取消订单操作（确认对话框）
+- [x] 7.8 验证：订单列表查询、详情查看、发货、取消功能正常
 
 ## 8. 用户管理页面（admin-user-management）
 
