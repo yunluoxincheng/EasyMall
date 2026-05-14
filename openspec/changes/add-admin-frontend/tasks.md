@@ -1,35 +1,35 @@
 ## 1. 项目初始化
 
-- [ ] 1.1 在 easymall-frontend/ 下初始化 Vue3 + Vite + TypeScript 项目（npm create vite@latest）
-- [ ] 1.2 安装核心依赖：naive-ui、vue-router、pinia、axios
-- [ ] 1.3 配置 vite.config.ts（代理 /api 到 localhost:8080）
-- [ ] 1.4 配置 tsconfig.json
-- [ ] 1.5 创建 src 目录结构（api/、assets/、components/、layouts/、router/、stores/、types/、utils/、views/）
+- [x] 1.1 在 easymall-frontend/ 下初始化 Vue3 + Vite + TypeScript 项目（npm create vite@latest）
+- [x] 1.2 安装核心依赖：naive-ui、vue-router、pinia、axios
+- [x] 1.3 配置 vite.config.ts（代理 /api 到 localhost:8080）
+- [x] 1.4 配置 tsconfig.json
+- [x] 1.5 创建 src 目录结构（api/、assets/、components/、layouts/、router/、stores/、types/、utils/、views/）
 
 ## 2. 基础工具层
 
-- [ ] 2.1 创建 utils/request.ts（Axios 实例、请求/响应拦截器、Token 自动附加、401 处理）
-- [ ] 2.2 创建 types/api.ts（Result<T>、PageResult<T>、MyBatisPage<T> 等通用类型定义）
-- [ ] 2.3 创建 stores/auth.ts（Pinia auth store：Token 存储、登录状态、用户角色、登出）
-- [ ] 2.4 创建 router/index.ts（Vue Router 配置，含路由守卫 beforeEach）
+- [x] 2.1 创建 utils/request.ts（Axios 实例、请求/响应拦截器、Token 自动附加、401 处理）
+- [x] 2.2 创建 types/api.ts（Result<T>、PageResult<T>、MyBatisPage<T> 等通用类型定义）
+- [x] 2.3 创建 stores/auth.ts（Pinia auth store：Token 存储、登录状态、用户角色、登出）
+- [x] 2.4 创建 router/index.ts（Vue Router 配置，含路由守卫 beforeEach）
 
 ## 3. 登录认证（admin-auth）
 
-- [ ] 3.1 创建 api/auth.ts（登录接口封装）
-- [ ] 3.2 调用 ui-ux-pro-max skill 设计登录页面
-- [ ] 3.3 创建 views/login/index.vue（登录页面：用户名/密码表单、表单验证、错误提示）
-- [ ] 3.4 实现登录成功后校验 role === 1：管理员存入 Token 并跳转后台首页，非管理员清除 Token 并提示"非管理员账号"
-- [ ] 3.5 实现登录失败错误提示（用户名或密码错误）
-- [ ] 3.6 验证：管理员可以登录并进入后台、普通用户登录被拒绝、Token 自动附加、401 自动跳转
+- [x] 3.1 创建 api/auth.ts（登录接口封装）
+- [x] 3.2 调用 ui-ux-pro-max skill 设计登录页面
+- [x] 3.3 创建 views/login/index.vue（登录页面：用户名/密码表单、表单验证、错误提示）
+- [x] 3.4 实现登录成功后校验 role === 1：管理员存入 Token 并跳转后台首页，非管理员清除 Token 并提示"非管理员账号"
+- [x] 3.5 实现登录失败错误提示（用户名或密码错误）
+- [x] 3.6 验证：管理员可以登录并进入后台、普通用户登录被拒绝、Token 自动附加、401 自动跳转
 
 ## 4. 管理后台布局（admin-layout）
 
-- [ ] 4.1 调用 ui-ux-pro-max skill 设计后台布局
-- [ ] 4.2 创建 layouts/AdminLayout.vue（侧边栏 + 顶栏 + 主内容区，使用 Naive UI NLayout 组件）
-- [ ] 4.3 实现侧边栏导航菜单（8 个管理模块 + 路由高亮）
-- [ ] 4.4 实现侧边栏折叠功能
-- [ ] 4.5 实现顶栏（页面标题、面包屑、登出按钮）
-- [ ] 4.6 配置路由使用 AdminLayout 作为父布局
+- [x] 4.1 调用 ui-ux-pro-max skill 设计后台布局
+- [x] 4.2 创建 layouts/AdminLayout.vue（侧边栏 + 顶栏 + 主内容区，使用 Naive UI NLayout 组件）
+- [x] 4.3 实现侧边栏导航菜单（8 个管理模块 + 路由高亮）
+- [x] 4.4 实现侧边栏折叠功能
+- [x] 4.5 实现顶栏（页面标题、面包屑、登出按钮）
+- [x] 4.6 配置路由使用 AdminLayout 作为父布局
 
 ## 5. 商品管理页面（admin-product-management）
 
