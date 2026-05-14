@@ -54,6 +54,16 @@ public class PointsRecord {
      */
     private String idempotencyKey;
 
+    /**
+     * 业务类型(ORDER_COMPLETED/COMMENT_CREATED/DAILY_SIGN_IN/POINTS_EXCHANGE/ADMIN_ADJUST/REFUND_DEDUCT)
+     */
+    private String bizType;
+
+    /**
+     * 业务标识(配合bizType实现幂等)
+     */
+    private String bizId;
+
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
 }

@@ -84,7 +84,7 @@ public class CommentServiceImpl implements ICommentService {
         commentMapper.insert(comment);
 
         // 增加积分
-        pointsService.addPointsForComment(userId, commentDTO.getProductId());
+        pointsService.addPointsForComment(userId, commentDTO.getOrderId(), commentDTO.getProductId());
 
         return comment.getId();
     }

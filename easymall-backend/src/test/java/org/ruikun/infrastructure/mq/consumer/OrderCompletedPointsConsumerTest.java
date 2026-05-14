@@ -2,7 +2,6 @@ package org.ruikun.infrastructure.mq.consumer;
 
 import com.rabbitmq.client.Channel;
 import com.alibaba.fastjson2.JSON;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -15,8 +14,6 @@ import org.ruikun.infrastructure.mq.MqConstants;
 import org.ruikun.infrastructure.mq.consumelog.ConsumeLogService;
 import org.ruikun.infrastructure.mq.consumelog.ConsumeTemplate;
 import org.ruikun.infrastructure.mq.event.OrderCompletedPayload;
-import org.ruikun.modules.points.entity.PointsRecord;
-import org.ruikun.modules.points.mapper.PointsRecordMapper;
 import org.ruikun.modules.points.service.IPointsService;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
@@ -32,7 +29,6 @@ class OrderCompletedPointsConsumerTest {
 
     @Mock private ConsumeLogService consumeLogService;
     @Mock private IPointsService pointsService;
-    @Mock private PointsRecordMapper pointsRecordMapper;
     @Mock private Channel channel;
 
     private ConsumeTemplate consumeTemplate;
@@ -41,7 +37,7 @@ class OrderCompletedPointsConsumerTest {
     @BeforeEach
     void setUp() {
         consumeTemplate = new ConsumeTemplate(consumeLogService);
-        consumer = new OrderCompletedPointsConsumer(consumeTemplate, pointsService, pointsRecordMapper);
+        consumer = new OrderCompletedPointsConsumer(consumeTemplate, pointsService);
     }
 
     private Message createSerializedMessage(Long orderId, Long userId, Double amount) {
@@ -66,7 +62,6 @@ class OrderCompletedPointsConsumerTest {
         void issuesPointsOnFirstEvent() throws Exception {
             when(consumeLogService.tryStart(anyString(), anyString()))
                     .thenReturn(new ConsumeLogService.StartResult("PROCESSING", null));
-            when(pointsRecordMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(0L);
 
             consumer.onOrderCompleted(createSerializedMessage(1001L, 1L, 199.0), channel);
 
@@ -75,7 +70,7 @@ class OrderCompletedPointsConsumerTest {
         }
 
         @Test
-        @DisplayName("7.6 Duplicate event does not issue points twice")
+        @DisplayName("Duplicate event (already consumed) does not issue points twice")
         void duplicateEventSkips() throws Exception {
             when(consumeLogService.tryStart(anyString(), anyString()))
                     .thenReturn(new ConsumeLogService.StartResult("SUCCESS", null));
@@ -87,25 +82,11 @@ class OrderCompletedPointsConsumerTest {
         }
 
         @Test
-        @DisplayName("7.6 Business idempotency: existing points record prevents re-issue")
-        void businessIdempotency() throws Exception {
+        @DisplayName("6.6 Duplicate key exception from unique constraint is treated as idempotent success")
+        void duplicateKeyHandledAsIdempotentSuccess() throws Exception {
             when(consumeLogService.tryStart(anyString(), anyString()))
                     .thenReturn(new ConsumeLogService.StartResult("PROCESSING", null));
-            when(pointsRecordMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(1L);
-
-            consumer.onOrderCompleted(createSerializedMessage(1001L, 1L, 199.0), channel);
-
-            verify(pointsService, never()).addPointsForOrder(anyLong(), anyLong(), anyDouble());
-            verify(channel).basicAck(anyLong(), anyBoolean());
-        }
-
-        @Test
-        @DisplayName("Duplicate key exception from unique constraint is handled gracefully")
-        void duplicateKeyHandled() throws Exception {
-            when(consumeLogService.tryStart(anyString(), anyString()))
-                    .thenReturn(new ConsumeLogService.StartResult("PROCESSING", null));
-            when(pointsRecordMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(0L);
-            doThrow(new DuplicateKeyException("uk_idempotency_key"))
+            doThrow(new DuplicateKeyException("uk_biz"))
                     .when(pointsService).addPointsForOrder(anyLong(), anyLong(), anyDouble());
 
             consumer.onOrderCompleted(createSerializedMessage(1001L, 1L, 199.0), channel);

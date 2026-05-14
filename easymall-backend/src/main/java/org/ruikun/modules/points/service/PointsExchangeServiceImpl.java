@@ -1,22 +1,21 @@
 package org.ruikun.modules.points.service;
 
-import cn.hutool.core.util.IdUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
 import org.ruikun.common.ResponseCode;
+import org.ruikun.enums.PointsBizType;
+import org.ruikun.exception.BusinessException;
 import org.ruikun.modules.points.dto.PointsExchangeDTO;
 import org.ruikun.modules.points.entity.PointsExchange;
 import org.ruikun.modules.points.entity.PointsProduct;
-import org.ruikun.modules.user.entity.User;
-import org.ruikun.exception.BusinessException;
 import org.ruikun.modules.points.mapper.PointsExchangeMapper;
 import org.ruikun.modules.points.mapper.PointsProductMapper;
-import org.ruikun.modules.user.mapper.UserMapper;
-import org.ruikun.modules.points.service.IPointsExchangeService;
-import org.ruikun.modules.points.service.IPointsService;
 import org.ruikun.modules.points.vo.PointsExchangeVO;
 import org.ruikun.modules.points.vo.PointsProductVO;
+import org.ruikun.modules.user.entity.User;
+import org.ruikun.modules.user.mapper.UserMapper;
+import cn.hutool.core.util.IdUtil;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,11 +38,9 @@ public class PointsExchangeServiceImpl implements IPointsExchangeService {
 
     @Override
     public List<PointsProductVO> getAvailableProducts(Long userId) {
-        // 获取用户积分
         User user = userMapper.selectById(userId);
         Integer userPoints = (user != null) ? user.getPoints() : 0;
 
-        // 查询所有上架的积分商品
         LambdaQueryWrapper<PointsProduct> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(PointsProduct::getStatus, 1)
                .orderByAsc(PointsProduct::getSortOrder)
@@ -51,7 +48,6 @@ public class PointsExchangeServiceImpl implements IPointsExchangeService {
 
         List<PointsProduct> products = pointsProductMapper.selectList(wrapper);
 
-        // 转换为VO并设置是否可兑换
         return products.stream().map(product -> {
             PointsProductVO vo = new PointsProductVO();
             BeanUtils.copyProperties(product, vo);
@@ -63,13 +59,11 @@ public class PointsExchangeServiceImpl implements IPointsExchangeService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public String exchangeProduct(Long userId, PointsExchangeDTO exchangeDTO) {
-        // 获取用户信息
         User user = userMapper.selectById(userId);
         if (user == null) {
             throw new BusinessException(ResponseCode.USER_NOT_FOUND, "用户不存在");
         }
 
-        // 获取兑换商品信息
         PointsProduct product = pointsProductMapper.selectById(exchangeDTO.getProductId());
         if (product == null) {
             throw new BusinessException(ResponseCode.PRODUCT_NOT_FOUND, "商品不存在");
@@ -80,25 +74,35 @@ public class PointsExchangeServiceImpl implements IPointsExchangeService {
         if (product.getStock() <= 0) {
             throw new BusinessException(ResponseCode.POINTS_PRODUCT_OUT_OF_STOCK, "商品库存不足");
         }
-
-        // 检查用户积分是否足够
         if (user.getPoints() < product.getPointsRequired()) {
-            throw new BusinessException(ResponseCode.POINTS_INSUFFICIENT, "积分不足，当前积分：" + user.getPoints() + "，所需积分：" + product.getPointsRequired());
+            throw new BusinessException(ResponseCode.POINTS_INSUFFICIENT,
+                    "积分不足，当前积分：" + user.getPoints() + "，所需积分：" + product.getPointsRequired());
         }
 
-        // 判断商品类型：1-实物商品，2-优惠券
         Integer productType = product.getProductType() != null ? product.getProductType() : 1;
 
+        // 先生成稳定的 exchangeNo 并创建兑换记录
+        String exchangeNo = generateExchangeNo();
+
+        PointsExchange exchange = new PointsExchange();
+        exchange.setUserId(userId);
+        exchange.setProductId(product.getId());
+        exchange.setProductName(product.getName());
+        exchange.setPointsUsed(product.getPointsRequired());
+        exchange.setExchangeNo(exchangeNo);
+        exchange.setStatus(0);
+        pointsExchangeMapper.insert(exchange);
+
         if (productType == 2) {
-            // 兑换优惠券
+            // 优惠券兑换
             if (product.getRelationId() == null) {
                 throw new BusinessException(ResponseCode.VALIDATION_ERROR, "优惠券配置错误");
             }
 
-            // 扣除积分
-            pointsService.deductPoints(userId, product.getPointsRequired(),
-                    org.ruikun.enums.PointsTypeEnum.EXCHANGE.getCode(),
-                    product.getId(), "兑换优惠券：" + product.getName());
+            // 扣除积分（幂等方法，兑换流水级幂等）
+            pointsService.deductPointsIdempotent(userId, product.getPointsRequired(),
+                    PointsBizType.POINTS_EXCHANGE, "exchange:" + exchangeNo,
+                    "兑换优惠券：" + product.getName());
 
             // 扣减库存
             product.setStock(product.getStock() - 1);
@@ -108,36 +112,29 @@ public class PointsExchangeServiceImpl implements IPointsExchangeService {
             // 发放优惠券
             Long userCouponId = couponService.issueCoupon(userId, product.getRelationId());
 
-            // 返回优惠券ID作为兑换编号
-            return "CPN" + userCouponId;
+            // 更新兑换记录备注
+            exchange.setRemark("优惠券ID：" + userCouponId);
+            pointsExchangeMapper.updateById(exchange);
         } else {
-            // 兑换实物商品（原有逻辑）
-            // 扣除积分
-            pointsService.deductPoints(userId, product.getPointsRequired(),
-                    org.ruikun.enums.PointsTypeEnum.EXCHANGE.getCode(),
-                    product.getId(), "兑换商品：" + product.getName());
+            // 实物兑换
+            pointsService.deductPointsIdempotent(userId, product.getPointsRequired(),
+                    PointsBizType.POINTS_EXCHANGE, "exchange:" + exchangeNo,
+                    "兑换商品：" + product.getName());
 
             // 扣减库存
             product.setStock(product.getStock() - 1);
             product.setExchangeCount(product.getExchangeCount() + 1);
             pointsProductMapper.updateById(product);
 
-            // 创建兑换记录
-            PointsExchange exchange = new PointsExchange();
-            exchange.setUserId(userId);
-            exchange.setProductId(product.getId());
-            exchange.setProductName(product.getName());
-            exchange.setPointsUsed(product.getPointsRequired());
-            exchange.setExchangeNo(generateExchangeNo());
-            exchange.setStatus(0);
+            // 更新收货信息
             exchange.setReceiverName(exchangeDTO.getReceiverName());
             exchange.setReceiverPhone(exchangeDTO.getReceiverPhone());
             exchange.setReceiverAddress(exchangeDTO.getReceiverAddress());
             exchange.setRemark(exchangeDTO.getRemark());
-            pointsExchangeMapper.insert(exchange);
-
-            return exchange.getExchangeNo();
+            pointsExchangeMapper.updateById(exchange);
         }
+
+        return exchangeNo;
     }
 
     @Override
@@ -149,7 +146,6 @@ public class PointsExchangeServiceImpl implements IPointsExchangeService {
 
         Page<PointsExchange> exchangePage = pointsExchangeMapper.selectPage(page, wrapper);
 
-        // 转换为VO
         Page<PointsExchangeVO> voPage = new Page<>();
         BeanUtils.copyProperties(exchangePage, voPage, "records");
 
@@ -170,16 +166,10 @@ public class PointsExchangeServiceImpl implements IPointsExchangeService {
         return convertToVO(exchange);
     }
 
-    /**
-     * 生成兑换单号
-     */
     private String generateExchangeNo() {
-        return "EXG" + System.currentTimeMillis();
+        return "EXG" + IdUtil.getSnowflakeNextIdStr();
     }
 
-    /**
-     * 转换为VO
-     */
     private PointsExchangeVO convertToVO(PointsExchange exchange) {
         PointsExchangeVO vo = new PointsExchangeVO();
         BeanUtils.copyProperties(exchange, vo);
@@ -187,9 +177,6 @@ public class PointsExchangeServiceImpl implements IPointsExchangeService {
         return vo;
     }
 
-    /**
-     * 获取状态描述
-     */
     private String getStatusText(Integer status) {
         switch (status) {
             case 0: return "待发货";

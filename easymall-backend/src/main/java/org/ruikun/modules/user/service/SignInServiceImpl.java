@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.ruikun.common.ResponseCode;
 import org.ruikun.modules.user.entity.User;
 import org.ruikun.modules.user.entity.UserSign;
+import org.ruikun.enums.PointsBizType;
 import org.ruikun.enums.PointsTypeEnum;
 import org.ruikun.exception.BusinessException;
 import org.ruikun.modules.user.mapper.UserMapper;
@@ -74,9 +75,10 @@ public class SignInServiceImpl implements ISignInService {
         userSign.setPointsEarned(pointsEarned);
         userSignMapper.insert(userSign);
 
-        // 增加积分
-        pointsService.addPoints(userId, pointsEarned, PointsTypeEnum.SIGN.getCode(),
-                               userSign.getId(), "连续签到" + continuousDays + "天");
+        // 增加积分（幂等方法）
+        String bizId = "sign:" + userId + ":" + today;
+        pointsService.addPointsIdempotent(userId, pointsEarned, PointsBizType.DAILY_SIGN_IN,
+                bizId, "连续签到" + continuousDays + "天");
 
         // 获取用户最新积分
         user = userMapper.selectById(userId);

@@ -40,6 +40,16 @@ public class PointsRecordVO {
     private String typeDesc;
 
     /**
+     * 业务类型
+     */
+    private String bizType;
+
+    /**
+     * 业务标识
+     */
+    private String bizId;
+
+    /**
      * 来源ID
      */
     private Long sourceId;

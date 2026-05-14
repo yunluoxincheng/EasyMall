@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.ruikun.common.PageResult;
 import org.ruikun.common.Result;
 import org.ruikun.common.ResponseCode;
+import org.ruikun.enums.PointsBizType;
 import org.ruikun.modules.admin.dto.UserQueryDTO;
 import org.ruikun.modules.user.entity.User;
 import org.ruikun.modules.user.mapper.UserMapper;
@@ -19,6 +20,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
@@ -139,13 +141,25 @@ public class AdminUserController {
             return Result.error(ResponseCode.USER_NOT_FOUND);
         }
 
+        // 调整值为 0 时直接返回
+        if (points == 0) {
+            return Result.success("调整用户积分成功");
+        }
+
         // 扣减积分时检查余额
         if (points < 0 && user.getPoints() + points < 0) {
             return Result.error(ResponseCode.POINTS_INSUFFICIENT);
         }
 
-        // 使用 PointsService 记录积分变动
-        pointsService.addPoints(user.getId(), points, "管理员手动调整");
+        // 使用幂等方法记录积分变动（管理员调整使用独立 UUID，仅用于审计追踪）
+        String bizId = "admin:" + UUID.randomUUID();
+        if (points > 0) {
+            pointsService.addPointsIdempotent(user.getId(), points, PointsBizType.ADMIN_ADJUST,
+                    bizId, "管理员手动调整（增加" + points + "积分）");
+        } else {
+            pointsService.deductPointsIdempotent(user.getId(), -points, PointsBizType.ADMIN_ADJUST,
+                    bizId, "管理员手动调整（扣减" + (-points) + "积分）");
+        }
 
         return Result.success("调整用户积分成功");
     }

@@ -1,6 +1,7 @@
 package org.ruikun.modules.points.service;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import org.ruikun.enums.PointsBizType;
 import org.ruikun.modules.points.entity.PointsRecord;
 import org.ruikun.modules.points.vo.PointsRecordVO;
 
@@ -10,25 +11,31 @@ import org.ruikun.modules.points.vo.PointsRecordVO;
 public interface IPointsService {
 
     /**
+     * 幂等增加积分（先写 ledger guard 再改余额）
+     * DuplicateKeyException 不在本方法内捕获，由调用方决定处理策略
+     */
+    void addPointsIdempotent(Long userId, Integer points, PointsBizType bizType, String bizId, String description);
+
+    /**
+     * 幂等扣减积分（先校验余额，再写 ledger guard，最后改余额）
+     * DuplicateKeyException 不在本方法内捕获，由调用方决定处理策略
+     */
+    void deductPointsIdempotent(Long userId, Integer points, PointsBizType bizType, String bizId, String description);
+
+    /**
      * 增加积分
      *
-     * @param userId       用户ID
-     * @param points       积分值
-     * @param type         类型 1-订单获得 2-评价获得 3-签到获得 4-系统赠送
-     * @param sourceId     来源ID
-     * @param description  描述
+     * @deprecated 使用 {@link #addPointsIdempotent} 替代
      */
+    @Deprecated
     void addPoints(Long userId, Integer points, Integer type, Long sourceId, String description);
 
     /**
      * 扣减积分
      *
-     * @param userId       用户ID
-     * @param points       积分值
-     * @param type         类型 5-兑换消耗 6-退款扣除
-     * @param sourceId     来源ID
-     * @param description  描述
+     * @deprecated 使用 {@link #deductPointsIdempotent} 替代
      */
+    @Deprecated
     void deductPoints(Long userId, Integer points, Integer type, Long sourceId, String description);
 
     /**
@@ -39,10 +46,9 @@ public interface IPointsService {
     /**
      * 增加或扣减积分（便捷方法，用于后台管理）
      *
-     * @param userId       用户ID
-     * @param points       积分值（正数为增加，负数为扣减）
-     * @param description  描述
+     * @deprecated 使用 {@link #addPointsIdempotent} 或 {@link #deductPointsIdempotent} 替代
      */
+    @Deprecated
     void addPoints(Long userId, Integer points, String description);
 
     /**
@@ -58,7 +64,8 @@ public interface IPointsService {
      * 评价商品后增加积分
      *
      * @param userId    用户ID
+     * @param orderId   订单ID
      * @param productId 商品ID
      */
-    void addPointsForComment(Long userId, Long productId);
+    void addPointsForComment(Long userId, Long orderId, Long productId);
 }
