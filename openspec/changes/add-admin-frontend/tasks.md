@@ -66,27 +66,27 @@
 
 ## 8. 用户管理页面（admin-user-management）
 
-- [ ] 8.1 创建 api/user.ts（用户查询、详情、状态变更、角色管理、积分调整接口封装）
-- [ ] 8.2 创建 types/user.ts（用户相关类型定义）
-- [ ] 8.3 调用 ui-ux-pro-max skill 设计用户管理页面
-- [ ] 8.4 创建 views/user/UserList.vue（用户列表表格、分页、多条件筛选）
-- [ ] 8.5 创建 views/user/UserDetail.vue（用户详情：基本信息 + 会员等级 + 积分）
-- [ ] 8.6 实现用户启用/禁用状态切换
-- [ ] 8.7 实现用户角色切换
-- [ ] 8.8 实现管理员调整用户积分（弹窗表单：仅积分数量，后端接口仅接受 points 参数）
-- [ ] 8.9 验证：用户查询、详情、状态管理、角色切换、积分调整功能正常
+- [x] 8.1 创建 api/user.ts（用户查询、详情、状态变更、角色管理、积分调整接口封装）
+- [x] 8.2 创建 types/user.ts（用户相关类型定义）
+- [x] 8.3 调用 ui-ux-pro-max skill 设计用户管理页面
+- [x] 8.4 创建 views/user/UserList.vue（用户列表表格、分页、多条件筛选）
+- [x] 8.5 创建 views/user/UserDetail.vue（用户详情：基本信息 + 会员等级 + 积分）
+- [x] 8.6 实现用户启用/禁用状态切换
+- [x] 8.7 实现用户角色切换
+- [x] 8.8 实现管理员调整用户积分（弹窗表单：仅积分数量，后端接口仅接受 points 参数）
+- [x] 8.9 验证：用户查询、详情、状态管理、角色切换、积分调整功能正常
 
 ## 9. 优惠券管理页面（admin-coupon-management）
 
-- [ ] 9.1 创建 api/coupon.ts（优惠券模板 CRUD、上下架、使用日志、统计接口封装，使用 MyBatisPage<T> 处理分页）
-- [ ] 9.2 创建 types/coupon.ts（优惠券相关类型定义，含 MyBatisPage 兼容类型）
-- [ ] 9.3 调用 ui-ux-pro-max skill 设计优惠券管理页面
-- [ ] 9.4 创建 views/coupon/CouponList.vue（优惠券模板列表表格，使用 MyBatisPage 分页）
-- [ ] 9.5 创建 views/coupon/CouponForm.vue（新增/编辑表单对话框：类型、面额、门槛、有效期）
-- [ ] 9.6 实现优惠券上下架切换
-- [ ] 9.7 创建 views/coupon/UsageLogs.vue（使用记录列表，支持按模板/用户筛选）
-- [ ] 9.8 实现优惠券统计数据展示
-- [ ] 9.9 验证：优惠券模板 CRUD、上下架、使用日志、统计功能正常
+- [x] 9.1 创建 api/coupon.ts（优惠券模板 CRUD、上下架、使用日志、统计接口封装，使用 MyBatisPage<T> 处理分页）
+- [x] 9.2 创建 types/coupon.ts（优惠券相关类型定义，含 MyBatisPage 兼容类型）
+- [x] 9.3 调用 ui-ux-pro-max skill 设计优惠券管理页面
+- [x] 9.4 创建 views/coupon/CouponList.vue（优惠券模板列表表格，使用 MyBatisPage 分页）
+- [x] 9.5 创建 views/coupon/CouponForm.vue（新增/编辑表单对话框：类型、面额、门槛、有效期）
+- [x] 9.6 实现优惠券上下架切换
+- [x] 9.7 创建 views/coupon/UsageLogs.vue（使用记录列表，支持按模板/用户筛选）
+- [x] 9.8 实现优惠券统计数据展示
+- [x] 9.9 验证：优惠券模板 CRUD、上下架、使用日志、统计功能正常
 
 ## 10. 评论审核页面（admin-comment-moderation）
 
