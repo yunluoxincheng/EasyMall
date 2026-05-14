@@ -64,3 +64,21 @@ TBD - created by archiving change add-admin-module. Update Purpose after archive
 - **WHEN** 管理员尝试扣减的积分超过用户当前积分
 - **THEN** 返回错误信息，积分不足
 
+### Requirement: 用户列表页面
+系统 SHALL 提供用户管理列表页面，展示用户 ID、用户名、手机号、角色、状态、注册时间、积分，支持按用户名/手机号搜索、按状态/角色筛选和分页。
+
+#### Scenario: 用户列表分页展示
+- **WHEN** 管理员访问用户管理页面
+- **THEN** 系统调用 `/api/admin/users` 接口并以表格形式展示用户列表
+
+#### Scenario: 用户搜索筛选
+- **WHEN** 管理员输入用户名或手机号进行搜索，或选择状态/角色进行筛选
+- **THEN** 系统根据条件重新查询并展示匹配的用户
+
+### Requirement: 用户详情查看
+系统 SHALL 提供用户详情查看功能，展示用户完整信息、会员等级、积分余额。
+
+#### Scenario: 查看用户详情
+- **WHEN** 管理员点击用户列表中的"查看详情"按钮
+- **THEN** 系统展示用户完整信息，包括会员等级和积分
+

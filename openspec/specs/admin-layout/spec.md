@@ -1,0 +1,37 @@
+# admin-layout Specification
+
+## Purpose
+TBD - created by archiving change add-admin-frontend. Update Purpose after archive.
+## Requirements
+### Requirement: 管理后台布局框架
+系统 SHALL 提供统一的后台管理布局，包含左侧导航菜单、顶部导航栏和主内容区域。
+
+#### Scenario: 管理员进入后台
+- **WHEN** 已登录管理员访问后台首页
+- **THEN** 系统显示包含侧边栏、顶栏和主内容区的三栏布局
+
+#### Scenario: 侧边栏导航折叠
+- **WHEN** 管理员点击侧边栏的折叠按钮
+- **THEN** 侧边栏收起为仅显示图标的窄侧栏状态，主内容区自动扩展
+
+### Requirement: 侧边栏导航菜单
+系统 SHALL 在侧边栏显示所有管理模块的导航菜单，包含：商品管理、分类管理、订单管理、用户管理、优惠券管理、评论审核、会员等级、积分商品。
+
+#### Scenario: 导航菜单点击跳转
+- **WHEN** 管理员点击侧边栏中的某个菜单项
+- **THEN** 系统跳转至对应的管理页面，侧边栏高亮当前菜单项
+
+### Requirement: 顶部导航栏
+系统 SHALL 在顶部导航栏显示当前页面标题、面包屑导航和管理员操作（登出按钮）。
+
+#### Scenario: 面包屑导航显示
+- **WHEN** 管理员浏览任意管理页面
+- **THEN** 顶栏显示面包屑路径（如"首页 > 商品管理 > 商品列表"）
+
+### Requirement: 登录页独立布局
+登录页 SHALL 不使用管理后台布局框架，使用独立的居中卡片式布局。
+
+#### Scenario: 登录页布局
+- **WHEN** 未登录用户访问登录页
+- **THEN** 页面显示居中的登录卡片，不包含侧边栏和顶栏
+

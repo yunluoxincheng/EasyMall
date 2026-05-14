@@ -57,3 +57,25 @@ TBD - created by archiving change add-admin-module. Update Purpose after archive
 - **THEN** 评论被逻辑删除（deleted 字段设置为 1）
 - **AND** 前端用户无法查看该评论
 
+### Requirement: 评论列表页面
+系统 SHALL 提供评论审核列表页面，展示评论 ID、商品名称、评论用户、评分、内容摘要、状态（待审核/已通过/已拒绝），支持按状态筛选和分页。
+
+#### Scenario: 评论列表展示
+- **WHEN** 管理员访问评论审核页面
+- **THEN** 系统调用 `/api/admin/comments` 接口并以表格形式展示评论列表
+
+#### Scenario: 按状态筛选评论
+- **WHEN** 管理员选择评论状态筛选条件
+- **THEN** 系统根据状态条件重新查询并展示结果
+
+### Requirement: 评论审核操作
+系统 SHALL 提供评论审核通过和拒绝操作。
+
+#### Scenario: 审核通过评论
+- **WHEN** 管理员对待审核评论点击"通过"操作
+- **THEN** 系统调用后端审核接口，评论状态变为已通过
+
+#### Scenario: 拒绝评论
+- **WHEN** 管理员对待审核评论点击"拒绝"操作
+- **THEN** 系统调用后端审核接口，评论状态变为已拒绝
+
