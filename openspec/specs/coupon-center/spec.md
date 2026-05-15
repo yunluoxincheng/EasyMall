@@ -1,0 +1,31 @@
+# coupon-center Specification
+
+## Purpose
+TBD - created by archiving change add-user-frontend. Update Purpose after archive.
+## Requirements
+### Requirement: 优惠券中心
+系统 SHALL 提供独立的优惠券中心页面（路由 /coupons），展示可领取的优惠券模板，并可通过导航栏或首页入口访问。
+
+#### Scenario: 浏览可领取优惠券
+- **WHEN** 用户访问优惠券中心页面
+- **THEN** 页面以卡片形式展示可领取的优惠券（面额、使用条件、有效期、领取状态），未领取的显示"立即领取"按钮
+
+#### Scenario: 领取优惠券
+- **WHEN** 用户点击某优惠券的"立即领取"按钮
+- **THEN** 系统调用领取接口，成功后按钮变为"已领取"，提示"领取成功"
+
+#### Scenario: 已领取标识
+- **WHEN** 用户已领取某优惠券
+- **THEN** 该优惠券卡片显示"已领取"标识，不可再次领取
+
+### Requirement: 我的优惠券列表
+系统 SHALL 提供我的优惠券页面（路由 /user/coupons），展示用户已拥有的优惠券，从用户中心菜单可访问。
+
+#### Scenario: 查看我的优惠券
+- **WHEN** 用户访问我的优惠券页面
+- **THEN** 页面展示优惠券列表（面额、使用条件、有效期、状态：可用/已使用/已过期），支持按状态筛选
+
+#### Scenario: 我的优惠券为空
+- **WHEN** 用户没有任何优惠券
+- **THEN** 显示空状态提示"暂无优惠券"，提供"去领取"链接跳转到优惠券中心
+

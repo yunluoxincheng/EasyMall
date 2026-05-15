@@ -20,3 +20,26 @@ export interface CommentQuery {
   showStatus?: number
   rating?: number
 }
+
+// 用户端评论类型
+export interface UserCommentVO {
+  id: number
+  userId: number
+  userNickname: string
+  userAvatar: string
+  productId: number
+  orderId: number
+  content: string
+  rating: number
+  images: string
+  reply: string
+  replyTime: string
+  createTime: string
+}
+
+export interface CommentCreateDTO {
+  productId: number
+  orderId: number
+  content: string
+  rating: number
+}

@@ -79,3 +79,38 @@ export type CouponStatistics = Record<string, unknown>
 
 export type CouponTemplatePage = MyBatisPage<CouponTemplateVO>
 export type UsageLogPage = MyBatisPage<CouponUsageLogVO>
+
+// 用户端优惠券类型
+export interface UserCouponVO {
+  id: number
+  templateId: number
+  couponCode: string
+  couponName: string
+  type: number
+  typeDesc: string
+  discountAmount: number
+  discountPercentage: number
+  minAmount: number
+  maxDiscount: number
+  startTime: string
+  endTime: string
+  status: number
+  statusDesc: string
+  useTime: string
+  orderId: number
+  orderNo: string
+  receiveTime: string
+  expiringSoon: boolean
+}
+
+export interface CouponCalculateResultVO {
+  userCouponId: number
+  couponName: string
+  type: number
+  typeDesc: string
+  originalAmount: number
+  discountAmount: number
+  finalAmount: number
+  available: boolean
+  unavailableReason: string
+}

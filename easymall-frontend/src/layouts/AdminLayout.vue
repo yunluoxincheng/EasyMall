@@ -40,14 +40,14 @@ function renderIcon(icon: unknown) {
 }
 
 const menuOptions: MenuOption[] = [
-  { label: '商品管理', key: '/product', icon: renderIcon(BagOutline) },
-  { label: '分类管理', key: '/category', icon: renderIcon(GridOutline) },
-  { label: '订单管理', key: '/order', icon: renderIcon(DocumentTextOutline) },
-  { label: '用户管理', key: '/user', icon: renderIcon(PeopleOutline) },
-  { label: '优惠券管理', key: '/coupon', icon: renderIcon(TicketOutline) },
-  { label: '评论审核', key: '/comment', icon: renderIcon(ChatboxOutline) },
-  { label: '会员等级', key: '/member-level', icon: renderIcon(StarOutline) },
-  { label: '积分商品', key: '/points-product', icon: renderIcon(GiftOutline) },
+  { label: '商品管理', key: '/admin/product', icon: renderIcon(BagOutline) },
+  { label: '分类管理', key: '/admin/category', icon: renderIcon(GridOutline) },
+  { label: '订单管理', key: '/admin/order', icon: renderIcon(DocumentTextOutline) },
+  { label: '用户管理', key: '/admin/user', icon: renderIcon(PeopleOutline) },
+  { label: '优惠券管理', key: '/admin/coupon', icon: renderIcon(TicketOutline) },
+  { label: '评论审核', key: '/admin/comment', icon: renderIcon(ChatboxOutline) },
+  { label: '会员等级', key: '/admin/member-level', icon: renderIcon(StarOutline) },
+  { label: '积分商品', key: '/admin/points-product', icon: renderIcon(GiftOutline) },
 ]
 
 const activeKey = computed(() => route.path)
@@ -67,7 +67,7 @@ function handleLogout() {
     onPositiveClick: () => {
       auth.logout()
       message.success('已退出登录')
-      router.push('/login')
+      router.push('/admin/login')
     },
   })
 }

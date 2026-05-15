@@ -1,0 +1,38 @@
+# user-layout Specification
+
+## Purpose
+TBD - created by archiving change add-user-frontend. Update Purpose after archive.
+## Requirements
+### Requirement: 用户端公共布局
+系统 SHALL 提供用户端专用布局，包含顶部导航栏和底部 Footer，与管理端布局独立。
+
+#### Scenario: 访问用户端任意页面显示公共布局
+- **WHEN** 用户访问用户端路由（如 /products、/cart、/orders）
+- **THEN** 页面顶部显示导航栏（Logo、商品分类入口、搜索框、购物车图标带数量角标、用户头像/菜单），底部显示 Footer
+
+#### Scenario: 未登录用户看到导航栏登录入口
+- **WHEN** 未登录用户访问用户端页面
+- **THEN** 导航栏右侧显示"登录/注册"按钮，点击跳转到登录页
+
+#### Scenario: 已登录用户看到用户菜单
+- **WHEN** 已登录用户访问用户端页面
+- **THEN** 导航栏右侧显示用户昵称和下拉菜单（我的订单、个人中心、退出登录）
+
+### Requirement: 顶部导航栏搜索功能
+系统 SHALL 在顶部导航栏提供搜索输入框，支持按商品名称搜索。
+
+#### Scenario: 输入关键词搜索商品
+- **WHEN** 用户在搜索框输入关键词并按回车或点击搜索
+- **THEN** 页面跳转到商品列表页，显示匹配关键词的商品结果
+
+### Requirement: 购物车图标显示商品数量
+系统 SHALL 在导航栏购物车图标上显示当前购物车商品数量角标。
+
+#### Scenario: 购物车有商品时显示角标
+- **WHEN** 用户购物车中有 3 件商品
+- **THEN** 购物车图标右上角显示数字 3 的角标
+
+#### Scenario: 购物车为空时无角标
+- **WHEN** 用户购物车为空
+- **THEN** 购物车图标不显示角标
+

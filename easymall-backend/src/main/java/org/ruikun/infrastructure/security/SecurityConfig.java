@@ -45,6 +45,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authz -> authz
                         .requestMatchers("/api/user/login", "/api/user/register").permitAll()
                         .requestMatchers("/api/product/**", "/api/category/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/comment/product/**").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/payment/callback").permitAll()
                         .requestMatchers("/", "/error", "/actuator/**").permitAll()

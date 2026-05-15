@@ -42,7 +42,7 @@ async function handleLogin() {
 
     auth.setLogin(token, role)
     message.success('登录成功')
-    router.push('/')
+    router.push('/admin')
   } catch (e: unknown) {
     auth.logout()
     const msg = e instanceof Error ? e.message : '用户名或密码错误'
