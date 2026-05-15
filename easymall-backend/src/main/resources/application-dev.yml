@@ -25,6 +25,9 @@ spring:
     password: guest
     virtual-host: /
 
+  flyway:
+    enabled: false
+
   devtools:
     restart:
       enabled: true

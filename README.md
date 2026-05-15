@@ -491,32 +491,36 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 
 #### 方式一：快速部署（推荐）
 
-使用预初始化的 MySQL 镜像，自动完成数据库初始化，无需手动导入 SQL 文件。
+使用 Docker Compose 一键启动，Flyway 自动完成数据库迁移，无需手动导入 SQL。
 
 ```bash
 # 1. 拉取镜像
 docker pull yunluoxincheng/easymall:latest
-docker pull yunluoxincheng/easymall-mysql:init
+docker pull mysql:8.0
 docker pull redis:7-alpine
+docker pull rabbitmq:3-management-alpine
 
 # 2. 创建网络
 docker network create easymall-net
 
-# 3. 启动 MySQL（自动初始化数据库）
+# 3. 启动 MySQL
 docker run -d `
   --name easymall-mysql `
   --network easymall-net `
   -e MYSQL_ROOT_PASSWORD=123456 `
   -e MYSQL_DATABASE=easymall `
   -e TZ=Asia/Shanghai `
-  yunluoxincheng/easymall-mysql:init
+  mysql:8.0
 
-# 4. 等待 30-60 秒让数据库初始化完成
+# 4. 等待 MySQL 就绪（约 30 秒）
 
 # 5. 启动 Redis
 docker run -d --name easymall-redis --network easymall-net redis:7-alpine
 
-# 6. 启动应用
+# 6. 启动 RabbitMQ
+docker run -d --name easymall-rabbitmq --network easymall-net rabbitmq:3-management-alpine
+
+# 7. 启动应用（Flyway 自动迁移数据库）
 docker run -d `
   --name easymall-app `
   --network easymall-net `
@@ -527,14 +531,21 @@ docker run -d `
   -e SPRING_DATASOURCE_PASSWORD=123456 `
   -e SPRING_DATA_REDIS_HOST=easymall-redis `
   -e SPRING_DATA_REDIS_PORT=6379 `
+  -e SPRING_RABBITMQ_HOST=easymall-rabbitmq `
+  -e SPRING_RABBITMQ_PORT=5672 `
+  -e SPRING_FLYWAY_ENABLED=true `
+  -e SPRING_FLYWAY_URL="jdbc:mysql://easymall-mysql:3306/easymall?useUnicode=true&characterEncoding=UTF-8&useSSL=false&serverTimezone=UTC" `
+  -e SPRING_FLYWAY_USER=root `
+  -e SPRING_FLYWAY_PASSWORD=123456 `
+  -e SPRING_FLYWAY_BASELINE_ON_MIGRATE=true `
   yunluoxincheng/easymall:latest
 
-# 7. 验证部署
-curl http://localhost:8080/api/public/products
+# 8. 验证部署
+curl http://localhost:8080/api/product/page?page=1&size=5
 ```
 
 **特点**：
-- ✅ 预初始化 MySQL 镜像，无需手动导入 SQL
+- ✅ Flyway 自动迁移数据库，无需手动导入 SQL
 - ✅ 启动即用，快速部署
 - ✅ 适合云服务器部署
 - ✅ 支持 Volume 挂载图片存储目录
@@ -543,34 +554,6 @@ curl http://localhost:8080/api/public/products
 ```bash
 mkdir -p /root/EasyMall/uploads
 chmod 755 /root/EasyMall/uploads
-```
-
-#### 方式二：标准部署
-
-使用官方 MySQL 镜像，需要手动初始化数据库。
-
-```bash
-# 1. 拉取镜像
-docker pull yunluoxincheng/easymall:latest
-docker pull mysql:8.0
-docker pull redis:7-alpine
-
-# 2. 创建网络
-docker network create easymall-net
-
-# 3. 启动 MySQL（需手动导入数据库）
-docker run -d \
-  --name easymall-mysql \
-  --network easymall-net \
-  -e MYSQL_ROOT_PASSWORD=123456 \
-  -e MYSQL_DATABASE=easymall \
-  -e TZ=Asia/Shanghai \
-  mysql:8.0
-
-# 4. 手动导入数据库脚本（详见部署文档）
-# 使用 WinSCP 或 scp 上传 migration 目录下的 SQL 文件
-
-# 5-7. 同方式一
 ```
 
 #### 更多部署选项

@@ -10,12 +10,16 @@ import org.ruikun.infrastructure.security.JwtUtil;
 import org.ruikun.modules.payment.dto.PaymentCallbackDTO;
 import org.ruikun.modules.payment.service.IPaymentService;
 import org.ruikun.modules.payment.vo.PaymentVO;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.math.BigDecimal;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 class PaymentControllerTest {
 
@@ -95,6 +99,70 @@ class PaymentControllerTest {
             assertFalse(result.getSuccess());
             assertEquals(ResponseCode.FORBIDDEN.getCode(), result.getCode());
             verify(paymentService, never()).processCallback(anyString(), any(BigDecimal.class), anyString());
+        }
+    }
+
+    @Nested
+    @DisplayName("MockMvc endpoints")
+    class MockMvcEndpoints {
+
+        private MockMvc mockMvc;
+
+        @BeforeEach
+        void setUp() {
+            mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
+        }
+
+        @Test
+        @DisplayName("POST /{paymentNo}/pay returns PaymentVO")
+        void payReturnsPaymentVO() throws Exception {
+            when(jwtUtil.getUserIdFromToken("test-token")).thenReturn(100L);
+            PaymentVO vo = createPaymentVO();
+            when(paymentService.pay("PAY123", 100L)).thenReturn(vo);
+
+            mockMvc.perform(post("/api/payment/PAY123/pay")
+                            .header("Authorization", "Bearer test-token"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true))
+                    .andExpect(jsonPath("$.data.paymentNo").value("PAY123"));
+        }
+
+        @Test
+        @DisplayName("POST /callback with valid signature")
+        void callbackWithValidSignature() throws Exception {
+            doNothing().when(paymentService).processCallback(eq("PAY123"), any(BigDecimal.class), anyString());
+
+            mockMvc.perform(post("/api/payment/callback")
+                            .header("X-Mock-Signature", "easymall-mock-signature-2024")
+                            .contentType("application/json")
+                            .content("{\"paymentNo\":\"PAY123\",\"amount\":199.00,\"channel\":\"MOCK\"}"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true));
+        }
+
+        @Test
+        @DisplayName("POST /callback without signature returns FORBIDDEN")
+        void callbackWithoutSignature() throws Exception {
+            mockMvc.perform(post("/api/payment/callback")
+                            .contentType("application/json")
+                            .content("{\"paymentNo\":\"PAY123\",\"amount\":199.00,\"channel\":\"MOCK\"}"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(false))
+                    .andExpect(jsonPath("$.code").value("FORBIDDEN"));
+        }
+
+        @Test
+        @DisplayName("GET /{paymentNo} returns PaymentVO")
+        void getByPaymentNoReturnsPaymentVO() throws Exception {
+            when(jwtUtil.getUserIdFromToken("test-token")).thenReturn(100L);
+            PaymentVO vo = createPaymentVO();
+            when(paymentService.getByPaymentNo("PAY123", 100L)).thenReturn(vo);
+
+            mockMvc.perform(get("/api/payment/PAY123")
+                            .header("Authorization", "Bearer test-token"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true))
+                    .andExpect(jsonPath("$.data.paymentNo").value("PAY123"));
         }
     }
 }

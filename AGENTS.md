@@ -72,7 +72,7 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d  # with app
 docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d  # production
 ```
 
-Production Dockerfile: `docker/Dockerfile.production`. Docker Hub: `yunluoxincheng/easymall:latest`, `yunluoxincheng/easymall-mysql:init`.
+Production Dockerfile: `docker/Dockerfile.production`. Docker Hub: `yunluoxincheng/easymall:latest`.
 
 ## Conventions
 
@@ -84,7 +84,7 @@ Production Dockerfile: `docker/Dockerfile.production`. Docker Hub: `yunluoxinche
 - Constructor injection via Lombok `@RequiredArgsConstructor`
 - Entities: `@Data`, `@TableName`, `@TableId(type = IdType.AUTO)`, `@TableLogic` for soft delete
 - All tables have `id`, `create_time`, `update_time`, `deleted`
-- DB migrations are plain SQL in `src/main/resources/db/migration/` — loaded by Docker init, **not** Flyway
+- DB migrations: Flyway (`src/main/resources/db/migration/`); `flyway.enabled: true` in base config, disabled in `application-dev.yml` for local dev
 - `@MapperScan` lists all module mapper packages explicitly
 - `type-aliases-package` lists all module entity packages
 

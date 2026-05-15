@@ -1,0 +1,35 @@
+name: Frontend CI
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'easymall-frontend/**'
+  pull_request:
+    branches: [master]
+    paths:
+      - 'easymall-frontend/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: easymall-frontend
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 18
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: npm
+          cache-dependency-path: easymall-frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build

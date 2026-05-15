@@ -8,6 +8,22 @@ services:
       dockerfile: ../docker/Dockerfile
     environment:
       - SPRING_PROFILES_ACTIVE=dev
+      # 覆盖 dev profile 中的 localhost 地址，使用 Docker 服务名
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/easymall?useUnicode=true&characterEncoding=UTF-8&useSSL=false&serverTimezone=UTC
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD:-123456}
+      # Flyway 迁移（Docker 环境启用）
+      - SPRING_FLYWAY_ENABLED=true
+      - SPRING_FLYWAY_URL=jdbc:mysql://mysql:3306/easymall?useUnicode=true&characterEncoding=UTF-8&useSSL=false&serverTimezone=UTC
+      - SPRING_FLYWAY_USER=root
+      - SPRING_FLYWAY_PASSWORD=${MYSQL_PASSWORD:-123456}
+      - SPRING_FLYWAY_BASELINE_ON_MIGRATE=true
+      - SPRING_DATA_REDIS_HOST=redis
+      - SPRING_DATA_REDIS_PORT=6379
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - SPRING_RABBITMQ_PORT=5672
+      - SPRING_RABBITMQ_USERNAME=${RABBITMQ_USERNAME:-guest}
+      - SPRING_RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-guest}
       # 启用 Spring Boot DevTools
       - SPRING_DEVTOOLS_RESTART_ENABLED=true
       - SPRING_DEVTOOLS_LIVERELOAD_ENABLED=true

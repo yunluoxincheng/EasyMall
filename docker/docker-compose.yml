@@ -35,10 +35,21 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/easymall?useUnicode=true&characterEncoding=UTF-8&useSSL=false&serverTimezone=UTC
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD}
+      # Flyway 迁移（Docker 环境启用）
+      - SPRING_FLYWAY_ENABLED=true
+      - SPRING_FLYWAY_URL=jdbc:mysql://mysql:3306/easymall?useUnicode=true&characterEncoding=UTF-8&useSSL=false&serverTimezone=UTC
+      - SPRING_FLYWAY_USER=root
+      - SPRING_FLYWAY_PASSWORD=${MYSQL_PASSWORD}
+      - SPRING_FLYWAY_BASELINE_ON_MIGRATE=true
       # Redis 配置
       - SPRING_DATA_REDIS_HOST=redis
       - SPRING_DATA_REDIS_PORT=6379
       - SPRING_DATA_REDIS_PASSWORD=${SPRING_DATA_REDIS_PASSWORD:-}
+      # RabbitMQ 配置
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - SPRING_RABBITMQ_PORT=5672
+      - SPRING_RABBITMQ_USERNAME=${RABBITMQ_USERNAME:-guest}
+      - SPRING_RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-guest}
       # JWT 配置
       - JWT_SECRET=${JWT_SECRET:-easymall_default_jwt_secret_key_for_development_only_at_least_256_bits_long}
       # 文件上传配置
@@ -74,7 +85,6 @@ services:
       - "${MYSQL_PORT:-3306}:3306"
     volumes:
       - mysql-data:/var/lib/mysql
-      - ../easymall-backend/src/main/resources/db/migration:/docker-entrypoint-initdb.d:ro
     networks:
       - easymall-network
     healthcheck:

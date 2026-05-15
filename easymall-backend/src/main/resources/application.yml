@@ -12,6 +12,10 @@ spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
 
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+
 server:
   port: ${SERVER_PORT:8080}
 
