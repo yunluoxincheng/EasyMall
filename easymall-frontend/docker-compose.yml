@@ -1,0 +1,13 @@
+services:
+  easymall-frontend:
+    build: .
+    container_name: easymall-frontend
+    ports:
+      - "${FRONTEND_PORT:-80}:80"
+    networks:
+      - easymall-network
+    restart: unless-stopped
+
+networks:
+  easymall-network:
+    external: true

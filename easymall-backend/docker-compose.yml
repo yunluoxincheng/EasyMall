@@ -1,60 +1,30 @@
-# Docker 基础配置（包含 MySQL + Redis + 应用服务）
-# 开发环境: docker compose -f docker-compose.yml -f docker-compose.dev.yml up
-# 生产环境: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
-
 services:
-  # RabbitMQ 消息队列
-  rabbitmq:
-    image: rabbitmq:3-management-alpine
-    container_name: easymall-rabbitmq
-    ports:
-      - "${RABBITMQ_PORT:-5672}:5672"
-      - "${RABBITMQ_MGMT_PORT:-15672}:15672"
-    environment:
-      - RABBITMQ_DEFAULT_USER=${RABBITMQ_USERNAME:-guest}
-      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASSWORD:-guest}
-    networks:
-      - easymall-network
-    healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
-      interval: 10s
-      timeout: 10s
-      retries: 5
-
-  # EasyMall 应用服务
   easymall-app:
-    build:
-      context: ../easymall-backend
-      dockerfile: ../docker/Dockerfile.production
+    build: .
     container_name: easymall-app
     ports:
       - "${APP_PORT:-8080}:8080"
     environment:
       - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-prod}
-      # 数据源配置
-      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/easymall?useUnicode=true&characterEncoding=UTF-8&useSSL=false&serverTimezone=UTC
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/easymall?useUnicode=true&characterEncoding=UTF-8&useSSL=false&serverTimezone=Asia/Shanghai
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD}
-      # Flyway 迁移（Docker 环境启用）
       - SPRING_FLYWAY_ENABLED=true
-      - SPRING_FLYWAY_URL=jdbc:mysql://mysql:3306/easymall?useUnicode=true&characterEncoding=UTF-8&useSSL=false&serverTimezone=UTC
+      - SPRING_FLYWAY_URL=jdbc:mysql://mysql:3306/easymall?useUnicode=true&characterEncoding=UTF-8&useSSL=false&serverTimezone=Asia/Shanghai
       - SPRING_FLYWAY_USER=root
       - SPRING_FLYWAY_PASSWORD=${MYSQL_PASSWORD}
       - SPRING_FLYWAY_BASELINE_ON_MIGRATE=true
-      # Redis 配置
       - SPRING_DATA_REDIS_HOST=redis
       - SPRING_DATA_REDIS_PORT=6379
-      - SPRING_DATA_REDIS_PASSWORD=${SPRING_DATA_REDIS_PASSWORD:-}
-      # RabbitMQ 配置
+      - SPRING_DATA_REDIS_PASSWORD=${REDIS_PASSWORD:-}
       - SPRING_RABBITMQ_HOST=rabbitmq
       - SPRING_RABBITMQ_PORT=5672
       - SPRING_RABBITMQ_USERNAME=${RABBITMQ_USERNAME:-guest}
       - SPRING_RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-guest}
-      # JWT 配置
-      - JWT_SECRET=${JWT_SECRET:-easymall_default_jwt_secret_key_for_development_only_at_least_256_bits_long}
-      # 文件上传配置
+      - JWT_SECRET=${JWT_SECRET}
       - FILE_UPLOAD_BASE_PATH=/data/easymall/uploads
       - FILE_UPLOAD_BASE_URL=${FILE_UPLOAD_BASE_URL:-http://localhost:8080/uploads}
+      - JAVA_OPTS=-Xmx512m -Xms256m
     volumes:
       - upload-data:/data/easymall/uploads
     depends_on:
@@ -68,7 +38,6 @@ services:
       - easymall-network
     restart: unless-stopped
 
-  # MySQL 数据库服务
   mysql:
     image: mysql:8.0
     container_name: easymall-mysql
@@ -93,10 +62,17 @@ services:
       timeout: 5s
       retries: 5
 
-  # Redis 缓存服务
   redis:
     image: redis:7-alpine
     container_name: easymall-redis
+    command: >
+      sh -c '
+        if [ -n "$REDIS_PASSWORD" ]; then
+          exec redis-server --requirepass "$REDIS_PASSWORD"
+        else
+          exec redis-server
+        fi
+      '
     ports:
       - "${REDIS_PORT:-6379}:6379"
     networks:
@@ -107,9 +83,26 @@ services:
       timeout: 5s
       retries: 5
 
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: easymall-rabbitmq
+    ports:
+      - "${RABBITMQ_PORT:-5672}:5672"
+      - "${RABBITMQ_MGMT_PORT:-15672}:15672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_USERNAME:-guest}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASSWORD:-guest}
+    networks:
+      - easymall-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+
 networks:
   easymall-network:
-    driver: bridge
+    external: true
 
 volumes:
   mysql-data:
