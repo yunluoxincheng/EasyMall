@@ -1,654 +1,271 @@
-# EasyMall B2C电子商城系统
+# EasyMall
 
-## 项目简介
+> 基于 Spring Boot + Redis + RabbitMQ 的 B2C 电商系统，实现了完整的交易链路设计。
 
-EasyMall是一个基于Spring Boot开发的B2C电子商城系统，采用前后端分离架构，提供商品展示、购物车、订单管理、用户管理等功能。系统已完整实现**会员等级体系**，包括积分系统、会员折扣、每日签到、积分兑换、商品评论收藏等核心功能，为用户提供完整的购物体验。
+## 核心亮点
+
+- **订单状态机** — 8 种状态、基于 `EnumMap` 的状态转换表，所有流转通过 `OrderStateMachine` 统一校验
+- **库存三态分离** — `available_stock / locked_stock / sold_stock` 独立管理，乐观锁防止超卖
+- **支付幂等** — `WAITING_PAY → PAYING → PAID` 三态 CAS 状态机 + 回调日志，防止重复扣款
+- **MQ 延迟关单** — RabbitMQ TTL + DLX 实现超时自动取消，CAS 防止与支付并发竞争
+- **优惠券生命周期** — 下单锁定 → 支付确认 → 取消/超时返还，完整的状态流转管理
+- **积分幂等** — `biz_type + biz_id` 唯一约束，订单、签到、评价等场景防重复发放
+- **领域事件驱动** — `DomainEvent` 统一事件模型，事务提交后异步投递，消费端幂等 + DLQ 兜底
+- **前后端分离** — Vue 3 + Naive UI 前端，Spring Boot RESTful 后端，Docker Compose 独立部署
 
 ## 技术栈
 
-- 后端框架：Spring Boot 4.0.1
-- 数据库：MySQL 8
-- 缓存：Redis（商品搜索结果缓存、热门/新品商品缓存、登录态缓存）
-- ORM框架：MyBatis Plus
-- 认证授权：Spring Security + JWT
-- 文件存储：本地文件系统（商品图片、用户头像）
-- 工具类：Hutool、FastJSON2
-- 构建工具：Maven
+### 后端
 
-**性能优化**:
-- 商品搜索使用 MySQL 全文索引（FULLTEXT）+ Redis 缓存（5分钟过期）
-- 支持 LIKE 模糊搜索和全文搜索两种方式，按相关性排序
-- 热门商品和新品推荐使用 Redis 缓存
-- 商品信息变更时自动清除相关缓存
+| 组件 | 版本 | 用途 |
+|------|------|------|
+| JDK | 17 | 运行时 |
+| Spring Boot | 4.0.1 | 基础框架 |
+| MySQL | 8.0 | 关系型数据库 |
+| Redis | 7 | 缓存（搜索结果、热门商品、登录态） |
+| RabbitMQ | 3 | 异步事件驱动（延迟关单、积分发放、缓存清理） |
+| MyBatis Plus | — | ORM 框架 |
+| Spring Security + JWT | — | 认证授权 |
+| Flyway | — | 数据库版本迁移 |
 
-## 功能模块
+### 前端
 
-### 1. 用户与会员模块
-- 用户注册与登录
-- JWT认证
-- 个人信息管理
-- 密码修改
-- **用户头像上传**
-- **会员等级系统**（5个等级：普通、铜牌、银牌、金牌、钻石）
-- **会员积分系统**
-  - 订单完成获得积分（每消费1元获得1积分）
-  - 商品评价获得积分（每次评价获得10积分）
-  - 每日签到获得积分（5-25积分）
-- **会员折扣**（不同等级享受不同折扣，最高85折）
-- **积分兑换**（使用积分兑换商品/优惠券）
-- **每日签到**（连续签到额外奖励）
+| 组件 | 用途 |
+|------|------|
+| Vue 3 | 前端框架 |
+| Vite | 构建工具 |
+| TypeScript | 类型安全 |
+| Naive UI | 组件库 |
+| Pinia | 状态管理 |
+| Axios | HTTP 客户端 |
 
-### 2. 商品与分类模块
-- 商品分类管理（支持多级分类）
-- 商品信息展示
-- 商品搜索（基于 MySQL FULLTEXT 全文索引 + Redis 缓存）
-- 热门商品、新品推荐
-- **商品图片上传**（支持单图/多图上传，文件类型验证，本地存储）
-- **商品评价系统**（评分、评论、图片）
-- **商品收藏功能**
+### 工程化
 
-### 3. 购物车模块
-- 添加商品至购物车
-- 修改商品数量
-- 删除购物车商品
-- 商品选择/取消选择
-- **会员折扣自动应用**
+| 组件 | 用途 |
+|------|------|
+| Docker Compose | 容器化部署 |
+| GitHub Actions | CI 流水线 |
+| Flyway | 数据库迁移 |
+| Maven | 构建管理 |
 
-### 4. 订单管理模块
-- 创建订单
-- **会员折扣自动计算**
-- 订单支付
-- 查看历史订单
-- 订单状态流转（待支付→已支付→已发货→已完成）
-- **订单完成后自动发放积分**
+## 系统架构
 
-### 5. 会员积分模块
-- **积分获取**
-  - 订单完成：消费金额 × 1
-  - 商品评价：10积分/次
-  - 每日签到：5-25积分（连续签到额外奖励）
-- **积分消耗**
-  - 积分兑换商品
-  - 积分兑换优惠券
-- **积分记录**：完整的积分变动历史查询
-- **会员等级**：根据积分自动升级
+```mermaid
+graph TB
+    subgraph Frontend
+        FE[Vue 3 前端]
+    end
+    subgraph Backend["后端 (Spring Boot)"]
+        API[REST API]
+        SM[订单状态机]
+        INV[库存服务]
+        PAY[支付服务]
+        MQ[RabbitMQ 事件]
+    end
+    subgraph Storage
+        MySQL[(MySQL 8)]
+        Redis[(Redis)]
+    end
 
-### 6. 评论与收藏模块
-- **商品评论**
-  - 评论商品（需订单完成后）
-  - 评分（1-5星）
-  - 上传评论图片
-  - 查看商品评论列表
-  - 商家回复功能
-- **商品收藏**
-  - 添加/取消收藏
-  - 收藏列表管理
-  - 收藏状态查询
+    FE -->|HTTP /api| API
+    API --> SM
+    API --> INV
+    API --> PAY
+    PAY --> MQ
+    MQ -->|延迟关单/积分发放| API
+    API --> MySQL
+    API --> Redis
+    MQ -->|缓存失效| Redis
+```
 
-### 7. 优惠券模块
-- **优惠券类型**
-  - 固定金额券（满减券）：满100减10
-  - 百分比折扣券（折扣券）：85折优惠券
-  - 新人专享券：注册自动发放
-  - 会员专属券：会员升级自动发放
-- **领取方式**
-  - 用户主动领取（优惠券中心）
-  - 积分兑换优惠券
-  - 系统自动发放（新人注册、会员升级）
-- **使用规则**
-  - 每笔订单限用一张优惠券
-  - 优惠券在会员折扣后的金额基础上计算
-  - 订单取消自动返还优惠券
-  - 支持使用门槛、会员等级限制、有效期等配置
+## 核心流程设计
 
-### 8. 后台管理模块
+### 订单交易链路
 
-#### 管理员权限
-- 所有后台接口需要管理员角色（`ROLE_ADMIN`）
-- 使用 `@PreAuthorize("hasRole('ADMIN')")` 注解进行权限控制
+```
+用户下单 → 锁定库存 → 创建支付单 → 发布延迟关单消息
+                                    ↓
+                          用户支付 ← → 超时自动取消
+                              ↓              ↓
+                    确认库存/使用优惠券    释放库存/返还优惠券
+                              ↓
+                    确认收货 → MQ 异步发放积分
+```
 
-#### 商品管理
-- 商品分页查询（支持名称、分类、状态筛选）
-- 商品详情查询
-- 新增/修改商品
-- 商品上架/下架
-- 库存管理
-- 删除商品
+### 库存锁定模型
 
-#### 订单管理
-- 订单分页查询（支持订单号、用户、状态筛选）
-- 订单详情查询
-- 订单状态修改
-- 取消订单
+库存表 `inventory` 采用三态分离设计：
 
-#### 用户管理
-- 用户分页查询（支持用户名、手机、状态、角色筛选）
-- 用户详情查询
-- 用户状态启用/禁用
-- 用户角色管理
-- 积分调整
+| 字段 | 含义 |
+|------|------|
+| `available_stock` | 可售库存，用户可见的可购买数量 |
+| `locked_stock` | 锁定库存，下单后从可售转移至此 |
+| `sold_stock` | 已售库存，支付成功后从锁定转移至此 |
 
-#### 评论审核
-- 评论分页查询（支持商品、用户、状态、评分筛选）
-- 评论详情查询
-- 审核通过/拒绝
-- 商家回复
-- 删除评论
+- **下单**：`available -= N, locked += N`（乐观锁，防止超卖）
+- **支付**：`locked -= N, sold += N`
+- **取消**：`locked -= N, available += N`
 
-#### 会员等级管理
-- 等级配置列表
-- 新增/修改/删除等级
-- 等级状态管理
+### 支付幂等机制
 
-#### 分类管理
-- 分类分页查询
-- 新增/修改/删除分类
-- 分类状态管理
+支付单 `payment_order` 采用 CAS 状态机防止重复扣款：
 
-#### 积分兑换商品管理
-- 兑换商品列表
-- 新增/修改/删除兑换商品
-- 商品上架/下架
-- 库存管理
+1. 创建支付单，状态 `WAITING_PAY`
+2. 支付时 CAS 更新为 `PAYING`，并发请求被拒绝
+3. 回调处理时 CAS 更新为 `PAID`，重复回调直接返回成功
+4. 每次回调都记录 `payment_callback_log`，可追溯
 
 ## 项目结构
 
 ```
 EasyMall/
-├── easymall-backend/         # Spring Boot 后端
+├── easymall-backend/              # Spring Boot 后端
 │   ├── src/main/java/org/ruikun/
-│   │   ├── EasyMallApplication.java
-│   │   ├── common/           # Result, ResponseCode, ErrorDetail, PageRequest, PageResult
-│   │   ├── enums/            # 共享枚举（UserRole, OrderStatus, CouponType 等）
-│   │   ├── exception/        # BusinessException, GlobalExceptionHandler
+│   │   ├── common/                # Result、ResponseCode、分页封装
+│   │   ├── enums/                 # 共享枚举（OrderStatus、PaymentStatus 等）
+│   │   ├── exception/             # BusinessException、GlobalExceptionHandler
 │   │   ├── infrastructure/
-│   │   │   ├── config/       # FileUploadProperties, MyBatisPlusConfig
-│   │   │   └── security/     # SecurityConfig, JwtAuthenticationFilter, JwtUtil
-│   │   │   └── TraceIdUtil.java
-│   │   └── modules/
-│   │       ├── user/         # 用户、会员等级、签到、会员折扣
-│   │       │   ├── controller/   # UserController, MemberController, SignInController
-│   │       │   ├── dto/          # UserLoginDTO, UserRegisterDTO, UserUpdateDTO
-│   │       │   ├── entity/       # User, UserSign, MemberLevel
-│   │       │   ├── mapper/       # UserMapper, UserSignMapper, MemberLevelMapper
-│   │       │   ├── service/      # IUserService, IMemberService, ISignInService, IPriceService 等
-│   │       │   └── vo/           # UserVO, LoginVO, MemberLevelVO, SignInResultVO
-│   │       ├── product/      # 商品、分类
-│   │       │   ├── controller/   # ProductController, CategoryController
-│   │       │   ├── dto/          # ProductDTO, CategoryDTO
-│   │       │   ├── entity/       # Product, Category
-│   │       │   ├── mapper/       # ProductMapper, CategoryMapper
-│   │       │   ├── service/      # IProductService, ICategoryService
-│   │       │   └── vo/           # ProductVO, CategoryVO
-│   │       ├── order/        # 订单、订单明细、购物车
-│   │       │   ├── controller/   # OrderController, CartController
-│   │       │   ├── dto/          # OrderCreateDTO, CartAddDTO, CartUpdateDTO
-│   │       │   ├── entity/       # Order, OrderItem, Cart
-│   │       │   ├── mapper/       # OrderMapper, OrderItemMapper, CartMapper
-│   │       │   ├── service/      # IOrderService, ICartService
-│   │       │   └── vo/           # OrderVO, OrderItemVO, CartVO
-│   │       ├── coupon/       # 优惠券模板、用户优惠券、使用记录
-│   │       │   ├── controller/   # CouponController
-│   │       │   ├── dto/          # CouponTemplateDTO, CouponTemplateQueryDTO, CouponCalculateDTO
-│   │       │   ├── entity/       # CouponTemplate, UserCoupon, CouponUsageLog
-│   │       │   ├── mapper/       # CouponTemplateMapper, UserCouponMapper, CouponUsageLogMapper
-│   │       │   ├── service/      # ICouponService, ICouponAdminService
-│   │       │   ├── task/         # CouponScheduledTask
-│   │       │   └── vo/           # CouponTemplateVO, UserCouponVO, CouponUsageLogVO 等
-│   │       ├── points/       # 积分记录、积分商品、积分兑换
-│   │       │   ├── controller/   # PointsController, PointsExchangeController
-│   │       │   ├── dto/          # PointsExchangeDTO
-│   │       │   ├── entity/       # PointsRecord, PointsProduct, PointsExchange
-│   │       │   ├── mapper/       # PointsRecordMapper, PointsProductMapper, PointsExchangeMapper
-│   │       │   ├── service/      # IPointsService, IPointsExchangeService
-│   │       │   └── vo/           # PointsRecordVO, PointsProductVO, PointsExchangeVO
-│   │       ├── comment/      # 商品评论
-│   │       │   ├── controller/   # CommentController
-│   │       │   ├── dto/          # CommentCreateDTO
-│   │       │   ├── entity/       # Comment
-│   │       │   ├── mapper/       # CommentMapper
-│   │       │   ├── service/      # ICommentService
-│   │       │   └── vo/           # CommentVO
-│   │       ├── favorite/     # 商品收藏
-│   │       │   ├── controller/   # FavoriteController
-│   │       │   ├── entity/       # Favorite
-│   │       │   ├── mapper/       # FavoriteMapper
-│   │       │   ├── service/      # IFavoriteService
-│   │       │   └── vo/           # FavoriteVO
-│   │       ├── upload/       # 文件上传
-│   │       │   ├── controller/   # FileUploadController
-│   │       │   ├── service/      # FileStorageService
-│   │       │   └── vo/           # ImageUploadVO, MultiImageUploadVO
-│   │       └── admin/        # 后台管理（跨模块）
-│   │           ├── controller/   # AdminUserController, AdminProductController 等
-│   │           ├── dto/          # 后台管理相关 DTO
-│   │           └── vo/           # 后台管理相关 VO
+│   │   │   ├── config/            # MyBatisPlus、文件上传配置
+│   │   │   ├── mq/                # RabbitMQ 配置、领域事件、消费者
+│   │   │   └── security/          # Spring Security + JWT
+│   │   └── modules/               # 业务模块（按功能域组织）
+│   │       ├── order/             # 订单、购物车、订单状态机
+│   │       ├── payment/           # 支付单、支付回调日志
+│   │       ├── inventory/         # 库存、库存流水
+│   │       ├── product/           # 商品、分类
+│   │       ├── user/              # 用户、会员等级、签到、会员折扣
+│   │       ├── coupon/            # 优惠券模板、用户优惠券、使用记录
+│   │       ├── points/            # 积分记录、积分商品、积分兑换
+│   │       ├── comment/           # 商品评论
+│   │       ├── favorite/          # 商品收藏
+│   │       ├── upload/            # 文件上传
+│   │       └── admin/             # 后台管理（跨模块）
 │   ├── src/main/resources/
-│   │   ├── application.yml        # 基础配置（无环境特定值）
-│   │   ├── application-dev.yml    # 开发环境默认值
-│   │   ├── application-prod.yml   # 生产环境（纯环境变量引用）
-│   │   ├── mapper/                # MyBatis XML 映射文件
-│   │   └── db/migration/          # SQL 初始化脚本
-│   └── pom.xml
-├── easymall-frontend/        # Vue 3 前端（占位）
-│   └── .gitkeep
-├── docker/
-│   ├── mysql/                # MySQL 初始化脚本
-│   ├── Dockerfile            # 开发环境 Dockerfile
-│   ├── Dockerfile.production # 生产环境多阶段构建 Dockerfile
-│   ├── docker-compose.yml    # 基础编排（MySQL + Redis）
-│   ├── docker-compose.dev.yml    # 开发环境覆盖
-│   ├── docker-compose.prod.yml   # 生产环境配置
-│   ├── start.bat / start.sh      # 启动脚本
-│   └── push-docker-image.bat / .sh # 镜像推送脚本
-├── .env.example              # 环境变量示例
+│   │   ├── application.yml        # 基础配置
+│   │   ├── application-dev.yml    # 开发环境
+│   │   ├── application-prod.yml   # 生产环境（纯环境变量）
+│   │   ├── db/migration/          # Flyway 迁移脚本（V1-V11）
+│   │   └── mapper/                # MyBatis XML
+│   ├── Dockerfile                 # 后端容器化
+│   └── docker-compose.yml         # MySQL + Redis + RabbitMQ + 后端
+├── easymall-frontend/             # Vue 3 前端
+│   ├── src/
+│   │   ├── views/                 # 页面（管理端 + 用户端）
+│   │   ├── api/                   # API 请求封装
+│   │   ├── stores/                # Pinia 状态管理
+│   │   ├── router/                # 路由配置
+│   │   └── components/            # 公共组件
+│   ├── Dockerfile                 # 前端多阶段构建（Node → Nginx）
+│   ├── nginx.conf                 # Nginx 配置（SPA + API 反向代理）
+│   └── docker-compose.yml         # 前端独立部署
+├── docs/                          # 项目文档
+├── openspec/                      # OpenSpec 变更管理
+├── .env.example                   # 环境变量示例
 ├── CLAUDE.md
-├── AGENTS.md
 └── README.md
 ```
 
 ## 快速开始
 
 ### 环境要求
+
 - JDK 17
 - MySQL 8.0+
 - Redis 6.0+
+- RabbitMQ 3+
 - Maven 3.6+
+- Node.js 20+
 
-### 安装步骤
+### 本地启动
 
-1. **克隆项目**
-   ```bash
-   git clone https://github.com/yunluoxincheng/EasyMall.git
-   cd EasyMall
-   ```
-
-2. **配置数据库**
-   - 创建数据库 `easymall`
-   - 执行数据库初始化脚本：`easymall-backend/src/main/resources/db/migration/V1__Create_initial_tables.sql`
-
-3. **配置环境**
-   - 复制 `.env.example` 为 `.env`，按需修改配置值
-   - 或直接编辑 `easymall-backend/src/main/resources/application-dev.yml`（开发环境默认值已内置）
-
-4. **启动项目**
-   ```bash
-   cd easymall-backend
-   mvn spring-boot:run
-   ```
-
-5. **访问接口**
-   - 接口地址：http://localhost:8080/api
-   - 默认管理员账号：admin/admin123
-
-### Docker 开发环境（推荐）
-
-使用 Docker 可以快速搭建完整的开发环境，无需手动安装 MySQL、Redis 等依赖。
-
-**环境要求**
-- Docker Engine 20.10+
-- Docker Compose 2.0+
-
-**快速启动**
-
-1. **启动所有服务**
-   ```bash
-   # 使用 Docker Compose 启动（基础模式，仅 MySQL + Redis）
-   cd docker
-   docker compose up -d
-
-   # 或使用开发模式（包含后端应用 + 代码热重载）
-   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
-   ```
-
-2. **查看服务状态**
-   ```bash
-   docker compose ps
-   ```
-
-3. **查看应用日志**
-   ```bash
-   # 查看所有服务日志
-   docker compose logs -f
-
-   # 仅查看应用日志
-   docker compose logs -f easymall-app
-   ```
-
-4. **停止所有服务**
-   ```bash
-   docker compose stop
-
-   # 停止并删除数据卷（清空数据库数据）
-   docker compose down -v
-   ```
-
-**服务说明**
-
-| 服务 | 容器名 | 端口映射 | 说明 |
-|------|--------|----------|------|
-| EasyMall 应用 | easymall-app | 8080:8080 | Spring Boot 应用 |
-| MySQL | easymall-mysql | 3306:3306 | 数据库 |
-| Redis | easymall-redis | 6379:6379 | 缓存 |
-
-**代码热重载**
-
-开发模式支持代码热重载，修改 `src` 目录下的代码会自动触发应用重启：
-
-1. **启动开发模式**
-   ```bash
-   cd docker
-   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
-   ```
-
-2. **卷挂载说明**
-   - `./src:/app/src` - 源代码目录
-   - `./pom.xml:/app/pom.xml` - Maven 配置文件
-   - `${HOME}/.m2:/root/.m2` - Maven 仓库缓存
-   - `./uploads:/data/easymall/uploads` - 图片存储目录
-
-3. **热重载触发条件**
-   - 修改 Java 源代码
-   - 修改配置文件
-   - 修改 pom.xml
-
-4. **查看日志**
-   ```bash
-   docker-compose logs -f easymall-app
-   ```
-
-5. **手动重启**（如需要）
-   ```bash
-   docker-compose restart easymall-app
-   ```
-
-**环境配置**
-
-可通过 `.env` 文件自定义配置（参考 `.env.example`）：
+**1. 配置环境变量**
 
 ```bash
-# 应用端口
-SERVER_PORT=8080
-
-# MySQL 配置
-SPRING_DATASOURCE_URL=jdbc:mysql://localhost:3306/easymall?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=UTC
-SPRING_DATASOURCE_USERNAME=root
-SPRING_DATASOURCE_PASSWORD=123456
-
-# Redis 配置
-SPRING_DATA_REDIS_HOST=localhost
-SPRING_DATA_REDIS_PORT=6379
-
-# Spring Profile
-SPRING_PROFILES_ACTIVE=dev
+# 在仓库根目录下
+cp .env.example easymall-backend/.env
 ```
 
-**常见问题**
+本地 `mvn spring-boot:run` 使用 dev profile（`application-dev.yml`），MySQL 密码硬编码为 `123456`。`.env` 中的 `MYSQL_PASSWORD` 仅供 Docker Compose 使用，不会覆盖 dev profile 的数据库连接。如果本地 MySQL 密码不是 `123456`，需要修改 `application-dev.yml` 或通过启动参数 `--spring.datasource.password=xxx` 覆盖。
 
-1. **Maven 依赖下载缓慢**
-   - 首次启动会下载依赖，请耐心等待
-   - 依赖会缓存到宿主机 `~/.m2` 目录，后续启动更快
+> Docker 启动基础设施时需要 `.env` 中的密码变量，所以**先配置再启动**。
 
-2. **端口冲突**
-   - 修改 `.env` 文件中的端口配置
-   - 或关闭占用端口的服务
-
-**数据库初始化**
-
-使用 Docker 首次启动时，数据库会自动执行初始化脚本（位于 `docker/mysql/` 目录和 `easymall-backend/src/main/resources/db/migration/` 目录），包括：
-
-- 表结构创建（V1、V2、V3、V4）
-- 测试数据导入（test-data.sql）
-
-所有表和字段均使用 **utf8mb4** 字符集，确保中文数据正常存储。
-
-**重新初始化数据库**
-
-如需清空数据重新初始化：
+**2. 启动基础设施**
 
 ```bash
-# 停止并删除所有容器和数据卷
-cd docker
-docker compose -f docker-compose.yml -f docker-compose.dev.yml down -v
-
-# 重新启动（自动初始化）
-docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+cd easymall-backend
+docker compose up -d mysql redis rabbitmq
 ```
 
-## 项目文档
+或手动启动 MySQL 8.0、Redis 7、RabbitMQ 3 服务。
 
-### 包结构说明
-详细的包结构和各模块功能说明: [docs/PACKAGE_STRUCTURE.md](docs/PACKAGE_STRUCTURE.md)
+**3. 初始化数据库**
 
-### API接口文档
-详细的 API 接口文档请查看: [docs/API.md](docs/API.md)
-
-### 主要接口模块
-
-#### 用户模块
-- POST /api/user/login - 用户登录
-- POST /api/user/register - 用户注册
-- GET /api/user/info - 获取用户信息
-- PUT /api/user/password - 修改密码
-
-#### 商品模块
-- GET /api/product/page - 商品分页查询（支持关键词搜索）
-- GET /api/product/{id} - 商品详情
-- GET /api/product/hot - 热门商品
-- GET /api/product/new - 新品推荐
-
-#### 订单模块
-- POST /api/order/create - 创建订单（自动应用会员折扣）
-- GET /api/order/page - 订单列表
-- PUT /api/order/{orderId}/pay - 支付订单
-
-#### 会员模块
-- GET /api/member/level - 获取会员等级
-- GET /api/member/discount - 获取会员折扣
-
-#### 优惠券模块（用户端）
-- GET /api/coupon/templates - 获取可领取的优惠券列表
-- POST /api/coupon/receive/{templateId} - 领取优惠券
-- GET /api/coupon/my - 查看我的优惠券列表
-- GET /api/coupon/available - 获取可用优惠券（下单时）
-- POST /api/coupon/calculate - 计算优惠金额
-
-#### 优惠券模块（管理端）
-- GET /api/admin/coupon/templates - 查询优惠券模板列表
-- POST /api/admin/coupon/template - 创建优惠券模板
-- PUT /api/admin/coupon/template - 更新优惠券模板
-- PUT /api/admin/coupon/template/{id}/status - 上下架优惠券
-- DELETE /api/admin/coupon/template/{id} - 删除优惠券模板
-- GET /api/admin/coupon/usage-logs - 查询优惠券使用记录
-
-#### 图片上传模块
-- POST /api/upload/image - 单图上传（商品图片/用户头像）
-- POST /api/upload/images - 多图上传（仅商品图片）
-- DELETE /api/upload/image - 删除图片（需管理员权限）
-
-#### 后台管理模块（需要管理员权限）
-- GET /api/admin/products - 商品管理
-- GET /api/admin/orders - 订单管理
-- GET /api/admin/users - 用户管理
-- GET /api/admin/comments - 评论审核
-- GET /api/admin/member-levels - 会员等级管理
-
-> 更多接口详情请查看 [docs/API.md](docs/API.md)
->
-> 图片上传功能详细使用指南: [docs/image-upload-guide.md](docs/image-upload-guide.md)
-
-## 部署说明
-
-### 本地部署
-1. 打包项目：`cd easymall-backend && mvn clean package`
-2. 运行jar包：`java -jar target/EasyMall-0.0.1-SNAPSHOT.jar --spring.profiles.active=prod`
-
-### Docker 部署（生产环境）
-
-> 📘 **详细的云服务器部署指南**: 查看 [Docker 云服务器部署文档](docs/cloud-deployment.md)
-
-项目提供多种 Docker 部署方式：
-
-#### 方式一：快速部署（推荐）
-
-使用 Docker Compose 一键启动，Flyway 自动完成数据库迁移，无需手动导入 SQL。
+dev profile 默认关闭 Flyway（`spring.flyway.enabled: false`），需要手动初始化：
 
 ```bash
-# 1. 拉取镜像
-docker pull yunluoxincheng/easymall:latest
-docker pull mysql:8.0
-docker pull redis:7-alpine
-docker pull rabbitmq:3-management-alpine
-
-# 2. 创建网络
-docker network create easymall-net
-
-# 3. 启动 MySQL
-docker run -d `
-  --name easymall-mysql `
-  --network easymall-net `
-  -e MYSQL_ROOT_PASSWORD=123456 `
-  -e MYSQL_DATABASE=easymall `
-  -e TZ=Asia/Shanghai `
-  mysql:8.0
-
-# 4. 等待 MySQL 就绪（约 30 秒）
-
-# 5. 启动 Redis
-docker run -d --name easymall-redis --network easymall-net redis:7-alpine
-
-# 6. 启动 RabbitMQ
-docker run -d --name easymall-rabbitmq --network easymall-net rabbitmq:3-management-alpine
-
-# 7. 启动应用（Flyway 自动迁移数据库）
-docker run -d `
-  --name easymall-app `
-  --network easymall-net `
-  -p 8080:8080 `
-  -v /root/EasyMall/uploads:/data/easymall/uploads `
-  -e SPRING_DATASOURCE_URL="jdbc:mysql://easymall-mysql:3306/easymall?useUnicode=true&characterEncoding=UTF-8&useSSL=false&serverTimezone=UTC" `
-  -e SPRING_DATASOURCE_USERNAME=root `
-  -e SPRING_DATASOURCE_PASSWORD=123456 `
-  -e SPRING_DATA_REDIS_HOST=easymall-redis `
-  -e SPRING_DATA_REDIS_PORT=6379 `
-  -e SPRING_RABBITMQ_HOST=easymall-rabbitmq `
-  -e SPRING_RABBITMQ_PORT=5672 `
-  -e SPRING_FLYWAY_ENABLED=true `
-  -e SPRING_FLYWAY_URL="jdbc:mysql://easymall-mysql:3306/easymall?useUnicode=true&characterEncoding=UTF-8&useSSL=false&serverTimezone=UTC" `
-  -e SPRING_FLYWAY_USER=root `
-  -e SPRING_FLYWAY_PASSWORD=123456 `
-  -e SPRING_FLYWAY_BASELINE_ON_MIGRATE=true `
-  yunluoxincheng/easymall:latest
-
-# 8. 验证部署
-curl http://localhost:8080/api/product/page?page=1&size=5
+mysql -u root -p123456 easymall < src/main/resources/db/migration/V1__Create_initial_tables.sql
+mysql -u root -p123456 easymall < src/main/resources/db/migration/V2__Create_member_tables.sql
+mysql -u root -p123456 easymall < src/main/resources/db/migration/V3__Create_points_exchange_tables.sql
+mysql -u root -p123456 easymall < src/main/resources/db/migration/V5__Add_coupon_tables.sql
+mysql -u root -p123456 easymall < src/main/resources/db/migration/V6__Create_inventory_tables.sql
+mysql -u root -p123456 easymall < src/main/resources/db/migration/V7__Create_payment_tables.sql
+mysql -u root -p123456 easymall < src/main/resources/db/migration/V8__Create_message_consume_log.sql
+mysql -u root -p123456 easymall < src/main/resources/db/migration/V9__Add_points_record_unique_constraint.sql
+mysql -u root -p123456 easymall < src/main/resources/db/migration/V10__Add_coupon_lifecycle_indexes.sql
+mysql -u root -p123456 easymall < src/main/resources/db/migration/V11__Add_points_biz_columns.sql
+mysql -u root -p123456 easymall < src/main/resources/db/migration/test-data.sql
 ```
 
-**特点**：
-- ✅ Flyway 自动迁移数据库，无需手动导入 SQL
-- ✅ 启动即用，快速部署
-- ✅ 适合云服务器部署
-- ✅ 支持 Volume 挂载图片存储目录
+> Docker 全栈部署（prod profile）会自动执行 Flyway 迁移，无需手动导入。
 
-**注意**：首次运行前需创建图片存储目录：
-```bash
-mkdir -p /root/EasyMall/uploads
-chmod 755 /root/EasyMall/uploads
-```
-
-#### 更多部署选项
-
-- 📘 **完整部署指南**: [docs/cloud-deployment.md](docs/cloud-deployment.md)
-  - 构建和推送应用镜像
-  - 快速部署（预初始化 MySQL）
-  - WinSCP 图形化上传方法
-  - 命令行部署详细步骤
-  - 故障排查指南
-  - 数据备份恢复
-  - 防火墙配置
-
-#### 构建和推送镜像
-
-如果需要从源代码构建应用镜像：
+**4. 启动后端**
 
 ```bash
-# 1. 克隆项目
-git clone https://github.com/yunluoxincheng/EasyMall.git
-cd EasyMall
-
-# 2. 登录 Docker Hub
-docker login
-
-# 3. 使用生产环境 Dockerfile 构建镜像
-docker build -f docker/Dockerfile.production -t yunluoxincheng/easymall:latest .
-
-# 4. 推送到 Docker Hub
-docker push yunluoxincheng/easymall:latest
+cd easymall-backend
+mvn spring-boot:run
 ```
 
-**构建说明**：
-- 使用 `-f docker/Dockerfile.production` 指定生产环境 Dockerfile
-- 多阶段构建，最终镜像只包含 JRE 和 jar 包，体积更小
-- 使用 Alpine 基础镜像和非 root 用户运行，安全性更高
+**5. 启动前端**
 
-详细步骤请查看：[构建和推送镜像](docs/cloud-deployment.md#构建和推送应用镜像可选)
+```bash
+cd easymall-frontend
+npm install
+npm run dev
+```
 
-#### 生产版 Dockerfile 特点
+**6. 访问系统**
 
-| 特性 | 说明 |
+- 前端：http://localhost:5173
+- 后端 API：http://localhost:8080/api
+- RabbitMQ 管理面板：http://localhost:15672（guest/guest）
+
+### Docker Compose 一键启动
+
+```bash
+# 启动后端全栈（MySQL + Redis + RabbitMQ + Spring Boot）
+cd easymall-backend
+docker compose up -d
+
+# 启动前端（Nginx + 静态文件 + 反向代理）
+cd easymall-frontend
+docker compose up -d
+```
+
+> 详细部署说明请参考 [部署指南](docs/deployment.md)
+
+## 文档
+
+| 文档 | 说明 |
 |------|------|
-| 多阶段构建 | 构建和运行分离，最终镜像只包含 JRE 和 jar 包 |
-| 镜像体积 | 使用 Alpine 基础镜像，体积更小 |
-| 安全性 | 使用非 root 用户运行应用 |
-| 时区设置 | 预设为上海时区 |
-| JVM 优化 | 支持通过环境变量自定义 JVM 参数 |
-
-## 待完善功能
-
-- [ ] 支付接口集成（支付宝/微信支付）
-- [ ] 会员生日礼包自动发放
-- [ ] 积分有效期管理
-- [ ] 会员专属活动
-
-## 会员等级与权益说明
-
-### 会员等级
-
-| 等级 | 名称 | 积分范围 | 折扣 |
-|------|------|----------|------|
-| 1 | 普通会员 | 0-999 | 无折扣 |
-| 2 | 铜牌会员 | 1000-4999 | 98折 |
-| 3 | 银牌会员 | 5000-19999 | 95折 |
-| 4 | 金牌会员 | 20000-49999 | 9折 |
-| 5 | 钻石会员 | 50000+ | 85折 |
-
-### 积分获取规则
-
-| 获取方式 | 积分值 | 说明 |
-|---------|-------|------|
-| 订单完成 | 订单金额×1 | 每消费1元获得1积分 |
-| 商品评价 | 10积分 | 每次评价获得10积分 |
-| 每日签到 | 5-25积分 | 基础5分，连续签到额外奖励 |
-
-### 签到积分规则
-
-- 基础积分：5积分/天
-- 连续签到第3天：额外+5积分
-- 连续签到第4天：额外+10积分
-- 连续签到第5天：额外+15积分
-- 连续签到第6天及以上：额外+20积分
-
-### 积分兑换商品示例
-
-- 100元优惠券 - 500积分
-- 精美定制水杯 - 2000积分
-- 蓝牙耳机 - 5000积分
-- 智能手表 - 10000积分
-
-## 贡献指南
-
-欢迎提交Issue和Pull Request来帮助完善项目。
+| [系统架构](docs/architecture.md) | 架构概览、后端模块化、前端架构、部署架构 |
+| [业务设计](docs/business/order-state-machine.md) | 订单状态机、库存模型、支付系统、MQ 事件驱动、优惠券生命周期、积分流水 |
+| [数据库设计](docs/database.md) | ER 图、核心表说明、Flyway 迁移策略 |
+| [前端开发指南](docs/frontend-guide.md) | 安装启动、技术栈、生产构建 |
+| [部署指南](docs/deployment.md) | 本地开发、Docker Compose、云服务器部署 |
+| [演示指南](docs/demo.md) | 默认账号、管理端/用户端演示路径、交易链路亮点 |
+| [API 文档](docs/API.md) | 完整的 REST API 接口文档 |
+| [图片上传指南](docs/image-upload-guide.md) | 文件上传功能使用说明 |
 
 ## 许可证
 
-本项目采用 MIT 许可证。
+MIT License
