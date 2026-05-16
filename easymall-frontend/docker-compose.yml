@@ -4,10 +4,6 @@ services:
     container_name: easymall-frontend
     ports:
       - "${FRONTEND_PORT:-80}:80"
-    networks:
-      - easymall-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     restart: unless-stopped
-
-networks:
-  easymall-network:
-    external: true

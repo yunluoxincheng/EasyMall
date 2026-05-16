@@ -34,8 +34,6 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
-    networks:
-      - easymall-network
     restart: unless-stopped
 
   mysql:
@@ -54,8 +52,6 @@ services:
       - "${MYSQL_PORT:-3306}:3306"
     volumes:
       - mysql-data:/var/lib/mysql
-    networks:
-      - easymall-network
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_PASSWORD}"]
       interval: 10s
@@ -75,8 +71,6 @@ services:
       '
     ports:
       - "${REDIS_PORT:-6379}:6379"
-    networks:
-      - easymall-network
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -92,17 +86,11 @@ services:
     environment:
       - RABBITMQ_DEFAULT_USER=${RABBITMQ_USERNAME:-guest}
       - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASSWORD:-guest}
-    networks:
-      - easymall-network
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
       interval: 10s
       timeout: 10s
       retries: 5
-
-networks:
-  easymall-network:
-    external: true
 
 volumes:
   mysql-data:
