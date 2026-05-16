@@ -21,20 +21,17 @@ TBD - created by archiving change add-docker-dev-environment. Update Purpose aft
 ---
 
 ### Requirement: Docker Compose service orchestration
-项目 MUST 包含一个 docker-compose.yml 文件， SHALL 编排应用、MySQL、Redis 三个服务， SHALL 实现一键启动完整开发环境。
+项目 MUST 包含一个 docker-compose.yml 文件，SHALL 编排后端相关服务（easymall-app、MySQL、Redis、RabbitMQ），SHALL 实现一键启动完整开发环境。
 
 #### Scenario: 启动所有服务
-**Given** docker-compose.yml 配置正确
-**When** 执行 `docker-compose up -d`
-**Then** 三个服务（easymall-app, mysql, redis）全部启动
-**And** 服务之间可以正常通信
+- **WHEN** 在 `easymall-backend/` 目录下执行 `docker compose up -d`
+- **THEN** 四个服务（easymall-app、mysql、redis、rabbitmq）全部启动
+- **AND** 服务之间可以正常通信
 
-#### Scenario: 服务依赖关系
-**Given** docker-compose.yml 定义了服务依赖
-**When** 服务启动
-**Then** mysql 和 redis 在 easymall-app 之前启动
-
----
+#### Scenario: 独立开发不受根 compose 影响
+- **WHEN** 在 `easymall-backend/` 目录下执行 `docker compose up -d`
+- **THEN** 仅启动后端相关服务
+- **AND** 不受根级别 `docker-compose.yml` 影响
 
 ### Requirement: Code hot reload via volume mounts
 系统 SHALL 通过卷挂载实现源代码热重载， MUST 确保开发者修改代码后应用自动重启。

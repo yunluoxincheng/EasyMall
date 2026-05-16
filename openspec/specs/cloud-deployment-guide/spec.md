@@ -264,25 +264,23 @@ TBD - created by archiving change add-docker-cloud-deployment. Update Purpose af
 ---
 
 ### Requirement: 部署文档完整性
-项目 MUST 提供完整的部署文档， SHALL 包含所有必需的命令和故障排查指南。
+项目 MUST 提供完整的部署文档，SHALL 包含统一编排启动、RabbitMQ 配置、前端 Nginx 代理和故障排查指南。
 
-#### Scenario: 快速开始指南
-**Given** 开发者首次部署
-**When** 阅读部署文档快速开始部分
-**Then** 可以按顺序执行命令完成部署
-**And** 理解每个命令的作用
+#### Scenario: 统一编排快速开始
+- **WHEN** 开发者首次部署
+- **THEN** 文档提供根级别 `docker compose up -d` 一键启动说明
+- **AND** 包含 `.env` 配置说明
 
 #### Scenario: 故障排查指南
-**Given** 部署过程中遇到问题
-**When** 查阅故障排查部分
-**Then** 找到对应问题的解决方案
-**And** 可以按步骤进行诊断
+- **WHEN** 部署过程中遇到问题
+- **THEN** 文档包含服务健康检查命令
+- **AND** 文档包含日志查看命令
+- **AND** 文档包含常见错误解决方案
 
-#### Scenario: 命令参考
-**Given** 需要执行特定管理操作
-**When** 查阅命令参考部分
-**Then** 找到所需命令的完整语法
-**And** 包含命令参数说明
+#### Scenario: 环境变量参考
+- **WHEN** 开发者查阅文档
+- **THEN** 文档列出所有必需的环境变量及其说明
+- **AND** 包含 `.env.example` 文件引用
 
 ### Requirement: Docker 镜像必须包含图片上传功能代码
 

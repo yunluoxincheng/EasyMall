@@ -156,7 +156,7 @@ EasyMall/
 │   │   ├── router/                # 路由配置
 │   │   └── components/            # 公共组件
 │   ├── Dockerfile                 # 前端多阶段构建（Node → Nginx）
-│   ├── nginx.conf                 # Nginx 配置（SPA + API 反向代理）
+│   ├── nginx.conf.template        # Nginx 配置模板（SPA + API 反向代理 + 静态文件）
 │   └── docker-compose.yml         # 前端独立部署
 ├── docs/                          # 项目文档
 ├── openspec/                      # OpenSpec 变更管理
@@ -242,16 +242,15 @@ npm run dev
 ### Docker Compose 一键启动
 
 ```bash
-# 启动后端全栈（MySQL + Redis + RabbitMQ + Spring Boot）
-cd easymall-backend
-docker compose up -d
+# 在项目根目录下
+cp .env.example .env
+# 编辑 .env 填入 MYSQL_PASSWORD、JWT_SECRET、PAYMENT_MOCK_SIGNATURE
 
-# 启动前端（Nginx + 静态文件 + 反向代理）
-cd easymall-frontend
+# 一键启动全部 5 个服务（MySQL + Redis + RabbitMQ + 后端 + 前端）
 docker compose up -d
 ```
 
-> 详细部署说明请参考 [部署指南](docs/deployment.md)
+也可分别在 `easymall-backend/` 和 `easymall-frontend/` 下独立启动，适用于开发调试。详见 [部署指南](docs/deployment.md)
 
 ## 文档
 

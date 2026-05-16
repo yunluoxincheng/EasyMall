@@ -1,6 +1,29 @@
 services:
+  easymall-frontend:
+    build:
+      context: easymall-frontend/
+    container_name: easymall-frontend
+    ports:
+      - "${FRONTEND_PORT:-80}:80"
+    environment:
+      - BACKEND_HOST=easymall-app
+    volumes:
+      - upload-data:/data/easymall/uploads
+    depends_on:
+      easymall-app:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:80/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - easymall-net
+    restart: unless-stopped
+
   easymall-app:
-    build: .
+    build:
+      context: easymall-backend/
     container_name: easymall-app
     ports:
       - "${APP_PORT:-8080}:8080"
@@ -23,7 +46,7 @@ services:
       - SPRING_RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-guest}
       - JWT_SECRET=${JWT_SECRET:?JWT_SECRET is required}
       - FILE_UPLOAD_BASE_PATH=/data/easymall/uploads
-      - FILE_UPLOAD_BASE_URL=${FILE_UPLOAD_BASE_URL:-http://localhost:8080/uploads}
+      - FILE_UPLOAD_BASE_URL=${FILE_UPLOAD_BASE_URL:-http://localhost/uploads}
       - PAYMENT_MOCK_SIGNATURE=${PAYMENT_MOCK_SIGNATURE:?PAYMENT_MOCK_SIGNATURE is required}
       - JAVA_OPTS=-Xmx512m -Xms256m
     volumes:
@@ -35,6 +58,14 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    networks:
+      - easymall-net
     restart: unless-stopped
 
   mysql:
@@ -58,6 +89,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - easymall-net
 
   redis:
     image: redis:7-alpine
@@ -77,6 +110,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - easymall-net
 
   rabbitmq:
     image: rabbitmq:3-management-alpine
@@ -92,6 +127,12 @@ services:
       interval: 10s
       timeout: 10s
       retries: 5
+    networks:
+      - easymall-net
+
+networks:
+  easymall-net:
+    driver: bridge
 
 volumes:
   mysql-data:

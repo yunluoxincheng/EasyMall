@@ -45,7 +45,7 @@ mysql -u root -p123456 easymall < src/main/resources/db/migration/V11__Add_point
 mysql -u root -p123456 easymall < src/main/resources/db/migration/test-data.sql
 ```
 
-> Docker 全栈部署（prod profile）会自动执行 Flyway 迁移，无需手动导入。详见下方 Docker Compose 部署章节。
+> Docker 全栈部署（prod profile）会自动执行 Flyway 迁移，无需手动导入。详见下方统一编排部署章节。
 
 ### 4. 启动后端
 
@@ -62,7 +62,7 @@ npm install
 npm run dev
 ```
 
-### 5. 访问系统
+### 6. 访问系统
 
 | 服务 | 地址 |
 |------|------|
@@ -72,61 +72,108 @@ npm run dev
 
 ## Docker Compose 部署
 
-### 启动后端全栈
+### 方式一：统一编排一键启动（推荐）
+
+根级别 `docker-compose.yml` 统一编排 5 个服务：easymall-frontend、easymall-app、mysql、redis、rabbitmq，通过共享网络 `easymall-net` 互通。
+
+**1. 配置环境变量**
+
+```bash
+# 在仓库根目录下
+cp .env.example .env
+# 编辑 .env，填入所有必需变量（参见下方环境变量章节）
+```
+
+**2. 一键启动**
+
+```bash
+# 在项目根目录下
+docker compose up -d
+```
+
+所有服务按依赖顺序启动：mysql → redis → rabbitmq → easymall-app → easymall-frontend。
+
+**3. 验证**
+
+```bash
+# 查看服务状态（等待所有服务 healthy）
+docker compose ps
+
+# 前端页面
+curl http://localhost
+
+# API 代理
+curl http://localhost/api/product/page?page=1&size=5
+```
+
+**网络架构**
+
+```
+┌──────────────────────────────────────────────────────┐
+│ 根 docker-compose.yml（easymall-net 网络）             │
+│                                                       │
+│  easymall-frontend → easymall-app:8080 /api/          │
+│  easymall-frontend → /data/easymall/uploads/ /uploads/│
+│  easymall-app      → mysql:3306                       │
+│  easymall-app      → redis:6379                       │
+│  easymall-app      → rabbitmq:5672                    │
+│                                                       │
+│  easymall-frontend :80 ← 宿主机 :80                   │
+│  easymall-app      :8080 ← 宿主机 :8080               │
+│  mysql             :3306 ← 宿主机 :3306               │
+│  redis             :6379 ← 宿主机 :6379               │
+│  rabbitmq          :5672/:15672 ← 宿主机              │
+└──────────────────────────────────────────────────────┘
+```
+
+**Nginx 代理说明**
+
+| 路径 | 代理目标 | 说明 |
+|------|---------|------|
+| `/` | 前端静态文件（SPA） | `try_files` 回退到 `index.html` |
+| `/api/` | `easymall-app:8080` | 反向代理，传递 `X-Real-IP`、`X-Forwarded-For` |
+| `/uploads/` | 本地 `/data/easymall/uploads/` | Nginx 直接从共享 volume 读取，不经过后端 |
+
+`/uploads/` 路径通过 Nginx `alias` 指令直接从 `upload-data` volume 读取静态文件，无需经过 Spring Boot 处理，性能更优。
+
+**RabbitMQ 配置**
+
+RabbitMQ 使用 `rabbitmq:3-management-alpine` 镜像，同时提供 AMQP 服务（5672）和管理面板（15672）。健康检查使用 `rabbitmq-diagnostics check_port_connectivity`。默认用户名/密码为 `guest/guest`，生产环境建议修改。
+
+### 方式二：子目录独立启动（开发用）
+
+可分别启动后端和前端，适用于只调试某一端的场景。
+
+**启动后端全栈**
 
 ```bash
 # 在仓库根目录下配置环境变量
 cp .env.example easymall-backend/.env
 # 编辑 easymall-backend/.env 填入 MYSQL_PASSWORD、JWT_SECRET 等
 
-# 启动 MySQL + Redis + RabbitMQ + Spring Boot
 cd easymall-backend
 docker compose up -d
 ```
 
-后端使用 Docker Compose 默认网络，服务间通过服务名互访（如 `mysql:3306`、`redis:6379`、`rabbitmq:5672`）。
-
-### 启动前端
+**启动前端**
 
 ```bash
 cd easymall-frontend
 docker compose up -d
 ```
 
-前端通过 `host.docker.internal` 访问宿主机上的后端 8080 端口，无需与后端共享 Docker 网络。
-
-### 网络架构
-
-```
-┌─────────────────────────────────────┐
-│ 后端 Docker Compose（默认网络）       │
-│  ├── easymall-app  → mysql:3306     │
-│  │                 → redis:6379     │
-│  │                 → rabbitmq:5672  │
-│  ├── mysql                          │
-│  ├── redis                          │
-│  └── rabbitmq                       │
-│        ↕ 宿主机端口映射 :8080        │
-└─────────────────────────────────────┘
-
-┌─────────────────────────────────────┐
-│ 前端 Docker Compose                  │
-│  └── nginx                          │
-│       → host.docker.internal:8080   │
-│       （extra_hosts: host-gateway）  │
-└─────────────────────────────────────┘
-```
+后端使用 Docker Compose 默认网络，服务间通过服务名互访（如 `mysql:3306`、`redis:6379`、`rabbitmq:5672`）。前端通过 `host.docker.internal` 访问宿主机上的后端 8080 端口。
 
 ### 服务端口
 
 | 服务 | 容器端口 | 宿主机端口 |
 |------|---------|-----------|
+| Nginx（前端） | 80 | `${FRONTEND_PORT:-80}` |
 | Spring Boot | 8080 | `${APP_PORT:-8080}` |
 | MySQL | 3306 | `${MYSQL_PORT:-3306}` |
 | Redis | 6379 | `${REDIS_PORT:-6379}` |
 | RabbitMQ | 5672 | `${RABBITMQ_PORT:-5672}` |
 | RabbitMQ 管理 | 15672 | `${RABBITMQ_MGMT_PORT:-15672}` |
-| Nginx（前端） | 80 | `${FRONTEND_PORT:-80}` |
 
 ## 云服务器部署
 
@@ -151,57 +198,47 @@ docker push yunluoxincheng/easymall-frontend:latest
 cat > .env << 'EOF'
 SPRING_PROFILES_ACTIVE=prod
 APP_PORT=8080
+FRONTEND_PORT=80
 MYSQL_PASSWORD=your_strong_password
 JWT_SECRET=your_jwt_secret_key_at_least_256_bits_long
-FILE_UPLOAD_BASE_URL=http://your-server-ip:8080/uploads
+PAYMENT_MOCK_SIGNATURE=your_mock_payment_signature
+FILE_UPLOAD_BASE_URL=http://your-server-ip/uploads
 EOF
 ```
 
 ### 3. 启动服务
 
 ```bash
-# 启动后端
-cd easymall-backend
-docker compose up -d
-
-# 等待后端就绪后启动前端
-cd ../easymall-frontend
+# 在项目根目录下一键启动
 docker compose up -d
 ```
 
 ### 4. 验证部署
 
 ```bash
-curl http://localhost:8080/api/product/page?page=1&size=5
-```
+# 检查所有服务状态
+docker compose ps
 
-### 5. Nginx 配置（如需域名访问）
+# 验证前端
+curl http://localhost
 
-前端容器已内置 Nginx 配置。如需自定义域名或 HTTPS，可在宿主机安装 Nginx 反向代理：
-
-```nginx
-server {
-    listen 80;
-    server_name your-domain.com;
-
-    location / {
-        proxy_pass http://127.0.0.1:80;  # 前端容器端口
-    }
-
-    location /api/ {
-        proxy_pass http://127.0.0.1:8080/api/;
-    }
-}
+# 验证 API 代理
+curl http://localhost/api/product/page?page=1&size=5
 ```
 
 ## 环境变量配置
 
 ### 必需变量
 
+以下变量**必须**在 `.env` 中配置，缺失时后端启动会失败（fail fast）：
+
 | 变量 | 说明 | 示例 |
 |------|------|------|
 | `MYSQL_PASSWORD` | MySQL root 密码 | `your_strong_password` |
 | `JWT_SECRET` | JWT 签名密钥 | `至少 256 位的随机字符串` |
+| `PAYMENT_MOCK_SIGNATURE` | 支付模拟签名密钥 | `your_mock_payment_signature` |
+
+> **Fail Fast 机制**：`docker-compose.yml` 中 `MYSQL_PASSWORD`、`JWT_SECRET`、`PAYMENT_MOCK_SIGNATURE` 使用 `${VAR:?error}` 语法。如果 `.env` 中缺少这些变量，`docker compose up` 会直接报错退出，不会将空值传入容器。
 
 ### 可选变量（有默认值）
 
@@ -209,6 +246,7 @@ server {
 |------|--------|------|
 | `SPRING_PROFILES_ACTIVE` | `prod` | Spring Profile |
 | `APP_PORT` | `8080` | 后端端口 |
+| `FRONTEND_PORT` | `80` | 前端端口 |
 | `MYSQL_PORT` | `3306` | MySQL 端口 |
 | `REDIS_PASSWORD` | 空 | Redis 密码 |
 | `REDIS_PORT` | `6379` | Redis 端口 |
@@ -216,30 +254,19 @@ server {
 | `RABBITMQ_PASSWORD` | `guest` | RabbitMQ 密码 |
 | `RABBITMQ_PORT` | `5672` | RabbitMQ 端口 |
 | `RABBITMQ_MGMT_PORT` | `15672` | RabbitMQ 管理端口 |
-| `FRONTEND_PORT` | `80` | 前端端口 |
-| `FILE_UPLOAD_BASE_URL` | `http://localhost:8080/uploads` | 图片访问 URL |
+| `FILE_UPLOAD_BASE_URL` | `http://localhost/uploads` | 图片访问 URL（统一编排下由 Nginx 提供静态文件） |
 
-> **注意**：前端 Docker 部署时，`APP_PORT` 须保持默认值 `8080`。因为前端 `nginx.conf` 中 `proxy_pass` 地址为 `http://host.docker.internal:8080`，如修改 `APP_PORT`，须同步修改 `nginx.conf` 并重新构建前端镜像。
+## 故障排查
 
-## 常见问题
-
-### Maven 依赖下载缓慢
-
-首次启动会下载依赖，依赖缓存到宿主机 `~/.m2` 目录，后续启动更快。
-
-### 端口冲突
-
-修改 `.env` 中的端口配置，或关闭占用端口的服务。
-
-### 重新初始化数据库
+### 检查服务健康状态
 
 ```bash
-cd easymall-backend
-docker compose down -v
-docker compose up -d
-```
+# 查看所有服务状态，关注 healthy/unhealthy
+docker compose ps
 
-`-v` 删除数据卷，下次启动时 Flyway 会重新执行迁移。
+# 查看特定服务健康状态
+docker inspect --format='{{.State.Health.Status}}' easymall-app
+```
 
 ### 查看日志
 
@@ -249,4 +276,41 @@ docker compose logs -f
 
 # 查看特定服务日志
 docker compose logs -f easymall-app
+docker compose logs -f easymall-frontend
+
+# 查看最近 100 行日志
+docker compose logs --tail 100 easymall-app
+```
+
+### 常见启动错误
+
+| 问题 | 现象 | 解决方案 |
+|------|------|---------|
+| 必需变量缺失 | easymall-app 启动失败，日志中显示 `${...}` 解析错误 | 检查 `.env` 是否包含 `MYSQL_PASSWORD`、`JWT_SECRET`、`PAYMENT_MOCK_SIGNATURE` |
+| MySQL 未就绪 | easymall-app 报连接拒绝 | 等待 mysql healthy 后重试，或检查 healthcheck 配置 |
+| 前端无法访问后端 API | 浏览器控制台 502/504 | 统一编排模式下检查 `BACKEND_HOST` 是否为 `easymall-app`；独立模式下检查 `host.docker.internal` |
+| 端口冲突 | 启动报端口已被占用 | 修改 `.env` 中的 `APP_PORT`、`FRONTEND_PORT` 等 |
+| 图片上传后无法访问 | `/uploads/` 返回 404 | 统一编排模式下 Nginx 直接读取 volume；独立模式下需确认后端 `FILE_UPLOAD_BASE_URL` 配置正确 |
+| RabbitMQ 连接失败 | 后端日志报 RabbitMQ 连接异常 | 检查 rabbitmq 服务是否 healthy，确认 `RABBITMQ_USERNAME`/`RABBITMQ_PASSWORD` 配置 |
+
+### 重新初始化数据库
+
+```bash
+docker compose down -v
+docker compose up -d
+```
+
+`-v` 删除数据卷（包括 mysql-data 和 upload-data），下次启动时 Flyway 会重新执行迁移。
+
+### 重新构建镜像
+
+```bash
+# 重新构建所有镜像
+docker compose build
+
+# 重新构建并启动
+docker compose up -d --build
+
+# 仅重新构建后端
+docker compose build easymall-app
 ```
