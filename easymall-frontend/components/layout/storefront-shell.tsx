@@ -19,7 +19,7 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import { authApi, storefrontApi } from "@/lib/api";
+import { useCartCount, useLogout } from "@/lib/hooks";
 import { clearSession } from "@/lib/session";
 import { useSession } from "@/lib/use-session";
 
@@ -44,38 +44,12 @@ export function StorefrontShell({ children }: { children: React.ReactNode }) {
   const keywordParam = searchParams.get("keyword") || "";
   const session = useSession();
   const [keyword, setKeyword] = useState(keywordParam);
-  const [cartCount, setCartCount] = useState(0);
+  const logout = useLogout();
+  const { data: cartCount = 0 } = useCartCount();
 
   useEffect(() => {
     setKeyword(keywordParam);
   }, [keywordParam]);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadCartCount() {
-      if (!session.isLoggedIn) {
-        setCartCount(0);
-        return;
-      }
-
-      try {
-        const count = await storefrontApi.getCartCount();
-        if (!cancelled) {
-          setCartCount(count);
-        }
-      } catch {
-        if (!cancelled) {
-          setCartCount(0);
-        }
-      }
-    }
-
-    void loadCartCount();
-    return () => {
-      cancelled = true;
-    };
-  }, [pathname, session.isLoggedIn]);
 
   const activeHref = useMemo(() => {
     if (pathname.startsWith("/products")) return "/products";
@@ -96,7 +70,7 @@ export function StorefrontShell({ children }: { children: React.ReactNode }) {
 
   async function handleLogout() {
     try {
-      await authApi.logout();
+      await logout.mutateAsync();
       clearSession();
       toast.success("已退出登录");
       router.push("/login");

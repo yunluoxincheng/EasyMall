@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Star } from "lucide-react";
 import { toast } from "sonner";
 
@@ -9,41 +9,22 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Pagination } from "@/components/ui/pagination";
-import { storefrontApi } from "@/lib/api";
+import { useMyComments, useDeleteMyComment } from "@/lib/hooks";
 import { formatDateTime } from "@/lib/format";
-import type { UserCommentVO } from "@/lib/types";
 
 export default function UserCommentsPage() {
   const [page, setPage] = useState(1);
-  const [total, setTotal] = useState(0);
-  const [comments, setComments] = useState<UserCommentVO[]>([]);
+  const { data: commentPage } = useMyComments({ pageNum: page, pageSize: 8 });
+  const deleteComment = useDeleteMyComment();
 
-  useEffect(() => {
-    void loadData();
-  }, [page]);
-
-  async function loadData() {
-    try {
-      const pageData = await storefrontApi.getMyComments({
-        pageNum: page,
-        pageSize: 8,
-      });
-      setComments(pageData.records);
-      setTotal(pageData.total);
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "获取评论列表失败");
-    }
-  }
+  const comments = commentPage?.records ?? [];
+  const total = commentPage?.total ?? 0;
 
   async function handleDelete(id: number) {
-    if (!window.confirm("确定删除这条评论吗？")) {
-      return;
-    }
-
+    if (!window.confirm("确定删除这条评论吗？")) return;
     try {
-      await storefrontApi.deleteMyComment(id);
+      await deleteComment.mutateAsync(id);
       toast.success("评论已删除");
-      await loadData();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "删除评论失败");
     }

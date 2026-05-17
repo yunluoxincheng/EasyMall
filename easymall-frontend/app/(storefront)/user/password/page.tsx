@@ -7,7 +7,7 @@ import { AccountShell } from "@/components/layout/account-shell";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { authApi } from "@/lib/api";
+import { useUpdatePassword } from "@/lib/hooks";
 
 export default function ChangePasswordPage() {
   const [form, setForm] = useState({
@@ -15,7 +15,7 @@ export default function ChangePasswordPage() {
     newPassword: "",
     confirmPassword: "",
   });
-  const [saving, setSaving] = useState(false);
+  const updatePassword = useUpdatePassword();
 
   async function handleSave() {
     if (!form.oldPassword || !form.newPassword) {
@@ -27,9 +27,8 @@ export default function ChangePasswordPage() {
       return;
     }
 
-    setSaving(true);
     try {
-      await authApi.updatePassword({
+      await updatePassword.mutateAsync({
         oldPassword: form.oldPassword,
         newPassword: form.newPassword,
       });
@@ -37,8 +36,6 @@ export default function ChangePasswordPage() {
       toast.success("密码修改成功");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "修改密码失败");
-    } finally {
-      setSaving(false);
     }
   }
 
@@ -63,8 +60,8 @@ export default function ChangePasswordPage() {
           </div>
         </div>
         <div className="mt-6">
-          <Button disabled={saving} onClick={handleSave}>
-            {saving ? "提交中..." : "更新密码"}
+          <Button disabled={updatePassword.isPending} onClick={handleSave}>
+            {updatePassword.isPending ? "提交中..." : "更新密码"}
           </Button>
         </div>
       </Card>

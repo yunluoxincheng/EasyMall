@@ -1,55 +1,23 @@
 "use client";
 
 import { CalendarCheck2 } from "lucide-react";
-import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { AccountShell } from "@/components/layout/account-shell";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { storefrontApi } from "@/lib/api";
+import { useSignInStatus, useDoSignIn } from "@/lib/hooks";
 import { updateSessionUser } from "@/lib/session";
 import { useSession } from "@/lib/use-session";
-import type { SignInResultVO } from "@/lib/types";
 
 export default function SignInPage() {
   const session = useSession();
-  const [status, setStatus] = useState<SignInResultVO | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadData() {
-      setLoading(true);
-      try {
-        const data = await storefrontApi.getSignInStatus();
-        if (!cancelled) {
-          setStatus(data);
-        }
-      } catch (error) {
-        if (!cancelled) {
-          toast.error(error instanceof Error ? error.message : "获取签到状态失败");
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
-    }
-
-    void loadData();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const { data: status, isLoading } = useSignInStatus();
+  const doSignIn = useDoSignIn();
 
   async function handleSignIn() {
-    setSaving(true);
     try {
-      const result = await storefrontApi.doSignIn();
-      setStatus(result);
+      const result = await doSignIn.mutateAsync();
       if (session.user) {
         updateSessionUser({
           ...session.user,
@@ -59,8 +27,6 @@ export default function SignInPage() {
       toast.success(result.success ? `签到成功，获得 ${result.pointsEarned} 积分` : result.message || "今日已签到");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "签到失败");
-    } finally {
-      setSaving(false);
     }
   }
 
@@ -70,7 +36,7 @@ export default function SignInPage() {
       description="签到页保留原来的连续签到和积分反馈链路，便于日常用户积分增长验证。"
     >
       <Card className="rounded-[34px] bg-gradient-to-r from-amber-400 via-orange-500 to-rose-500 text-white">
-        {loading ? (
+        {isLoading ? (
           <div className="text-sm text-white/80">正在加载签到状态...</div>
         ) : (
           <div className="flex flex-col items-center gap-6 py-6 text-center">
@@ -87,10 +53,10 @@ export default function SignInPage() {
             </div>
             <Button
               className="bg-white text-slate-950 hover:bg-slate-100"
-              disabled={saving || status?.hasSignedToday}
+              disabled={doSignIn.isPending || status?.hasSignedToday}
               onClick={() => void handleSignIn()}
             >
-              {status?.hasSignedToday ? "今日已签到" : saving ? "签到中..." : "立即签到"}
+              {status?.hasSignedToday ? "今日已签到" : doSignIn.isPending ? "签到中..." : "立即签到"}
             </Button>
           </div>
         )}

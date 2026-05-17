@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 
 import { ProtectedRoute } from "@/components/auth/protected";
@@ -11,7 +11,7 @@ import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { LoadingState } from "@/components/ui/loading-state";
 import { Pagination } from "@/components/ui/pagination";
-import { storefrontApi } from "@/lib/api";
+import { useOrders, useOrderPayment } from "@/lib/hooks";
 import { formatCurrency, formatDateTime, getOrderStatusLabel, getStatusTone } from "@/lib/format";
 import type { OrderVO } from "@/lib/types";
 
@@ -25,56 +25,96 @@ const tabs = [
   { label: "已取消", value: "4" },
 ];
 
+function OrderCard({ order, onGoPay }: { order: OrderVO; onGoPay: (order: OrderVO) => void }) {
+  const router = useRouter();
+  return (
+    <Card className="rounded-[30px]">
+      <div className="flex flex-col gap-5">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border)] pb-5">
+          <div>
+            <div className="text-sm font-semibold text-slate-900">
+              订单号：{order.orderNo}
+            </div>
+            <div className="mt-2 text-sm text-slate-500">
+              下单时间：{formatDateTime(order.createTime)}
+            </div>
+          </div>
+          <Badge tone={getStatusTone(order.status)}>
+            {order.statusText || getOrderStatusLabel(order.status)}
+          </Badge>
+        </div>
+        <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_200px] md:items-center">
+          <div className="space-y-3">
+            {order.orderItems.slice(0, 2).map((item) => (
+              <div key={item.id} className="flex gap-4 rounded-[24px] bg-slate-50 p-4">
+                <div className="h-16 w-16 overflow-hidden rounded-[18px] bg-slate-100">
+                  <img alt={item.productName} className="h-full w-full object-cover" src={item.productImage || "/favicon.svg"} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="line-clamp-2 font-bold text-slate-950">{item.productName}</div>
+                  <div className="mt-2 text-sm text-slate-500">
+                    {formatCurrency(item.productPrice || 0)} × {item.quantity}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="space-y-4 text-right">
+            <div>
+              <div className="text-xs font-black uppercase tracking-[0.16em] text-slate-400">
+                实付金额
+              </div>
+              <div className="mt-2 text-2xl font-black text-rose-600">
+                {formatCurrency(order.payAmount)}
+              </div>
+            </div>
+            <div className="flex flex-wrap justify-end gap-3">
+              <Button variant="secondary" onClick={() => router.push(`/orders/${order.id}`)}>
+                查看详情
+              </Button>
+              {order.status === 0 ? (
+                <Button onClick={() => onGoPay(order)}>去支付</Button>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
 export default function OrdersPage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("");
   const [page, setPage] = useState(1);
-  const [loading, setLoading] = useState(true);
-  const [orders, setOrders] = useState<OrderVO[]>([]);
-  const [total, setTotal] = useState(0);
+  const [payingOrderId, setPayingOrderId] = useState<number | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
+  const { data: orderPage, isLoading } = useOrders({
+    pageNum: page,
+    pageSize: 8,
+    status: activeTab ? Number(activeTab) : undefined,
+  });
 
-    async function loadData() {
-      setLoading(true);
-      try {
-        const pageData = await storefrontApi.getOrders({
-          pageNum: page,
-          pageSize: 8,
-          status: activeTab ? Number(activeTab) : undefined,
-        });
-        if (!cancelled) {
-          setOrders(pageData.records);
-          setTotal(pageData.total);
-        }
-      } catch (error) {
-        if (!cancelled) {
-          toast.error(error instanceof Error ? error.message : "获取订单列表失败");
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
-    }
+  const orders = orderPage?.records ?? [];
+  const total = orderPage?.total ?? 0;
 
-    void loadData();
-    return () => {
-      cancelled = true;
-    };
-  }, [activeTab, page]);
+  const { data: paymentForOrder } = useOrderPayment(payingOrderId ?? 0);
 
   async function handleGoPay(order: OrderVO) {
     try {
-      const payment = await storefrontApi.getOrderPayment(order.id);
+      const payment = await storefrontApi_getOrderPayment(order.id);
       router.push(`/payment/${payment.paymentNo}`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "获取支付信息失败");
     }
   }
 
-  if (loading) {
+  async function storefrontApi_getOrderPayment(orderId: number) {
+    const { storefrontApi } = await import("@/lib/api");
+    return storefrontApi.getOrderPayment(orderId);
+  }
+
+  if (isLoading) {
     return <ProtectedRoute requireAuth><LoadingState label="正在加载订单列表..." /></ProtectedRoute>;
   }
 
@@ -112,58 +152,7 @@ export default function OrdersPage() {
         {orders.length ? (
           <>
             {orders.map((order) => (
-              <Card key={order.id} className="rounded-[30px]">
-                <div className="flex flex-col gap-5">
-                  <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border)] pb-5">
-                    <div>
-                      <div className="text-sm font-semibold text-slate-900">
-                        订单号：{order.orderNo}
-                      </div>
-                      <div className="mt-2 text-sm text-slate-500">
-                        下单时间：{formatDateTime(order.createTime)}
-                      </div>
-                    </div>
-                    <Badge tone={getStatusTone(order.status)}>
-                      {order.statusText || getOrderStatusLabel(order.status)}
-                    </Badge>
-                  </div>
-                  <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_200px] md:items-center">
-                    <div className="space-y-3">
-                      {order.orderItems.slice(0, 2).map((item) => (
-                        <div key={item.id} className="flex gap-4 rounded-[24px] bg-slate-50 p-4">
-                          <div className="h-16 w-16 overflow-hidden rounded-[18px] bg-slate-100">
-                            <img alt={item.productName} className="h-full w-full object-cover" src={item.productImage || "/favicon.svg"} />
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <div className="line-clamp-2 font-bold text-slate-950">{item.productName}</div>
-                            <div className="mt-2 text-sm text-slate-500">
-                              {formatCurrency(item.productPrice || 0)} × {item.quantity}
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="space-y-4 text-right">
-                      <div>
-                        <div className="text-xs font-black uppercase tracking-[0.16em] text-slate-400">
-                          实付金额
-                        </div>
-                        <div className="mt-2 text-2xl font-black text-rose-600">
-                          {formatCurrency(order.payAmount)}
-                        </div>
-                      </div>
-                      <div className="flex flex-wrap justify-end gap-3">
-                        <Button variant="secondary" onClick={() => router.push(`/orders/${order.id}`)}>
-                          查看详情
-                        </Button>
-                        {order.status === 0 ? (
-                          <Button onClick={() => void handleGoPay(order)}>去支付</Button>
-                        ) : null}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </Card>
+              <OrderCard key={order.id} order={order} onGoPay={handleGoPay} />
             ))}
             <Pagination page={page} pageSize={8} total={total} onPageChange={setPage} />
           </>

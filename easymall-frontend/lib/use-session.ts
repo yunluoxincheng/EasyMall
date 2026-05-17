@@ -6,17 +6,22 @@ import { getSessionSnapshot, hasAdminAccess, subscribeSession } from "@/lib/sess
 
 export function useSession() {
   const [session, setSession] = useState(() => getSessionSnapshot());
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setSession(getSessionSnapshot());
+    setMounted(true);
     return subscribeSession(() => {
       setSession(getSessionSnapshot());
     });
   }, []);
 
+  const isLoggedIn = mounted ? Boolean(session.token) : false;
+  const isAdmin = mounted ? hasAdminAccess(session.user) : false;
+
   return {
     ...session,
-    isLoggedIn: Boolean(session.token),
-    isAdmin: hasAdminAccess(session.user),
+    isLoggedIn,
+    isAdmin,
   };
 }

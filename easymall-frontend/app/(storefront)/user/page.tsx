@@ -2,7 +2,7 @@
 
 import { BarChart3, ShieldCheck, Store } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 
 import { AccountShell } from "@/components/layout/account-shell";
@@ -10,85 +10,70 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
-import { authApi } from "@/lib/api";
+import { useUserProfile, useUpdateProfile } from "@/lib/hooks";
 import { updateSessionUser } from "@/lib/session";
 import { useSession } from "@/lib/use-session";
-import type { UserVO } from "@/lib/types";
+
+function InfoTile({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-[24px] border border-[var(--border)] bg-slate-50 p-4">
+      <div className="text-xs font-black uppercase tracking-[0.16em] text-slate-400">
+        {label}
+      </div>
+      <div className="mt-2 text-lg font-black text-slate-950">{value}</div>
+    </div>
+  );
+}
 
 export default function UserProfilePage() {
   const router = useRouter();
   const session = useSession();
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [user, setUser] = useState<UserVO | null>(null);
+  const { data: user, isLoading } = useUserProfile();
+  const updateProfile = useUpdateProfile();
+
   const [form, setForm] = useState({
     nickname: "",
     phone: "",
     email: "",
     gender: "0",
   });
+  const [initialized, setInitialized] = useState(false);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadData() {
-      setLoading(true);
-      try {
-        const profile = await authApi.getCurrentUser();
-        if (!cancelled) {
-          setUser(profile);
-          setForm({
-            nickname: profile.nickname || "",
-            phone: profile.phone || "",
-            email: profile.email || "",
-            gender: String(profile.gender ?? 0),
-          });
-        }
-      } catch (error) {
-        if (!cancelled) {
-          toast.error(error instanceof Error ? error.message : "获取用户信息失败");
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
-    }
-
-    void loadData();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  if (user && !initialized) {
+    setForm({
+      nickname: user.nickname || "",
+      phone: user.phone || "",
+      email: user.email || "",
+      gender: String(user.gender ?? 0),
+    });
+    setInitialized(true);
+  }
 
   async function handleSave() {
-    setSaving(true);
     try {
-      await authApi.updateCurrentUser({
+      await updateProfile.mutateAsync({
         nickname: form.nickname.trim(),
         phone: form.phone.trim(),
         email: form.email.trim(),
         gender: Number(form.gender),
       });
-      const profile = await authApi.getCurrentUser();
-      setUser(profile);
-      updateSessionUser({
-        id: profile.id,
-        username: profile.username,
-        nickname: profile.nickname,
-        phone: profile.phone,
-        email: profile.email,
-        avatar: profile.avatar,
-        gender: profile.gender,
-        role: profile.role,
-        points: profile.points,
-        level: profile.level,
-      });
+      if (user) {
+        updateSessionUser({
+          id: user.id,
+          username: user.username,
+          nickname: user.nickname,
+          phone: user.phone,
+          email: user.email,
+          avatar: user.avatar,
+          gender: user.gender,
+          role: user.role,
+          points: user.points,
+          level: user.level,
+        });
+      }
       toast.success("个人信息已更新");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "保存失败");
-    } finally {
-      setSaving(false);
     }
   }
 
@@ -97,7 +82,7 @@ export default function UserProfilePage() {
       title="个人中心"
       description="在这里维护个人资料、查看积分和会员等级；管理员账号还会看到后台管理入口。"
     >
-      {loading ? (
+      {isLoading ? (
         <Card className="rounded-[30px]">正在加载个人资料...</Card>
       ) : (
         <div className="space-y-5">
@@ -166,24 +151,13 @@ export default function UserProfilePage() {
               </div>
             </div>
             <div className="mt-6">
-              <Button disabled={saving} onClick={handleSave}>
-                {saving ? "保存中..." : "保存资料"}
+              <Button disabled={updateProfile.isPending} onClick={handleSave}>
+                {updateProfile.isPending ? "保存中..." : "保存资料"}
               </Button>
             </div>
           </Card>
         </div>
       )}
     </AccountShell>
-  );
-}
-
-function InfoTile({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-[24px] border border-[var(--border)] bg-slate-50 p-4">
-      <div className="text-xs font-black uppercase tracking-[0.16em] text-slate-400">
-        {label}
-      </div>
-      <div className="mt-2 text-lg font-black text-slate-950">{value}</div>
-    </div>
   );
 }

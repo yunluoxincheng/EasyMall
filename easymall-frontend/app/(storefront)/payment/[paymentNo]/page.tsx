@@ -2,7 +2,7 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { ArrowRight, CircleCheckBig, CreditCard, QrCode, WalletCards } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { ProtectedRoute } from "@/components/auth/protected";
@@ -11,74 +11,56 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { LoadingState } from "@/components/ui/loading-state";
+import { usePaymentByNo, usePayByPaymentNo } from "@/lib/hooks";
 import { executePayment, getPaymentProviders } from "@/lib/payment-providers";
 import { formatCurrency, formatDateTime, getPaymentStatusLabel } from "@/lib/format";
-import type { PaymentProviderMeta, PaymentVO } from "@/lib/types";
-import { storefrontApi } from "@/lib/api";
+import type { PaymentProviderMeta } from "@/lib/types";
+
+function DetailRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between gap-4 rounded-2xl bg-slate-50 px-4 py-3">
+      <span className="text-slate-500">{label}</span>
+      <span className="font-semibold text-slate-900">{value}</span>
+    </div>
+  );
+}
+
+function ProviderModeIcon({ mode }: { mode: PaymentProviderMeta["executionMode"] }) {
+  if (mode === "qr") return <QrCode className="h-6 w-6 text-slate-400" />;
+  if (mode === "wallet-sheet") return <WalletCards className="h-6 w-6 text-slate-400" />;
+  return <CreditCard className="h-6 w-6 text-slate-400" />;
+}
 
 export default function PaymentPage() {
   const params = useParams<{ paymentNo: string }>();
   const router = useRouter();
   const paymentNo = params.paymentNo;
 
-  const [loading, setLoading] = useState(true);
-  const [paying, setPaying] = useState(false);
-  const [payment, setPayment] = useState<PaymentVO | null>(null);
+  const { data: payment, isLoading } = usePaymentByNo(paymentNo);
+  const payMutation = usePayByPaymentNo();
+
   const [selectedProvider, setSelectedProvider] = useState<PaymentProviderMeta["id"]>("MOCK");
   const [statusMessage, setStatusMessage] = useState("");
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadData() {
-      setLoading(true);
-      try {
-        const data = await storefrontApi.getPaymentByPaymentNo(paymentNo);
-        if (!cancelled) {
-          setPayment(data);
-        }
-      } catch (error) {
-        if (!cancelled) {
-          toast.error(error instanceof Error ? error.message : "获取支付单失败");
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
-    }
-
-    void loadData();
-    return () => {
-      cancelled = true;
-    };
-  }, [paymentNo]);
 
   const providers = useMemo(() => getPaymentProviders(), []);
   const provider = providers.find((item) => item.id === selectedProvider) || providers[0];
 
   async function handlePay() {
-    if (!payment) {
-      return;
-    }
-
-    setPaying(true);
+    if (!payment) return;
     setStatusMessage("");
     try {
       const paid = await executePayment(payment.paymentNo, selectedProvider);
-      setPayment(paid);
+      payMutation.reset();
       setStatusMessage("模拟支付执行成功，订单流程可以继续向下验证。");
       toast.success("支付成功");
     } catch (error) {
       const message = error instanceof Error ? error.message : "支付失败";
       setStatusMessage(message);
       toast.error(message);
-    } finally {
-      setPaying(false);
     }
   }
 
-  if (loading) {
+  if (isLoading) {
     return <ProtectedRoute requireAuth><LoadingState label="正在加载支付单..." /></ProtectedRoute>;
   }
 
@@ -186,8 +168,8 @@ export default function PaymentPage() {
                 <DetailRow label="当前状态" value={getPaymentStatusLabel(payment.status)} />
               </div>
               <div className="mt-6 space-y-3">
-                <Button disabled={!provider.available || paying} className="w-full" onClick={handlePay}>
-                  {paying ? "支付处理中..." : `使用 ${provider.label} 支付`}
+                <Button disabled={!provider.available || payMutation.isPending} className="w-full" onClick={handlePay}>
+                  {payMutation.isPending ? "支付处理中..." : `使用 ${provider.label} 支付`}
                 </Button>
                 <Button className="w-full" variant="secondary" onClick={() => router.push(`/orders/${payment.orderId}`)}>
                   查看订单详情
@@ -209,23 +191,4 @@ export default function PaymentPage() {
       )}
     </ProtectedRoute>
   );
-}
-
-function DetailRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-center justify-between gap-4 rounded-2xl bg-slate-50 px-4 py-3">
-      <span className="text-slate-500">{label}</span>
-      <span className="font-semibold text-slate-900">{value}</span>
-    </div>
-  );
-}
-
-function ProviderModeIcon({ mode }: { mode: PaymentProviderMeta["executionMode"] }) {
-  if (mode === "qr") {
-    return <QrCode className="h-6 w-6 text-slate-400" />;
-  }
-  if (mode === "wallet-sheet") {
-    return <WalletCards className="h-6 w-6 text-slate-400" />;
-  }
-  return <CreditCard className="h-6 w-6 text-slate-400" />;
 }

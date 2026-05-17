@@ -9,10 +9,12 @@ import { ProtectedRoute } from "@/components/auth/protected";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { authApi } from "@/lib/api";
+import { useRegister } from "@/lib/hooks";
 
 export default function RegisterPage() {
   const router = useRouter();
+  const register = useRegister();
+
   const [form, setForm] = useState({
     username: "",
     nickname: "",
@@ -21,7 +23,6 @@ export default function RegisterPage() {
     phone: "",
     email: "",
   });
-  const [submitting, setSubmitting] = useState(false);
 
   function patch<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
     setForm((previous) => ({ ...previous, [key]: value }));
@@ -39,9 +40,8 @@ export default function RegisterPage() {
       return;
     }
 
-    setSubmitting(true);
     try {
-      await authApi.register({
+      await register.mutateAsync({
         username: form.username.trim(),
         nickname: form.nickname.trim(),
         password: form.password,
@@ -53,8 +53,6 @@ export default function RegisterPage() {
       router.push("/login");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "注册失败");
-    } finally {
-      setSubmitting(false);
     }
   }
 
@@ -128,8 +126,8 @@ export default function RegisterPage() {
                       placeholder="请再次输入密码"
                     />
                   </div>
-                  <Button className="w-full" disabled={submitting} type="submit">
-                    {submitting ? "注册中..." : "注册并创建账号"}
+                  <Button className="w-full" disabled={register.isPending} type="submit">
+                    {register.isPending ? "注册中..." : "注册并创建账号"}
                   </Button>
                 </form>
 

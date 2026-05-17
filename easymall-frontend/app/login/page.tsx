@@ -2,26 +2,28 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useMemo, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { ProtectedRoute } from "@/components/auth/protected";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { useLogin } from "@/lib/hooks";
 import { authApi, mapLoginToSessionUser } from "@/lib/api";
 import { setSession } from "@/lib/session";
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTarget = useMemo(
     () => searchParams.get("redirect") || "",
     [searchParams],
   );
+  const login = useLogin();
+
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [submitting, setSubmitting] = useState(false);
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -30,17 +32,16 @@ export default function LoginPage() {
       return;
     }
 
-    setSubmitting(true);
     try {
-      const login = await authApi.login({
+      const loginData = await login.mutateAsync({
         username: username.trim(),
         password,
       });
-      setSession(login.token, mapLoginToSessionUser(login));
+      setSession(loginData.token, mapLoginToSessionUser(loginData));
 
       try {
         const profile = await authApi.getCurrentUser();
-        setSession(login.token, {
+        setSession(loginData.token, {
           id: profile.id,
           username: profile.username,
           nickname: profile.nickname,
@@ -62,11 +63,9 @@ export default function LoginPage() {
         return;
       }
 
-      router.push(login.role === 1 ? "/user" : "/");
+      router.push(loginData.role === 1 ? "/user" : "/");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "登录失败");
-    } finally {
-      setSubmitting(false);
     }
   }
 
@@ -116,8 +115,8 @@ export default function LoginPage() {
                       登录后默认进入商城首页；管理员可从个人中心继续进入后台。
                     </p>
                   )}
-                  <Button className="w-full" disabled={submitting} type="submit">
-                    {submitting ? "登录中..." : "登录"}
+                  <Button className="w-full" disabled={login.isPending} type="submit">
+                    {login.isPending ? "登录中..." : "登录"}
                   </Button>
                 </form>
 
@@ -133,5 +132,13 @@ export default function LoginPage() {
         </div>
       </div>
     </ProtectedRoute>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
   );
 }

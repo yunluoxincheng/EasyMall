@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { ProtectedRoute } from "@/components/auth/protected";
@@ -12,11 +12,42 @@ import { Input } from "@/components/ui/input";
 import { LoadingState } from "@/components/ui/loading-state";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { authApi, storefrontApi } from "@/lib/api";
+import { useCartList, useUserProfile, useMemberDiscount, useAvailableCoupons, useCalculateCoupon, useCreateOrder } from "@/lib/hooks";
+import { storefrontApi } from "@/lib/api";
 import { formatCurrency } from "@/lib/format";
-import type { CartVO, UserCouponVO } from "@/lib/types";
 
-export default function CheckoutPage() {
+function SummaryRow({
+  label,
+  value,
+  highlight = false,
+  muted = false,
+}: {
+  label: string;
+  value: string;
+  highlight?: boolean;
+  muted?: boolean;
+}) {
+  return (
+    <div className="flex items-center justify-between">
+      <span className={`text-sm ${highlight ? "font-bold text-slate-900" : "text-slate-500"}`}>
+        {label}
+      </span>
+      <span
+        className={`${
+          highlight
+            ? "text-2xl font-black text-rose-600"
+            : muted
+              ? "text-sm text-slate-400"
+              : "text-base font-bold text-slate-900"
+        }`}
+      >
+        {value}
+      </span>
+    </div>
+  );
+}
+
+function CheckoutContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const cartIds = useMemo(
@@ -28,13 +59,26 @@ export default function CheckoutPage() {
     [searchParams],
   );
 
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-  const [items, setItems] = useState<CartVO[]>([]);
-  const [availableCoupons, setAvailableCoupons] = useState<UserCouponVO[]>([]);
+  const { data: cart = [], isLoading: cartLoading } = useCartList();
+  const { data: currentUser } = useUserProfile();
+  const { data: memberDiscount } = useMemberDiscount();
+  const createOrder = useCreateOrder();
+  const calculateCoupon = useCalculateCoupon();
+
+  const items = useMemo(
+    () => cart.filter((item) => cartIds.includes(item.id)),
+    [cart, cartIds],
+  );
+
+  const totalAmount = useMemo(
+    () => items.reduce((sum, item) => sum + item.totalPrice, 0),
+    [items],
+  );
+
+  const { data: availableCoupons = [] } = useAvailableCoupons(totalAmount);
+
   const [selectedCouponId, setSelectedCouponId] = useState("");
   const [discountAmount, setDiscountAmount] = useState(0);
-  const [memberDiscount, setMemberDiscount] = useState<number | null>(null);
   const [form, setForm] = useState({
     receiverName: "",
     receiverPhone: "",
@@ -43,68 +87,23 @@ export default function CheckoutPage() {
   });
 
   useEffect(() => {
-    let cancelled = false;
-
-    async function loadData() {
-      if (!cartIds.length) {
-        setLoading(false);
-        return;
-      }
-
-      setLoading(true);
-      try {
-        const cart = await storefrontApi.getCartList();
-        const selected = cart.filter((item) => cartIds.includes(item.id));
-        const totalAmount = selected.reduce((sum, item) => sum + item.totalPrice, 0);
-        const [coupons, currentUser, discount] = await Promise.all([
-          totalAmount > 0
-            ? storefrontApi.getAvailableCoupons(totalAmount).catch(() => [])
-            : Promise.resolve([]),
-          authApi.getCurrentUser().catch(() => null),
-          storefrontApi.getMemberDiscount().catch(() => null),
-        ]);
-
-        if (!cancelled) {
-          setItems(selected);
-          setAvailableCoupons(coupons);
-          setMemberDiscount(discount);
-          setForm((previous) => ({
-            ...previous,
-            receiverName: currentUser?.nickname || previous.receiverName,
-            receiverPhone: currentUser?.phone || previous.receiverPhone,
-            receiverAddress: previous.receiverAddress,
-          }));
-        }
-      } catch (error) {
-        if (!cancelled) {
-          toast.error(error instanceof Error ? error.message : "加载结算信息失败");
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
+    if (currentUser) {
+      setForm((previous) => ({
+        ...previous,
+        receiverName: currentUser.nickname || previous.receiverName,
+        receiverPhone: currentUser.phone || previous.receiverPhone,
+        receiverAddress: previous.receiverAddress,
+      }));
     }
-
-    void loadData();
-    return () => {
-      cancelled = true;
-    };
-  }, [cartIds]);
-
-  const totalAmount = useMemo(
-    () => items.reduce((sum, item) => sum + item.totalPrice, 0),
-    [items],
-  );
+  }, [currentUser]);
 
   const memberDiscountAmount = useMemo(() => {
-    if (!memberDiscount || memberDiscount >= 1) {
-      return 0;
-    }
+    if (!memberDiscount || memberDiscount >= 1) return 0;
     return totalAmount - totalAmount * memberDiscount;
   }, [memberDiscount, totalAmount]);
 
   const payAmount = Math.max(totalAmount - memberDiscountAmount - discountAmount, 0);
+  const loading = cartLoading || !items.length && cartIds.length > 0;
 
   async function handleCouponChange(nextValue: string) {
     setSelectedCouponId(nextValue);
@@ -114,7 +113,10 @@ export default function CheckoutPage() {
     }
 
     try {
-      const calculation = await storefrontApi.calculateCoupon(Number(nextValue), totalAmount);
+      const calculation = await calculateCoupon.mutateAsync({
+        userCouponId: Number(nextValue),
+        orderAmount: totalAmount,
+      });
       if (!calculation.available) {
         toast.warning(calculation.unavailableReason || "该优惠券当前不可用");
         setDiscountAmount(0);
@@ -132,9 +134,8 @@ export default function CheckoutPage() {
       return;
     }
 
-    setSubmitting(true);
     try {
-      const order = await storefrontApi.createOrder({
+      const order = await createOrder.mutateAsync({
         cartIds,
         receiverName: form.receiverName.trim(),
         receiverPhone: form.receiverPhone.trim(),
@@ -146,8 +147,6 @@ export default function CheckoutPage() {
       router.push(`/payment/${order.paymentNo}`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "创建订单失败");
-    } finally {
-      setSubmitting(false);
     }
   }
 
@@ -242,16 +241,12 @@ export default function CheckoutPage() {
                 <SummaryRow label="会员折扣" value={`-${formatCurrency(memberDiscountAmount)}`} muted={memberDiscountAmount <= 0} />
                 <SummaryRow label="优惠券抵扣" value={`-${formatCurrency(discountAmount)}`} muted={discountAmount <= 0} />
                 <div className="border-t border-[var(--border)] pt-4">
-                  <SummaryRow
-                    highlight
-                    label="应付金额"
-                    value={formatCurrency(payAmount)}
-                  />
+                  <SummaryRow highlight label="应付金额" value={formatCurrency(payAmount)} />
                 </div>
               </div>
               <div className="mt-6 flex flex-wrap gap-3">
-                <Button className="flex-1" disabled={submitting} onClick={handleSubmit}>
-                  {submitting ? "提交中..." : "提交订单"}
+                <Button className="flex-1" disabled={createOrder.isPending} onClick={handleSubmit}>
+                  {createOrder.isPending ? "提交中..." : "提交订单"}
                 </Button>
                 <Button variant="secondary" onClick={() => router.push("/cart")}>
                   返回购物车
@@ -274,33 +269,10 @@ export default function CheckoutPage() {
   );
 }
 
-function SummaryRow({
-  label,
-  value,
-  highlight = false,
-  muted = false,
-}: {
-  label: string;
-  value: string;
-  highlight?: boolean;
-  muted?: boolean;
-}) {
+export default function CheckoutPage() {
   return (
-    <div className="flex items-center justify-between">
-      <span className={`text-sm ${highlight ? "font-bold text-slate-900" : "text-slate-500"}`}>
-        {label}
-      </span>
-      <span
-        className={`${
-          highlight
-            ? "text-2xl font-black text-rose-600"
-            : muted
-              ? "text-sm text-slate-400"
-              : "text-base font-bold text-slate-900"
-        }`}
-      >
-        {value}
-      </span>
-    </div>
+    <Suspense fallback={<ProtectedRoute requireAuth><LoadingState label="正在加载结算信息..." /></ProtectedRoute>}>
+      <CheckoutContent />
+    </Suspense>
   );
 }

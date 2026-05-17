@@ -1,9 +1,8 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
 import { Search } from "lucide-react";
-import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,71 +12,72 @@ import { Input } from "@/components/ui/input";
 import { LoadingState } from "@/components/ui/loading-state";
 import { Pagination } from "@/components/ui/pagination";
 import { Select } from "@/components/ui/select";
-import { storefrontApi } from "@/lib/api";
+import { useCategoryTree, useProducts } from "@/lib/hooks";
 import { formatCurrency } from "@/lib/format";
 import type { CategoryVO, ProductVO } from "@/lib/types";
 
-export default function ProductsPage() {
+function ProductCard({ product }: { product: ProductVO }) {
+  return (
+    <div className="text-left">
+      <Card className="h-full rounded-[30px] transition hover:-translate-y-0.5 hover:shadow-panel">
+        <div className="aspect-[4/3] overflow-hidden rounded-[24px] bg-slate-100">
+          <img alt={product.name} className="h-full w-full object-cover" src={product.image || "/favicon.svg"} />
+        </div>
+        <div className="mt-4 flex items-center justify-between gap-2">
+          <Badge tone="neutral">{product.categoryName || "精选"}</Badge>
+          <span className="text-xs text-slate-500">已售 {product.sales}</span>
+        </div>
+        <h3 className="mt-4 line-clamp-2 text-base font-black text-slate-950">
+          {product.name}
+        </h3>
+        <p className="mt-2 line-clamp-1 text-sm text-[var(--muted)]">
+          {product.subtitle || "精选商品，支持购物车和立即购买。"}
+        </p>
+        <div className="mt-5 flex items-end justify-between">
+          <div>
+            <div className="text-xl font-black text-rose-600">
+              {formatCurrency(product.price)}
+            </div>
+            {product.originalPrice > product.price ? (
+              <div className="text-xs text-slate-400 line-through">
+                {formatCurrency(product.originalPrice)}
+              </div>
+            ) : null}
+          </div>
+          <Badge tone={product.stock > 0 ? "success" : "danger"}>
+            {product.stock > 0 ? `库存 ${product.stock}` : "已售罄"}
+          </Badge>
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+function ProductListContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const page = Number(searchParams.get("page") || "1");
   const keywordQuery = searchParams.get("keyword") || "";
   const categoryQuery = Number(searchParams.get("categoryId") || "0");
 
-  const [loading, setLoading] = useState(true);
-  const [categories, setCategories] = useState<CategoryVO[]>([]);
-  const [products, setProducts] = useState<ProductVO[]>([]);
-  const [total, setTotal] = useState(0);
   const [keyword, setKeyword] = useState(keywordQuery);
   const [selectedCategory, setSelectedCategory] = useState(
     categoryQuery > 0 ? String(categoryQuery) : "",
   );
 
-  useEffect(() => {
-    setKeyword(keywordQuery);
-    setSelectedCategory(categoryQuery > 0 ? String(categoryQuery) : "");
-  }, [categoryQuery, keywordQuery]);
+  const { data: categories = [] } = useCategoryTree();
+  const { data: productPage, isLoading: loading } = useProducts({
+    pageNum: page,
+    pageSize: 12,
+    keyword: keywordQuery || undefined,
+    categoryId: categoryQuery > 0 ? categoryQuery : undefined,
+  });
 
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadData() {
-      setLoading(true);
-      try {
-        const [categoryData, productPage] = await Promise.all([
-          storefrontApi.getCategoryTree().catch(() => []),
-          storefrontApi.getProducts({
-            pageNum: page,
-            pageSize: 12,
-            keyword: keywordQuery || undefined,
-            categoryId: categoryQuery > 0 ? categoryQuery : undefined,
-          }),
-        ]);
-
-        if (!cancelled) {
-          setCategories(categoryData);
-          setProducts(productPage.records);
-          setTotal(productPage.total);
-        }
-      } catch (error) {
-        if (!cancelled) {
-          toast.error(error instanceof Error ? error.message : "获取商品列表失败");
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
-    }
-
-    void loadData();
-    return () => {
-      cancelled = true;
-    };
-  }, [categoryQuery, keywordQuery, page]);
+  const products = productPage?.records ?? [];
+  const total = productPage?.total ?? 0;
 
   const categoryOptions = useMemo(() => {
-    const flattened = categories.flatMap((item) => [item, ...(item.children || [])]);
+    const flattened = (categories as CategoryVO[]).flatMap((item) => [item, ...(item.children || [])]);
     return flattened;
   }, [categories]);
 
@@ -199,36 +199,7 @@ export default function ProductsPage() {
                 onClick={() => router.push(`/products/${product.id}`)}
                 type="button"
               >
-                <Card className="h-full rounded-[30px] transition hover:-translate-y-0.5 hover:shadow-panel">
-                  <div className="aspect-[4/3] overflow-hidden rounded-[24px] bg-slate-100">
-                    <img alt={product.name} className="h-full w-full object-cover" src={product.image || "/favicon.svg"} />
-                  </div>
-                  <div className="mt-4 flex items-center justify-between gap-2">
-                    <Badge tone="neutral">{product.categoryName || "精选"}</Badge>
-                    <span className="text-xs text-slate-500">已售 {product.sales}</span>
-                  </div>
-                  <h3 className="mt-4 line-clamp-2 text-base font-black text-slate-950">
-                    {product.name}
-                  </h3>
-                  <p className="mt-2 line-clamp-1 text-sm text-[var(--muted)]">
-                    {product.subtitle || "精选商品，支持购物车和立即购买。"}
-                  </p>
-                  <div className="mt-5 flex items-end justify-between">
-                    <div>
-                      <div className="text-xl font-black text-rose-600">
-                        {formatCurrency(product.price)}
-                      </div>
-                      {product.originalPrice > product.price ? (
-                        <div className="text-xs text-slate-400 line-through">
-                          {formatCurrency(product.originalPrice)}
-                        </div>
-                      ) : null}
-                    </div>
-                    <Badge tone={product.stock > 0 ? "success" : "danger"}>
-                      {product.stock > 0 ? `库存 ${product.stock}` : "已售罄"}
-                    </Badge>
-                  </div>
-                </Card>
+                <ProductCard product={product} />
               </button>
             ))}
           </div>
@@ -245,5 +216,13 @@ export default function ProductsPage() {
         />
       )}
     </div>
+  );
+}
+
+export default function ProductsPage() {
+  return (
+    <Suspense fallback={<LoadingState label="正在加载商品列表..." />}>
+      <ProductListContent />
+    </Suspense>
   );
 }

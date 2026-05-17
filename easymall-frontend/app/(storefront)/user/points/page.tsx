@@ -1,40 +1,23 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { toast } from "sonner";
+import { useState } from "react";
 
 import { AccountShell } from "@/components/layout/account-shell";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Pagination } from "@/components/ui/pagination";
-import { authApi, storefrontApi } from "@/lib/api";
+import { usePointsRecords, useUserProfile } from "@/lib/hooks";
 import { formatDateTime } from "@/lib/format";
-import type { PointsRecordVO } from "@/lib/types";
 
 export default function UserPointsPage() {
   const [page, setPage] = useState(1);
-  const [currentPoints, setCurrentPoints] = useState(0);
-  const [records, setRecords] = useState<PointsRecordVO[]>([]);
-  const [total, setTotal] = useState(0);
+  const { data: profile } = useUserProfile();
+  const { data: recordPage } = usePointsRecords({ pageNum: page, pageSize: 10 });
 
-  useEffect(() => {
-    void loadData();
-  }, [page]);
-
-  async function loadData() {
-    try {
-      const [profile, pageData] = await Promise.all([
-        authApi.getCurrentUser().catch(() => null),
-        storefrontApi.getPointsRecords({ pageNum: page, pageSize: 10 }),
-      ]);
-      setCurrentPoints(profile?.points || 0);
-      setRecords(pageData.records);
-      setTotal(pageData.total);
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "获取积分记录失败");
-    }
-  }
+  const currentPoints = profile?.points || 0;
+  const records = recordPage?.records ?? [];
+  const total = recordPage?.total ?? 0;
 
   return (
     <AccountShell

@@ -1,44 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { toast } from "sonner";
-
 import { AccountShell } from "@/components/layout/account-shell";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
-import { storefrontApi } from "@/lib/api";
-import type { MemberLevelVO } from "@/lib/types";
+import { useMemberLevels, useCurrentMemberLevel } from "@/lib/hooks";
 
 export default function MemberCenterPage() {
-  const [currentLevel, setCurrentLevel] = useState<MemberLevelVO | null>(null);
-  const [levels, setLevels] = useState<MemberLevelVO[]>([]);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadData() {
-      try {
-        const [current, list] = await Promise.all([
-          storefrontApi.getCurrentMemberLevel(),
-          storefrontApi.getMemberLevels(),
-        ]);
-        if (!cancelled) {
-          setCurrentLevel(current);
-          setLevels(list);
-        }
-      } catch (error) {
-        if (!cancelled) {
-          toast.error(error instanceof Error ? error.message : "获取会员信息失败");
-        }
-      }
-    }
-
-    void loadData();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const { data: currentLevel } = useCurrentMemberLevel();
+  const { data: levels = [] } = useMemberLevels();
 
   return (
     <AccountShell

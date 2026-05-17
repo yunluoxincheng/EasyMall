@@ -2,50 +2,45 @@
 
 import Link from "next/link";
 import { Gift, TicketPercent, Trophy } from "lucide-react";
-import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { LoadingState } from "@/components/ui/loading-state";
-import { storefrontApi } from "@/lib/api";
+import { useCouponTemplates, useReceiveCoupon } from "@/lib/hooks";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { useSession } from "@/lib/use-session";
-import type { CouponTemplateVO } from "@/lib/types";
+import { useState } from "react";
+
+function QuickLink({
+  title,
+  href,
+  icon,
+}: {
+  title: string;
+  href: string;
+  icon: React.ReactNode;
+}) {
+  return (
+    <Link
+      href={href}
+      className="flex items-center justify-between rounded-[28px] border border-white/10 bg-white/8 px-5 py-4 transition hover:bg-white/12"
+    >
+      <div className="flex items-center gap-3">
+        <span className="rounded-2xl bg-white/10 p-3">{icon}</span>
+        <span className="font-semibold">{title}</span>
+      </div>
+      <span className="text-sm text-white/72">立即进入</span>
+    </Link>
+  );
+}
 
 export default function CouponsPage() {
   const session = useSession();
-  const [loading, setLoading] = useState(true);
-  const [coupons, setCoupons] = useState<CouponTemplateVO[]>([]);
+  const { data: coupons, isLoading } = useCouponTemplates();
+  const receiveCoupon = useReceiveCoupon();
   const [claimingId, setClaimingId] = useState<number | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadData() {
-      setLoading(true);
-      try {
-        const data = await storefrontApi.getCouponTemplates();
-        if (!cancelled) {
-          setCoupons(data);
-        }
-      } catch (error) {
-        if (!cancelled) {
-          toast.error(error instanceof Error ? error.message : "获取优惠券中心失败");
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
-    }
-
-    void loadData();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   async function handleReceiveCoupon(templateId: number) {
     if (!session.isLoggedIn) {
@@ -55,7 +50,7 @@ export default function CouponsPage() {
 
     setClaimingId(templateId);
     try {
-      await storefrontApi.receiveCoupon(templateId);
+      await receiveCoupon.mutateAsync(templateId);
       toast.success("领取成功，已放入我的优惠券");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "领取失败");
@@ -64,7 +59,7 @@ export default function CouponsPage() {
     }
   }
 
-  if (loading) {
+  if (isLoading) {
     return <LoadingState label="正在加载优惠券中心..." />;
   }
 
@@ -91,9 +86,9 @@ export default function CouponsPage() {
         </div>
       </Card>
 
-      {coupons.length ? (
+      {(coupons ?? []).length ? (
         <div className="grid gap-5 lg:grid-cols-2">
-          {coupons.map((coupon) => (
+          {(coupons ?? []).map((coupon) => (
             <Card key={coupon.id} className="rounded-[30px]">
               <div className="flex gap-5">
                 <div className="min-w-28 rounded-[24px] bg-rose-50 px-4 py-5 text-center">
@@ -149,28 +144,5 @@ export default function CouponsPage() {
         />
       )}
     </div>
-  );
-}
-
-function QuickLink({
-  title,
-  href,
-  icon,
-}: {
-  title: string;
-  href: string;
-  icon: React.ReactNode;
-}) {
-  return (
-    <Link
-      href={href}
-      className="flex items-center justify-between rounded-[28px] border border-white/10 bg-white/8 px-5 py-4 transition hover:bg-white/12"
-    >
-      <div className="flex items-center gap-3">
-        <span className="rounded-2xl bg-white/10 p-3">{icon}</span>
-        <span className="font-semibold">{title}</span>
-      </div>
-      <span className="text-sm text-white/72">立即进入</span>
-    </Link>
   );
 }

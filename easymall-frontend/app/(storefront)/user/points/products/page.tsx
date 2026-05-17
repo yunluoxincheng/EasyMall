@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 
 import { AccountShell } from "@/components/layout/account-shell";
@@ -10,14 +10,15 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
 import { Textarea } from "@/components/ui/textarea";
-import { authApi, storefrontApi } from "@/lib/api";
-import type { PointsProductVO } from "@/lib/types";
+import { usePointsProducts, useUserProfile, useExchangePointsProduct } from "@/lib/hooks";
 
 export default function PointsProductsPage() {
-  const [products, setProducts] = useState<PointsProductVO[]>([]);
-  const [currentPoints, setCurrentPoints] = useState(0);
+  const { data: products = [], isLoading } = usePointsProducts();
+  const { data: profile } = useUserProfile();
+  const exchangeMutation = useExchangePointsProduct();
+
+  const currentPoints = profile?.points || 0;
   const [selectedProduct, setSelectedProduct] = useState<PointsProductVO | null>(null);
-  const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     receiverName: "",
     receiverPhone: "",
@@ -25,40 +26,23 @@ export default function PointsProductsPage() {
     remark: "",
   });
 
-  useEffect(() => {
-    void loadData();
-  }, []);
-
-  async function loadData() {
-    try {
-      const [list, profile] = await Promise.all([
-        storefrontApi.getPointsProducts(),
-        authApi.getCurrentUser().catch(() => null),
-      ]);
-      setProducts(list);
-      setCurrentPoints(profile?.points || 0);
-      setForm((prev) => ({
-        ...prev,
-        receiverName: profile?.nickname || prev.receiverName,
-        receiverPhone: profile?.phone || prev.receiverPhone,
-      }));
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "加载积分商品失败");
-    }
+  if (profile && !form.receiverName && profile.nickname) {
+    setForm((prev) => ({
+      ...prev,
+      receiverName: profile.nickname || prev.receiverName,
+      receiverPhone: profile.phone || prev.receiverPhone,
+    }));
   }
 
   async function handleExchange() {
-    if (!selectedProduct) {
-      return;
-    }
+    if (!selectedProduct) return;
     if (!form.receiverName.trim() || !form.receiverPhone.trim() || !form.receiverAddress.trim()) {
       toast.warning("请填写完整收货信息");
       return;
     }
 
-    setSaving(true);
     try {
-      await storefrontApi.exchangePointsProduct({
+      await exchangeMutation.mutateAsync({
         productId: selectedProduct.id,
         receiverName: form.receiverName.trim(),
         receiverPhone: form.receiverPhone.trim(),
@@ -67,12 +51,13 @@ export default function PointsProductsPage() {
       });
       toast.success("兑换成功");
       setSelectedProduct(null);
-      await loadData();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "兑换失败");
-    } finally {
-      setSaving(false);
     }
+  }
+
+  if (isLoading) {
+    return <AccountShell title="积分商城" description=""><Card className="rounded-[30px]">加载中...</Card></AccountShell>;
   }
 
   return (
@@ -156,11 +141,13 @@ export default function PointsProductsPage() {
           <Button variant="secondary" onClick={() => setSelectedProduct(null)}>
             取消
           </Button>
-          <Button disabled={saving} onClick={() => void handleExchange()}>
-            {saving ? "兑换中..." : "确认兑换"}
+          <Button disabled={exchangeMutation.isPending} onClick={() => void handleExchange()}>
+            {exchangeMutation.isPending ? "兑换中..." : "确认兑换"}
           </Button>
         </div>
       </Modal>
     </AccountShell>
   );
 }
+
+type PointsProductVO = import("@/lib/types").PointsProductVO;

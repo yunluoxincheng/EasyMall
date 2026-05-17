@@ -1,15 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { toast } from "sonner";
+import { useState } from "react";
 
 import { AccountShell } from "@/components/layout/account-shell";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
-import { storefrontApi } from "@/lib/api";
+import { useMyCoupons } from "@/lib/hooks";
 import { formatCurrency, formatDate } from "@/lib/format";
-import type { UserCouponVO } from "@/lib/types";
 
 const tabs = [
   { label: "全部", value: "" },
@@ -20,22 +18,11 @@ const tabs = [
 
 export default function UserCouponsPage() {
   const [activeTab, setActiveTab] = useState("");
-  const [coupons, setCoupons] = useState<UserCouponVO[]>([]);
+  const { data: couponPage } = useMyCoupons(
+    activeTab ? { status: Number(activeTab) } : {},
+  );
 
-  useEffect(() => {
-    void loadData();
-  }, [activeTab]);
-
-  async function loadData() {
-    try {
-      const pageData = await storefrontApi.getMyCoupons(
-        activeTab ? { status: Number(activeTab) } : {},
-      );
-      setCoupons(pageData.records);
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "获取优惠券失败");
-    }
-  }
+  const coupons = couponPage?.records ?? [];
 
   return (
     <AccountShell

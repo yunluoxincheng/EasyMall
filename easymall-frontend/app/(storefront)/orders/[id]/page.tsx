@@ -1,7 +1,6 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { ProtectedRoute } from "@/components/auth/protected";
@@ -10,56 +9,57 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { LoadingState } from "@/components/ui/loading-state";
+import { useOrderDetail, useCancelOrder, useConfirmOrder } from "@/lib/hooks";
 import { storefrontApi } from "@/lib/api";
 import { formatCurrency, formatDateTime, getOrderStatusLabel, getStatusTone } from "@/lib/format";
-import type { OrderVO } from "@/lib/types";
+
+function Detail({
+  label,
+  value,
+  full = false,
+  highlight = false,
+}: {
+  label: string;
+  value: string;
+  full?: boolean;
+  highlight?: boolean;
+}) {
+  return (
+    <div className={full ? "md:col-span-2" : ""}>
+      <div className="text-xs font-black uppercase tracking-[0.16em] text-slate-400">
+        {label}
+      </div>
+      <div className={`mt-2 ${highlight ? "text-2xl font-black text-rose-600" : "text-sm font-semibold text-slate-900"}`}>
+        {value}
+      </div>
+    </div>
+  );
+}
 
 export default function OrderDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const orderId = Number(params.id);
-  const [order, setOrder] = useState<OrderVO | null>(null);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    void loadOrder();
-  }, [orderId]);
-
-  async function loadOrder() {
-    setLoading(true);
-    try {
-      const data = await storefrontApi.getOrderById(orderId);
-      setOrder(data);
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "获取订单详情失败");
-    } finally {
-      setLoading(false);
-    }
-  }
+  const { data: order, isLoading } = useOrderDetail(orderId);
+  const cancelOrder = useCancelOrder();
+  const confirmOrder = useConfirmOrder();
 
   async function handleCancel() {
-    if (!window.confirm("确定要取消该订单吗？")) {
-      return;
-    }
-
+    if (!window.confirm("确定要取消该订单吗？")) return;
     try {
-      await storefrontApi.cancelOrder(orderId);
+      await cancelOrder.mutateAsync(orderId);
       toast.success("订单已取消");
-      await loadOrder();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "取消订单失败");
     }
   }
 
   async function handleConfirm() {
-    if (!window.confirm("确认已经收到商品吗？")) {
-      return;
-    }
-
+    if (!window.confirm("确认已经收到商品吗？")) return;
     try {
-      await storefrontApi.confirmOrder(orderId);
+      await confirmOrder.mutateAsync(orderId);
       toast.success("确认收货成功");
-      await loadOrder();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "确认收货失败");
     }
@@ -74,7 +74,7 @@ export default function OrderDetailPage() {
     }
   }
 
-  if (loading) {
+  if (isLoading) {
     return <ProtectedRoute requireAuth><LoadingState label="正在加载订单详情..." /></ProtectedRoute>;
   }
 
@@ -191,28 +191,5 @@ export default function OrderDetailPage() {
         />
       )}
     </ProtectedRoute>
-  );
-}
-
-function Detail({
-  label,
-  value,
-  full = false,
-  highlight = false,
-}: {
-  label: string;
-  value: string;
-  full?: boolean;
-  highlight?: boolean;
-}) {
-  return (
-    <div className={full ? "md:col-span-2" : ""}>
-      <div className="text-xs font-black uppercase tracking-[0.16em] text-slate-400">
-        {label}
-      </div>
-      <div className={`mt-2 ${highlight ? "text-2xl font-black text-rose-600" : "text-sm font-semibold text-slate-900"}`}>
-        {value}
-      </div>
-    </div>
   );
 }
