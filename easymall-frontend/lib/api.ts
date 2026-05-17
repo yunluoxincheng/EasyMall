@@ -199,11 +199,11 @@ export const storefrontApi = {
       method: "DELETE",
     }),
   toggleFavorite: (productId: number) =>
-    request<boolean>(`/api/favorite/${productId}/toggle`, {
+    request<boolean>(`/api/favorite/toggle/${productId}`, {
       method: "POST",
     }),
   checkFavorite: (productId: number) =>
-    request<boolean>(`/api/favorite/${productId}/check`),
+    request<boolean>(`/api/favorite/check/${productId}`),
   getFavorites: async (params: { pageNum?: number; pageSize?: number }) =>
     normalizePage(await request<ListPage<FavoriteVO>>("/api/favorite/page", { params })),
   createComment: (payload: CommentCreateDTO) =>
