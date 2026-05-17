@@ -124,7 +124,7 @@ public class OrderServiceImpl implements IOrderService {
             inventoryService.lockStock(cartItem.getProductId(), cartItem.getQuantity(), order.getId());
         }
 
-        cartMapper.physicallyDeleteBatchSoftDeleted(orderCreateDTO.getCartIds());
+        cartMapper.physicallyDeleteAllSoftDeleted(userId);
         cartMapper.deleteBatchIds(orderCreateDTO.getCartIds());
 
         // 创建支付单
