@@ -60,63 +60,89 @@ export default function RegisterPage() {
 
   return (
     <ProtectedRoute redirectIfAuthed>
-      <div className="mx-auto flex min-h-screen max-w-5xl items-center px-4 py-10">
-        <Card className="mx-auto w-full max-w-3xl rounded-[40px] p-8">
-          <div className="text-center">
-            <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">
-              Create Account
-            </p>
-            <h1 className="mt-3 text-3xl font-black tracking-tight text-slate-950">
-              注册新的 EasyMall 账号
-            </h1>
-            <p className="mt-3 text-sm leading-7 text-[var(--muted)]">
-              注册完成后，你可以直接进入商城购物；如果账号具备管理员角色，登录后会在个人中心显示管理入口。
-            </p>
-          </div>
+      <div className="min-h-screen bg-storefront-glow">
+        <div className="mx-auto flex min-h-screen max-w-7xl items-center justify-center px-4 py-10 lg:py-14">
+          <div className="w-full max-w-[560px]">
+            <Card className="overflow-hidden rounded-[40px] border-white/70 bg-white/92 p-0 shadow-panel">
+              <div className="border-b border-[var(--border)] bg-gradient-to-br from-white via-emerald-50/70 to-cyan-50/70 px-8 py-7">
+                <p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-700">
+                  EasyMall Access
+                </p>
+                <h1 className="mt-4 text-3xl font-black tracking-tight text-slate-950">
+                  注册新的 EasyMall 账号
+                </h1>
+                <p className="mt-3 text-sm leading-7 text-[var(--muted)]">
+                  注册完成后就可以直接登录商城；如果账号具备管理员角色，登录后会在个人中心看到管理入口。
+                </p>
+              </div>
 
-          <form className="mt-8 grid gap-5 md:grid-cols-2" onSubmit={handleSubmit}>
-            <div>
-              <label className="field-label">用户名</label>
-              <Input value={form.username} onChange={(event) => patch("username", event.target.value)} />
-            </div>
-            <div>
-              <label className="field-label">昵称</label>
-              <Input value={form.nickname} onChange={(event) => patch("nickname", event.target.value)} />
-            </div>
-            <div>
-              <label className="field-label">手机号</label>
-              <Input value={form.phone} onChange={(event) => patch("phone", event.target.value)} />
-            </div>
-            <div>
-              <label className="field-label">邮箱</label>
-              <Input value={form.email} onChange={(event) => patch("email", event.target.value)} />
-            </div>
-            <div>
-              <label className="field-label">密码</label>
-              <Input type="password" value={form.password} onChange={(event) => patch("password", event.target.value)} />
-            </div>
-            <div>
-              <label className="field-label">确认密码</label>
-              <Input
-                type="password"
-                value={form.confirmPassword}
-                onChange={(event) => patch("confirmPassword", event.target.value)}
-              />
-            </div>
-            <div className="md:col-span-2">
-              <Button className="w-full" disabled={submitting} type="submit">
-                {submitting ? "注册中..." : "注册并创建账号"}
-              </Button>
-            </div>
-          </form>
+              <div className="px-8 py-8">
+                <form className="space-y-5" onSubmit={handleSubmit}>
+                  <div>
+                    <label className="field-label">用户名</label>
+                    <Input
+                      value={form.username}
+                      onChange={(event) => patch("username", event.target.value)}
+                      placeholder="请输入用户名"
+                    />
+                  </div>
+                  <div>
+                    <label className="field-label">昵称</label>
+                    <Input
+                      value={form.nickname}
+                      onChange={(event) => patch("nickname", event.target.value)}
+                      placeholder="请输入昵称"
+                    />
+                  </div>
+                  <div>
+                    <label className="field-label">手机号</label>
+                    <Input
+                      value={form.phone}
+                      onChange={(event) => patch("phone", event.target.value)}
+                      placeholder="选填"
+                    />
+                  </div>
+                  <div>
+                    <label className="field-label">邮箱</label>
+                    <Input
+                      value={form.email}
+                      onChange={(event) => patch("email", event.target.value)}
+                      placeholder="选填"
+                    />
+                  </div>
+                  <div>
+                    <label className="field-label">密码</label>
+                    <Input
+                      type="password"
+                      value={form.password}
+                      onChange={(event) => patch("password", event.target.value)}
+                      placeholder="请输入密码"
+                    />
+                  </div>
+                  <div>
+                    <label className="field-label">确认密码</label>
+                    <Input
+                      type="password"
+                      value={form.confirmPassword}
+                      onChange={(event) => patch("confirmPassword", event.target.value)}
+                      placeholder="请再次输入密码"
+                    />
+                  </div>
+                  <Button className="w-full" disabled={submitting} type="submit">
+                    {submitting ? "注册中..." : "注册并创建账号"}
+                  </Button>
+                </form>
 
-          <div className="mt-6 text-center text-sm text-slate-500">
-            已经有账号？
-            <Link href="/login" className="ml-2 font-semibold text-emerald-700">
-              去登录
-            </Link>
+                <div className="mt-6 text-center text-sm text-slate-500">
+                  已经有账号？
+                  <Link href="/login" className="ml-2 font-semibold text-emerald-700">
+                    去登录
+                  </Link>
+                </div>
+              </div>
+            </Card>
           </div>
-        </Card>
+        </div>
       </div>
     </ProtectedRoute>
   );
