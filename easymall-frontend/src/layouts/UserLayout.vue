@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch, h } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import {
   NLayout,
@@ -21,7 +21,6 @@ import {
   DocumentTextOutline,
   HeartOutline,
   StarOutline,
-  ShieldCheckmarkOutline,
 } from '@vicons/ionicons5'
 import { useUserAuthStore } from '@/stores/userAuth'
 import { useAuthStore } from '@/stores/auth'
@@ -66,8 +65,6 @@ function goToCart() {
   router.push('/cart')
 }
 
-const isAdminUser = computed(() => userAuth.userInfo?.role === 1 || adminAuth.isAdmin)
-
 const userDropdownOptions = computed(() => {
   const options = [
     { label: '我的订单', key: 'orders', icon: () => h(NIcon, null, { default: () => h(DocumentTextOutline) }) },
@@ -76,10 +73,6 @@ const userDropdownOptions = computed(() => {
     { label: '会员中心', key: 'member', icon: () => h(NIcon, null, { default: () => h(StarOutline) }) },
   ]
 
-  if (isAdminUser.value) {
-    options.push({ label: '管理后台', key: 'admin', icon: () => h(NIcon, null, { default: () => h(ShieldCheckmarkOutline) }) })
-  }
-
   return [
     ...options,
     { type: 'divider' as const },
@@ -87,20 +80,12 @@ const userDropdownOptions = computed(() => {
   ]
 })
 
-import { h } from 'vue'
-
 function handleUserAction(key: string) {
   switch (key) {
     case 'orders': router.push('/orders'); break
     case 'profile': router.push('/user'); break
     case 'favorites': router.push('/user/favorites'); break
     case 'member': router.push('/user/member'); break
-    case 'admin':
-      if (userAuth.token && userAuth.userInfo?.role === 1) {
-        adminAuth.setLogin(userAuth.token, 1)
-      }
-      router.push('/admin')
-      break
     case 'logout':
       dialog.warning({
         title: '确认退出',
@@ -109,6 +94,7 @@ function handleUserAction(key: string) {
         negativeText: '取消',
         onPositiveClick: () => {
           userAuth.logout()
+          adminAuth.logout()
           message.success('已退出登录')
           router.push('/login')
         },
@@ -173,15 +159,6 @@ onMounted(() => fetchCartCount())
           </NBadge>
 
           <template v-if="userAuth.isLoggedIn">
-            <NButton
-              v-if="isAdminUser"
-              secondary
-              size="small"
-              type="primary"
-              @click="handleUserAction('admin')"
-            >
-              管理后台
-            </NButton>
             <NDropdown
               :options="userDropdownOptions"
               @select="handleUserAction"

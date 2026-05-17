@@ -14,13 +14,20 @@ import {
   NInput,
   NIcon,
   NSpin,
+  NCarousel,
+  NTag,
   useMessage,
 } from 'naive-ui'
 import {
+  CartOutline,
   FlashOutline,
   GiftOutline,
+  GridOutline,
+  HeartOutline,
+  SearchOutline,
   ShieldCheckmarkOutline,
   StorefrontOutline,
+  TicketOutline,
 } from '@vicons/ionicons5'
 import { getProductPage } from '@/api/user-product'
 import { getCategoryTree } from '@/api/user-category'
@@ -35,6 +42,22 @@ const categories = ref<CategoryVO[]>([])
 const loading = ref(false)
 const total = ref(0)
 
+const fallbackCategories: CategoryVO[] = [
+  { id: -1, name: '手机数码', icon: '', parentId: 0, level: 1, sort: 1, status: 1, createTime: '' },
+  { id: -2, name: '家用电器', icon: '', parentId: 0, level: 1, sort: 2, status: 1, createTime: '' },
+  { id: -3, name: '服饰鞋包', icon: '', parentId: 0, level: 1, sort: 3, status: 1, createTime: '' },
+  { id: -4, name: '美妆个护', icon: '', parentId: 0, level: 1, sort: 4, status: 1, createTime: '' },
+  { id: -5, name: '食品生鲜', icon: '', parentId: 0, level: 1, sort: 5, status: 1, createTime: '' },
+  { id: -6, name: '家居生活', icon: '', parentId: 0, level: 1, sort: 6, status: 1, createTime: '' },
+]
+
+const fallbackStories = [
+  { id: 0, name: '品质生活精选', categoryName: '精选', price: '今日上新', image: new URL('@/assets/hero.png', import.meta.url).href },
+  { id: 0, name: '会员积分好礼', categoryName: '积分商城', price: '积分可兑', image: new URL('@/assets/hero.png', import.meta.url).href },
+  { id: 0, name: '限时优惠专区', categoryName: '优惠券', price: '先领后买', image: new URL('@/assets/hero.png', import.meta.url).href },
+  { id: 0, name: '热销口碑榜单', categoryName: '热卖', price: '持续更新', image: new URL('@/assets/hero.png', import.meta.url).href },
+]
+
 const query = ref<ProductQuery>({
   pageNum: 1,
   pageSize: 12,
@@ -45,13 +68,65 @@ const query = ref<ProductQuery>({
 const selectedCategoryId = ref<number | string>(query.value.categoryId ? Number(query.value.categoryId) : '')
 const keyword = ref(query.value.keyword ?? '')
 
-const featuredCategories = computed(() => categories.value.slice(0, 8))
+const featuredCategories = computed(() => categories.value.slice(0, 10))
+const selectedCategoryName = computed(() => {
+  if (!selectedCategoryId.value) return '全场精选'
+  return flattenCategories(categories.value).find((item) => item.id === selectedCategoryId.value)?.name || '分类精选'
+})
+const hotProducts = computed(() => products.value.slice(0, 4))
+const storyItems = computed(() => {
+  if (hotProducts.value.length) {
+    return hotProducts.value.map((item) => ({
+      id: item.id,
+      name: item.name,
+      categoryName: item.categoryName,
+      price: `¥${item.price}`,
+      image: item.image,
+    }))
+  }
+  return fallbackStories
+})
+const heroSlides = computed(() => {
+  const items = hotProducts.value.slice(0, 3)
+  if (items.length) return items
+  return [
+    {
+      id: 0,
+      name: 'EasyMall 品质生活馆',
+      subtitle: '每日精选、优惠券和积分福利正在上新',
+      price: 0,
+      originalPrice: 0,
+      stock: 0,
+      sales: 0,
+      image: '',
+      images: [],
+      categoryId: 0,
+      categoryName: '精选',
+      brand: '',
+      status: 1,
+      createTime: '',
+      description: '',
+    },
+  ] as ProductVO[]
+})
+
+function flattenCategories(list: CategoryVO[]) {
+  const result: CategoryVO[] = []
+  for (const cat of list) {
+    result.push(cat)
+    if (cat.children?.length) {
+      result.push(...cat.children)
+    }
+  }
+  return result
+}
 
 function buildCategoryOptions(list: CategoryVO[]) {
   const options: Array<{ label: string; value: number | string }> = [
     { label: '全部分类', value: '' },
   ]
   for (const cat of list) {
+    if (cat.id <= 0) continue
     options.push({ label: cat.name, value: cat.id })
     if (cat.children?.length) {
       for (const child of cat.children) {
@@ -65,9 +140,9 @@ function buildCategoryOptions(list: CategoryVO[]) {
 async function fetchCategories() {
   try {
     const res = await getCategoryTree()
-    categories.value = res.data.data
+    categories.value = res.data.data.length ? res.data.data : fallbackCategories
   } catch {
-    // ignore
+    categories.value = fallbackCategories
   }
 }
 
@@ -96,7 +171,7 @@ async function fetchProducts() {
 }
 
 function handleSearch() {
-  query.value.keyword = keyword.value || undefined
+  query.value.keyword = keyword.value.trim() || undefined
   query.value.categoryId = typeof selectedCategoryId.value === 'number' ? selectedCategoryId.value : undefined
   query.value.pageNum = 1
   fetchProducts()
@@ -122,21 +197,22 @@ function handlePageSizeChange(pageSize: number) {
 }
 
 function goProduct(id: number) {
-  router.push(`/products/${id}`)
+  if (id > 0) {
+    router.push(`/products/${id}`)
+  }
 }
 
-// 监听路由变化（如从首页点击分类跳转）
+function goCategory(id: number) {
+  handleCategoryChange(id)
+}
+
 watch(
   () => route.query,
   (newQuery) => {
-    if (newQuery.keyword) {
-      keyword.value = newQuery.keyword as string
-      query.value.keyword = keyword.value
-    }
-    if (newQuery.categoryId) {
-      selectedCategoryId.value = Number(newQuery.categoryId)
-      query.value.categoryId = selectedCategoryId.value
-    }
+    keyword.value = (newQuery.keyword as string) || ''
+    query.value.keyword = keyword.value || undefined
+    selectedCategoryId.value = newQuery.categoryId ? Number(newQuery.categoryId) : ''
+    query.value.categoryId = typeof selectedCategoryId.value === 'number' ? selectedCategoryId.value : undefined
     query.value.pageNum = 1
     fetchProducts()
   },
@@ -150,45 +226,106 @@ onMounted(() => {
 
 <template>
   <div class="product-list-page">
-    <section class="mall-hero">
-      <div class="hero-copy">
-        <div class="hero-kicker">
-          <NIcon :component="StorefrontOutline" />
-          精选好物商城
+    <section class="storefront-shell">
+      <aside class="category-panel">
+        <div class="panel-heading">
+          <NIcon :component="GridOutline" />
+          <span>商品分类</span>
         </div>
-        <h2>把日常需要的好东西一次逛齐</h2>
-        <p>甄选热销商品、优惠券和积分福利，支持购物车、下单、模拟支付与订单跟踪。</p>
-        <div class="hero-search">
-          <NInput
-            v-model:value="keyword"
-            placeholder="搜索手机、家电、服饰、零食"
-            clearable
-            size="large"
-            @keyup.enter="handleSearch"
-          />
-          <NButton type="primary" size="large" @click="handleSearch">搜索商品</NButton>
-        </div>
-      </div>
-      <div class="hero-panel">
-        <div class="panel-title">今日服务</div>
-        <div class="service-list">
-          <div class="service-item">
+        <button
+          class="category-row"
+          :class="{ active: selectedCategoryId === '' }"
+          type="button"
+          @click="handleCategoryChange('')"
+        >
+          <span>全部商品</span>
+          <small>All</small>
+        </button>
+        <button
+          v-for="cat in featuredCategories"
+          :key="cat.id"
+          class="category-row"
+          :class="{ active: selectedCategoryId === cat.id }"
+          type="button"
+          @click="cat.id > 0 ? goCategory(cat.id) : handleCategoryChange('')"
+        >
+          <span>{{ cat.name }}</span>
+          <small>{{ cat.children?.length || 0 }} 个子类</small>
+        </button>
+      </aside>
+
+      <div class="hero-stage">
+        <NCarousel autoplay draggable show-arrow dot-type="line" class="hero-carousel">
+          <div v-for="slide in heroSlides" :key="slide.id" class="hero-slide">
+            <div class="hero-copy">
+              <NTag size="small" type="success" round>{{ slide.categoryName || '精选频道' }}</NTag>
+              <h2>{{ slide.id ? slide.name : 'EasyMall 品质生活馆' }}</h2>
+              <p>{{ slide.subtitle || '精选热销商品、积分好礼和限时优惠，快速找到更值得买的选择。' }}</p>
+              <div class="hero-actions">
+                <NButton type="primary" size="large" @click="goProduct(slide.id)">
+                  <template #icon>
+                    <NIcon :component="StorefrontOutline" />
+                  </template>
+                  立即选购
+                </NButton>
+                <NButton secondary size="large" @click="router.push('/coupons')">
+                  <template #icon>
+                    <NIcon :component="TicketOutline" />
+                  </template>
+                  领优惠券
+                </NButton>
+              </div>
+            </div>
+            <div class="hero-visual">
+              <img v-if="slide.image" :src="slide.image" :alt="slide.name" />
+              <img v-else src="@/assets/hero.png" alt="EasyMall 商城精选" />
+            </div>
+          </div>
+        </NCarousel>
+
+        <div class="benefit-strip">
+          <div class="benefit-item">
             <NIcon :component="ShieldCheckmarkOutline" />
             <span>正品保障</span>
           </div>
-          <div class="service-item">
+          <div class="benefit-item">
             <NIcon :component="FlashOutline" />
             <span>快速下单</span>
           </div>
-          <div class="service-item">
+          <div class="benefit-item">
             <NIcon :component="GiftOutline" />
             <span>积分好礼</span>
           </div>
         </div>
       </div>
+
+      <aside class="quick-panel">
+        <div>
+          <div class="quick-title">我的 EasyMall</div>
+          <div class="quick-subtitle">会员、订单、收藏一站直达</div>
+        </div>
+        <div class="quick-grid">
+          <button type="button" @click="router.push('/cart')">
+            <NIcon :component="CartOutline" />
+            <span>购物车</span>
+          </button>
+          <button type="button" @click="router.push('/orders')">
+            <NIcon :component="StorefrontOutline" />
+            <span>订单</span>
+          </button>
+          <button type="button" @click="router.push('/user/favorites')">
+            <NIcon :component="HeartOutline" />
+            <span>收藏</span>
+          </button>
+          <button type="button" @click="router.push('/user/points/products')">
+            <NIcon :component="GiftOutline" />
+            <span>积分</span>
+          </button>
+        </div>
+      </aside>
     </section>
 
-    <section v-if="featuredCategories.length" class="category-rail">
+    <section class="category-rail" aria-label="快捷分类">
       <button
         class="category-chip"
         :class="{ active: selectedCategoryId === '' }"
@@ -198,40 +335,71 @@ onMounted(() => {
         全部商品
       </button>
       <button
-        v-for="cat in featuredCategories"
+        v-for="cat in flattenCategories(categories).slice(0, 14)"
         :key="cat.id"
         class="category-chip"
         :class="{ active: selectedCategoryId === cat.id }"
         type="button"
-        @click="handleCategoryChange(cat.id)"
+        @click="cat.id > 0 ? handleCategoryChange(cat.id) : handleCategoryChange('')"
       >
         {{ cat.name }}
       </button>
     </section>
 
-    <!-- 筛选栏 -->
-    <div class="filter-bar">
-      <NSpace align="center">
+    <section class="apple-strip">
+      <div class="section-heading">
+        <div>
+          <span class="eyebrow">New Picks</span>
+          <h3>上新了，先看这些值得逛的好物。</h3>
+        </div>
+        <NButton text type="primary" @click="handleSearch">查看全部</NButton>
+      </div>
+      <div class="story-row">
+        <article
+          v-for="item in storyItems"
+          :key="item.id"
+          class="story-card"
+          @click="goProduct(item.id)"
+        >
+          <img :src="item.image" :alt="item.name" />
+          <div>
+            <span>{{ item.categoryName }}</span>
+            <strong>{{ item.name }}</strong>
+            <small>{{ item.price }}</small>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="filter-bar">
+      <div class="filter-title">
+        <span class="eyebrow">{{ selectedCategoryName }}</span>
+        <h3>发现商品</h3>
+      </div>
+      <NSpace align="center" class="filter-controls">
         <NSelect
           :value="selectedCategoryId"
           :options="buildCategoryOptions(categories)"
           placeholder="选择分类"
-          style="width: 200px"
+          class="category-select"
           @update:value="handleCategoryChange"
         />
         <NInput
           v-model:value="keyword"
-          placeholder="搜索商品"
+          placeholder="搜索商品、品牌或关键词"
           clearable
-          style="width: 260px"
+          class="keyword-input"
           @keyup.enter="handleSearch"
-        />
+        >
+          <template #prefix>
+            <NIcon :component="SearchOutline" />
+          </template>
+        </NInput>
         <NButton type="primary" @click="handleSearch">筛选</NButton>
       </NSpace>
       <div class="result-count">共 {{ total }} 件商品</div>
-    </div>
+    </section>
 
-    <!-- 商品网格 -->
     <NSpin :show="loading">
       <div v-if="products.length" class="product-grid">
         <NGrid :x-gap="18" :y-gap="18" cols="1 s:2 m:3 l:4" responsive="screen">
@@ -258,7 +426,6 @@ onMounted(() => {
       <NEmpty v-if="!loading && !products.length" description="暂无商品" />
     </NSpin>
 
-    <!-- 分页 -->
     <div v-if="total > 0" class="pagination-wrap">
       <NPagination
         :page="query.pageNum"
@@ -275,108 +442,213 @@ onMounted(() => {
 
 <style scoped>
 .product-list-page {
-  padding: 0 0 40px;
+  padding: 0 0 44px;
 }
 
-.mall-hero {
+.storefront-shell {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 280px;
-  gap: 24px;
-  padding: 32px;
-  margin-bottom: 20px;
+  grid-template-columns: 214px minmax(0, 1fr) 214px;
+  gap: 18px;
+  margin-bottom: 98px;
+}
+
+.category-panel,
+.quick-panel {
+  min-height: 394px;
+  padding: 16px;
+  border: 1px solid #e5e7eb;
   border-radius: 8px;
-  background:
-    linear-gradient(120deg, rgba(255, 255, 255, 0.9), rgba(255, 247, 237, 0.82)),
-    url('@/assets/hero.png') center right / cover no-repeat;
-  border: 1px solid #f1f5f9;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.06);
 }
 
-.hero-copy {
-  max-width: 680px;
-}
-
-.hero-kicker {
-  display: inline-flex;
+.panel-heading {
+  display: flex;
   align-items: center;
-  gap: 6px;
-  height: 28px;
-  padding: 0 10px;
+  gap: 8px;
   margin-bottom: 12px;
-  border-radius: 999px;
-  background: #ecfdf5;
-  color: #047857;
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.hero-copy h2 {
-  margin: 0 0 10px;
   color: #111827;
-  font-size: 32px;
-  line-height: 1.25;
   font-weight: 700;
 }
 
+.category-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  min-height: 36px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #334155;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.2s, color 0.2s;
+}
+
+.category-row small {
+  color: #94a3b8;
+  white-space: nowrap;
+}
+
+.category-row:hover,
+.category-row.active {
+  background: #f0fdf4;
+  color: #047857;
+}
+
+.hero-stage {
+  min-width: 0;
+}
+
+.hero-carousel {
+  overflow: hidden;
+  min-height: 306px;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.hero-slide {
+  display: grid;
+  grid-template-columns: minmax(0, 1.02fr) minmax(240px, 0.98fr);
+  min-height: 306px;
+  padding: 34px;
+  background:
+    radial-gradient(circle at 80% 18%, rgba(34, 197, 94, 0.2), transparent 28%),
+    linear-gradient(135deg, #f8fafc 0%, #ffffff 42%, #eef6ff 100%);
+}
+
+.hero-copy {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+}
+
+.hero-copy h2 {
+  margin: 12px 0 10px;
+  max-width: 540px;
+  color: #0f172a;
+  font-size: 34px;
+  line-height: 1.18;
+  font-weight: 800;
+}
+
 .hero-copy p {
-  margin: 0 0 20px;
+  margin: 0 0 22px;
+  max-width: 500px;
   color: #475569;
   font-size: 15px;
   line-height: 1.7;
 }
 
-.hero-search {
+.hero-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 12px;
-  max-width: 560px;
 }
 
-.hero-panel {
-  align-self: stretch;
-  padding: 18px;
+.hero-visual {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+}
+
+.hero-visual img {
+  width: min(100%, 330px);
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.86);
-  border: 1px solid rgba(226, 232, 240, 0.9);
-  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.18);
 }
 
-.panel-title {
-  margin-bottom: 14px;
-  color: #111827;
+.benefit-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.benefit-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 76px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fff;
+  color: #1f2937;
   font-weight: 700;
 }
 
-.service-list {
-  display: grid;
-  gap: 10px;
-}
-
-.service-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-height: 44px;
-  padding: 10px 12px;
-  border-radius: 8px;
-  background: #f8fafc;
-  color: #334155;
-  font-size: 14px;
-}
-
-.service-item :deep(.n-icon) {
+.benefit-item :deep(.n-icon) {
   color: #16a34a;
-  font-size: 20px;
+  font-size: 22px;
+}
+
+.quick-panel {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  background:
+    linear-gradient(160deg, rgba(15, 23, 42, 0.96), rgba(30, 64, 175, 0.88)),
+    radial-gradient(circle at top right, rgba(250, 204, 21, 0.28), transparent 32%);
+  color: #fff;
+}
+
+.quick-title {
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.quick-subtitle {
+  margin-top: 6px;
+  color: rgba(255, 255, 255, 0.72);
+  line-height: 1.5;
+}
+
+.quick-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.quick-grid button {
+  display: grid;
+  place-items: center;
+  min-height: 74px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.quick-grid button:hover {
+  border-color: rgba(255, 255, 255, 0.38);
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.quick-grid :deep(.n-icon) {
+  margin-bottom: 6px;
+  font-size: 24px;
 }
 
 .category-rail {
   display: flex;
   gap: 10px;
   overflow-x: auto;
-  padding: 4px 0 14px;
-  margin-bottom: 12px;
+  padding: 4px 0 16px;
+  margin-bottom: 8px;
 }
 
 .category-chip {
-  min-height: 36px;
+  min-height: 38px;
   padding: 0 16px;
   border-radius: 999px;
   border: 1px solid #e2e8f0;
@@ -394,21 +666,112 @@ onMounted(() => {
   background: #ecfdf5;
 }
 
+.apple-strip {
+  margin: 0 0 22px;
+}
+
+.section-heading,
 .filter-bar {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  gap: 16px;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.eyebrow {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.section-heading h3,
+.filter-title h3 {
+  margin: 4px 0 0;
+  color: #0f172a;
+  font-size: 24px;
+  line-height: 1.25;
+}
+
+.story-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.story-card {
+  position: relative;
+  min-height: 230px;
+  overflow: hidden;
+  border-radius: 8px;
+  cursor: pointer;
+  background: #f8fafc;
+  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.08);
+}
+
+.story-card img {
+  width: 100%;
+  height: 100%;
+  min-height: 230px;
+  object-fit: cover;
+  transition: transform 0.25s;
+}
+
+.story-card:hover img {
+  transform: scale(1.03);
+}
+
+.story-card div {
+  position: absolute;
+  inset: auto 14px 14px;
+  padding: 12px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(12px);
+}
+
+.story-card span,
+.story-card small {
+  display: block;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.story-card strong {
+  display: block;
+  margin: 4px 0;
+  color: #111827;
+  font-size: 15px;
+  line-height: 1.35;
+}
+
+.filter-bar {
   margin-bottom: 20px;
-  padding: 14px 16px;
+  padding: 16px;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   background: #fff;
 }
 
+.filter-controls {
+  flex: 1;
+  justify-content: flex-end;
+}
+
+.category-select {
+  width: 190px;
+}
+
+.keyword-input {
+  width: 300px;
+}
+
 .result-count {
   color: #64748b;
   font-size: 13px;
+  white-space: nowrap;
 }
 
 .product-card {
@@ -423,7 +786,7 @@ onMounted(() => {
 }
 
 .product-image-wrap {
-  height: 200px;
+  height: 214px;
   overflow: hidden;
   border-radius: 8px;
   margin-bottom: 12px;
@@ -432,7 +795,7 @@ onMounted(() => {
 
 .product-image-wrap :deep(img) {
   width: 100%;
-  height: 200px;
+  height: 214px;
   transition: transform 0.25s;
 }
 
@@ -459,7 +822,7 @@ onMounted(() => {
   min-height: 42px;
   font-size: 15px;
   line-height: 1.4;
-  font-weight: 600;
+  font-weight: 700;
   color: #111827;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -480,9 +843,9 @@ onMounted(() => {
 }
 
 .product-price {
-  font-size: 18px;
-  font-weight: 600;
-  color: #e4393c;
+  font-size: 19px;
+  font-weight: 800;
+  color: #dc2626;
 }
 
 .price-symbol {
@@ -491,7 +854,7 @@ onMounted(() => {
 
 .original-price {
   font-size: 12px;
-  color: #999;
+  color: #94a3b8;
   text-decoration: line-through;
   font-weight: normal;
   margin-left: 6px;
@@ -508,20 +871,69 @@ onMounted(() => {
   margin-top: 24px;
 }
 
-@media (max-width: 768px) {
-  .mall-hero {
+@media (prefers-reduced-motion: reduce) {
+  .story-card img,
+  .product-image-wrap :deep(img),
+  .category-chip,
+  .quick-grid button {
+    transition: none;
+  }
+}
+
+@media (max-width: 1180px) {
+  .storefront-shell {
+    grid-template-columns: 190px minmax(0, 1fr);
+  }
+
+  .quick-panel {
+    grid-column: 1 / -1;
+    min-height: auto;
+  }
+
+  .quick-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    margin-top: 16px;
+  }
+}
+
+@media (max-width: 900px) {
+  .storefront-shell,
+  .hero-slide,
+  .story-row {
     grid-template-columns: 1fr;
+  }
+
+  .category-panel {
+    min-height: auto;
+  }
+
+  .filter-bar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .filter-controls {
+    justify-content: flex-start;
+  }
+
+  .category-select,
+  .keyword-input {
+    width: 100%;
+  }
+}
+
+@media (max-width: 640px) {
+  .hero-slide {
     padding: 24px;
   }
 
   .hero-copy h2 {
-    font-size: 26px;
+    font-size: 28px;
   }
 
-  .hero-search,
-  .filter-bar {
-    flex-direction: column;
-    align-items: stretch;
+  .benefit-strip,
+  .quick-grid {
+    grid-template-columns: 1fr 1fr;
   }
 }
 </style>

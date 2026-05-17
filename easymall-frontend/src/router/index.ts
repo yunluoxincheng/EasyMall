@@ -9,7 +9,7 @@ const router = createRouter({
     {
       path: '/admin/login',
       name: 'AdminLogin',
-      component: () => import('@/views/login/index.vue'),
+      redirect: '/login',
       meta: { title: '管理端登录' },
     },
     {
@@ -197,14 +197,18 @@ router.beforeEach((to, _from, next) => {
   // 管理端路由守卫
   if (to.path.startsWith('/admin')) {
     if (to.path === '/admin/login') {
-      next()
+      next('/login')
       return
     }
     const auth = useAuthStore()
-    if (!auth.isLoggedIn || !auth.isAdmin) {
-      next('/admin/login')
-    } else {
+    const userAuth = useUserAuthStore()
+    if (auth.isLoggedIn && auth.isAdmin) {
       next()
+    } else if (userAuth.isLoggedIn && userAuth.userInfo?.role === 1 && userAuth.token) {
+      auth.setLogin(userAuth.token, 1)
+      next()
+    } else {
+      next({ path: '/login', query: { redirect: to.fullPath } })
     }
     return
   }

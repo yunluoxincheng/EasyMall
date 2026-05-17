@@ -11,14 +11,25 @@ function getTokenKey(url?: string): string {
   return path.startsWith('/admin') || url?.startsWith('/api/admin') ? 'admin_token' : 'user_token'
 }
 
-function getLoginPath(url?: string): string {
-  const path = window.location.pathname
-  return path.startsWith('/admin') || url?.startsWith('/api/admin') ? '/admin/login' : '/login'
+function getLoginPath(_url?: string): string {
+  return '/login'
+}
+
+function getAdminFallbackToken(): string {
+  try {
+    const userInfo = JSON.parse(localStorage.getItem('user_info') || 'null') as { role?: number } | null
+    if (userInfo?.role === 1) {
+      return localStorage.getItem('user_token') || ''
+    }
+  } catch {
+    return ''
+  }
+  return ''
 }
 
 request.interceptors.request.use((config) => {
   const tokenKey = getTokenKey(config.url)
-  const token = localStorage.getItem(tokenKey)
+  const token = localStorage.getItem(tokenKey) || (tokenKey === 'admin_token' ? getAdminFallbackToken() : '')
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
   }

@@ -36,15 +36,17 @@ async function handleLogin() {
   try {
     const res = await userLogin(formData)
     const { token, userId, username, nickname, avatar, role } = res.data.data
+    userAuth.setLogin(token, { id: userId, username, nickname, avatar: avatar || '', phone: '', email: '', role, points: 0 })
+
     if (role === 1) {
-      userAuth.logout()
       adminAuth.setLogin(token, role)
       message.success('管理员登录成功')
-      router.push('/admin')
+      const redirect = (route.query.redirect as string) || '/user'
+      router.push(redirect)
       return
     }
 
-    userAuth.setLogin(token, { id: userId, username, nickname, avatar: avatar || '', phone: '', email: '', role, points: 0 })
+    adminAuth.logout()
     message.success('登录成功')
     const redirect = (route.query.redirect as string) || '/'
     router.push(redirect)
@@ -72,8 +74,6 @@ async function handleLogin() {
       </NForm>
       <div class="login-footer">
         还没有账号？<a @click="router.push('/register')">立即注册</a>
-        <span class="footer-divider">|</span>
-        <a @click="router.push('/admin/login')">管理后台</a>
       </div>
     </div>
   </div>
@@ -114,11 +114,6 @@ async function handleLogin() {
 .login-footer a {
   color: #667eea;
   cursor: pointer;
-}
-
-.footer-divider {
-  margin: 0 10px;
-  color: #ddd;
 }
 
 .login-footer a:hover {

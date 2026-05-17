@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { useMessage } from 'naive-ui'
 import {
   NCard,
@@ -14,14 +15,26 @@ import {
   NSpin,
   NSelect,
   NTag,
+  NIcon,
 } from 'naive-ui'
+import {
+  BarChartOutline,
+  ShieldCheckmarkOutline,
+  StorefrontOutline,
+} from '@vicons/ionicons5'
 import { getUserInfo, updateUserInfo } from '@/api/user-user'
+import { useAuthStore } from '@/stores/auth'
+import { useUserAuthStore } from '@/stores/userAuth'
 import type { UserVO, UserUpdateDTO } from '@/types/user-user'
 
+const router = useRouter()
 const message = useMessage()
+const adminAuth = useAuthStore()
+const userAuth = useUserAuthStore()
 const loading = ref(true)
 const saving = ref(false)
 const userInfo = ref<UserVO | null>(null)
+const isAdmin = computed(() => userInfo.value?.role === 1)
 
 const editForm = ref<UserUpdateDTO>({
   nickname: '',
@@ -66,11 +79,47 @@ async function handleSave() {
     saving.value = false
   }
 }
+
+function enterAdmin() {
+  if (!userAuth.token || userAuth.userInfo?.role !== 1) {
+    message.warning('当前账号不是管理员')
+    return
+  }
+  adminAuth.setLogin(userAuth.token, 1)
+  router.push('/admin')
+}
 </script>
 
 <template>
   <NSpin :show="loading">
     <div class="user-profile">
+      <section v-if="isAdmin" class="admin-entry">
+        <div class="admin-entry-main">
+          <div class="admin-icon">
+            <NIcon :component="ShieldCheckmarkOutline" />
+          </div>
+          <div>
+            <div class="admin-kicker">管理员工作台</div>
+            <h2>用当前账号进入商城管理后台</h2>
+            <p>统一使用商城账号登录，系统会根据管理员角色自动开放商品、分类、订单和用户管理能力。</p>
+          </div>
+        </div>
+        <NSpace :size="10">
+          <NButton secondary @click="router.push('/products')">
+            <template #icon>
+              <NIcon :component="StorefrontOutline" />
+            </template>
+            返回商城
+          </NButton>
+          <NButton type="primary" @click="enterAdmin">
+            <template #icon>
+              <NIcon :component="BarChartOutline" />
+            </template>
+            进入管理后台
+          </NButton>
+        </NSpace>
+      </section>
+
       <NCard title="个人信息">
         <div class="profile-header" v-if="userInfo">
           <NAvatar :size="64" :src="userInfo.avatar" round>
@@ -123,8 +172,59 @@ async function handleSave() {
 
 <style scoped>
 .user-profile {
-  max-width: 700px;
+  max-width: 860px;
   margin: 0 auto;
+}
+
+.admin-entry {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 18px;
+  padding: 22px;
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(15, 23, 42, 0.94), rgba(29, 78, 216, 0.88)),
+    radial-gradient(circle at top right, rgba(34, 197, 94, 0.28), transparent 34%);
+  color: #fff;
+  box-shadow: 0 18px 42px rgba(15, 23, 42, 0.18);
+}
+
+.admin-entry-main {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.admin-icon {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  flex: 0 0 52px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.16);
+  font-size: 28px;
+}
+
+.admin-kicker {
+  color: #bbf7d0;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.admin-entry h2 {
+  margin: 4px 0 6px;
+  font-size: 22px;
+  line-height: 1.25;
+}
+
+.admin-entry p {
+  margin: 0;
+  max-width: 520px;
+  color: rgba(255, 255, 255, 0.78);
+  line-height: 1.6;
 }
 
 .profile-header {
@@ -148,5 +248,13 @@ async function handleSave() {
 
 .info-desc {
   margin-bottom: 8px;
+}
+
+@media (max-width: 768px) {
+  .admin-entry,
+  .admin-entry-main {
+    align-items: stretch;
+    flex-direction: column;
+  }
 }
 </style>

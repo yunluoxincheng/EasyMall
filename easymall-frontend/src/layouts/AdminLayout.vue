@@ -62,13 +62,13 @@ const pageTitle = computed(() => (route.meta.title as string) || '管理后台')
 function handleLogout() {
   dialog.warning({
     title: '确认退出',
-    content: '确定要退出登录吗？',
+    content: '确定要退出管理后台吗？',
     positiveText: '退出',
     negativeText: '取消',
     onPositiveClick: () => {
       auth.logout()
-      message.success('已退出登录')
-      router.push('/admin/login')
+      message.success('已退出管理后台')
+      router.push('/products')
     },
   })
 }
