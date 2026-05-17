@@ -171,7 +171,7 @@ ALL_CART_IDS=$(curl -s -H "Authorization: Bearer $USER_TOKEN" "$BASE/api/cart/li
 if [ -n "$CART_ID" ]; then
   test_api PUT "/api/cart/$CART_ID" '{"quantity":2}' "$USER_TOKEN"
   test_api PUT "/api/cart/selectAll/true" '' "$USER_TOKEN"
-  test_api PUT "/api/cart/batchSelect/true" '' "$USER_TOKEN"
+  test_api PUT "/api/cart/batchSelect/true" "[$CART_ID]" "$USER_TOKEN"
 fi
 
 # ─────────────────────────────

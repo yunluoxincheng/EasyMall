@@ -60,7 +60,7 @@ public class GlobalExceptionHandler {
         response.setStatus(ResponseCode.ERROR.getHttpStatus());
         response.setContentType("application/json;charset=UTF-8");
 
-        Result<?> result = Result.error(ResponseCode.ERROR, "系统异常，请联系管理员");
+        Result<?> result = Result.error(ResponseCode.ERROR, "系统异常：" + e.getClass().getSimpleName() + " - " + e.getMessage());
         response.getWriter().write(JSON.toJSONString(result));
     }
 

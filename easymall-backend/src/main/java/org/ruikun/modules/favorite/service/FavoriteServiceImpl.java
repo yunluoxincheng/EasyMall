@@ -58,6 +58,7 @@ public class FavoriteServiceImpl implements IFavoriteService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void removeFavorite(Long userId, Long productId) {
+        favoriteMapper.physicallyDeleteSoftDeleted(userId, productId);
         LambdaQueryWrapper<Favorite> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Favorite::getUserId, userId)
                .eq(Favorite::getProductId, productId);
