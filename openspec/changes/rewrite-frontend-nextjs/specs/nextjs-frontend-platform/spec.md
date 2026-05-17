@@ -26,7 +26,7 @@
 系统 SHALL 在 Next.js 替换后保留现有主要用户端和管理端路径，除非明确提供重定向。
 
 #### Scenario: 保留主要商城路径
-- **WHEN** 用户访问 `/products`、`/products/:id`、`/cart`、`/checkout`、`/orders`、`/user` 或 `/coupons`
+- **WHEN** 用户访问 `/login`、`/register`、`/products`、`/products/:id`、`/cart`、`/checkout`、`/payment/:paymentNo`、`/orders`、`/orders/:id`、`/coupons`、`/user`、`/user/password`、`/user/favorites`、`/user/comments`、`/user/coupons`、`/user/points`、`/user/points/products`、`/user/member` 或 `/user/signin`
 - **THEN** 系统 SHALL 渲染对应 Next.js 页面或重定向到等价页面
 
 #### Scenario: 保留主要管理路径
