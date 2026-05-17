@@ -47,6 +47,7 @@ public class CartServiceImpl implements ICartService {
         if (existCart != null) {
             cartMapper.updateCartByUserIdAndProductId(userId, cartAddDTO.getProductId(), cartAddDTO.getQuantity());
         } else {
+            cartMapper.physicallyDeleteSoftDeleted(userId, cartAddDTO.getProductId());
             Cart cart = new Cart();
             cart.setUserId(userId);
             cart.setProductId(cartAddDTO.getProductId());

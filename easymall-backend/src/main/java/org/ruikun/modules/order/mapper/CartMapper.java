@@ -1,6 +1,7 @@
 package org.ruikun.modules.order.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.ruikun.modules.order.entity.Cart;
@@ -21,4 +22,7 @@ public interface CartMapper extends BaseMapper<Cart> {
     void updateCartByUserIdAndProductId(@Param("userId") Long userId,
                                         @Param("productId") Long productId,
                                         @Param("quantity") Integer quantity);
+
+    @Delete("DELETE FROM cart WHERE user_id = #{userId} AND product_id = #{productId} AND deleted = 1")
+    int physicallyDeleteSoftDeleted(@Param("userId") Long userId, @Param("productId") Long productId);
 }
