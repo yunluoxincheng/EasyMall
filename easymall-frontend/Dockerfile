@@ -1,28 +1,39 @@
-# 阶段一：Node 构建
-FROM node:20-alpine AS builder
+# 阶段一：依赖安装
+FROM node:20-alpine AS deps
 
 WORKDIR /app
 
 COPY package.json package-lock.json* ./
 RUN npm ci
 
+# 阶段二：构建
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npm run build
 
-# 阶段二：Nginx 托管
-FROM nginx:alpine
+# 阶段三：运行
+FROM node:20-alpine AS runner
+
+WORKDIR /app
+
+ENV NODE_ENV=production
+ENV PORT=3000
 
 RUN apk add --no-cache tzdata && \
     cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && \
     echo "Asia/Shanghai" > /etc/timezone && \
-    apk del tzdata
+    addgroup -S nextjs && adduser -S nextjs -G nextjs
 
-COPY --from=builder /app/dist /usr/share/nginx/html
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
 
-COPY nginx.conf.template /etc/nginx/conf.d/default.conf.template
+USER nextjs
 
-ENV BACKEND_HOST=host.docker.internal
+EXPOSE 3000
 
-EXPOSE 80
-
-CMD ["/bin/sh", "-c", "envsubst '${BACKEND_HOST}' < /etc/nginx/conf.d/default.conf.template > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"]
+CMD ["node", "server.js"]
