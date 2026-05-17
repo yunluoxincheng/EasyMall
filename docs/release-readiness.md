@@ -153,7 +153,9 @@ docker compose up -d
 |---------|------|------------|
 | 数据库表结构 | Flyway 迁移 `V1`-`V12` | prod: 自动 / dev: 手动 |
 | 默认管理员账号 | `V1__Create_initial_tables.sql` INSERT | 随 Flyway 自动创建 |
-| 测试商品/分类数据 | `test-data.sql` | **必须手动导入** |
+| 演示商品/分类/库存数据 | `V13__Insert_demo_data.sql` | 可选；默认随 Flyway 自动创建，dev profile 需手动导入 |
+
+> `V13__Insert_demo_data.sql` 是演示种子数据，不是业务表结构必需迁移。它适合干净的一键演示环境；生产或自定义数据环境如果不需要演示数据，应在首次执行 Flyway 前将该文件改为非 `V` 前缀或移出迁移目录。已经执行过 V13 的数据库不要直接改名或删除该迁移文件，除非重置数据库或处理 Flyway 历史记录。
 
 ### 管理员账号
 
@@ -170,13 +172,10 @@ docker compose up -d
 
 ```bash
 docker compose down -v    # 删除数据卷（mysql-data, upload-data）
-docker compose up -d       # 重新启动，Flyway 自动执行迁移
-# 注意：test-data.sql 不在 Flyway 版本控制中，需手动导入：
-docker compose exec mysql mysql -u root -p"$MYSQL_PASSWORD" easymall \
-  -e "source /path/to/test-data.sql"
+docker compose up -d       # 重新启动，Flyway 自动执行 V1-V12 表结构迁移；默认也会执行可选 V13 演示数据迁移
 ```
 
-> **重要**：`test-data.sql` 不以 `V` 开头，Flyway 不会自动执行。在 Docker 环境中需通过 `docker compose exec` 手动导入，或在本地开发环境中通过 `mysql` 命令行导入。
+> 默认配置会自动执行 V13 并插入演示商品数据；如不需要演示数据，请在首次启动前禁用 V13。
 
 **本地开发环境**（dev profile，Flyway 关闭）：
 
@@ -186,7 +185,7 @@ cd easymall-backend
 mysql -u root -p123456 easymall < src/main/resources/db/migration/V1__Create_initial_tables.sql
 mysql -u root -p123456 easymall < src/main/resources/db/migration/V2__Create_member_tables.sql
 # ... 按 deployment.md 中的顺序导入所有脚本
-mysql -u root -p123456 easymall < src/main/resources/db/migration/test-data.sql
+mysql -u root -p123456 easymall < src/main/resources/db/migration/V13__Insert_demo_data.sql
 ```
 
 ### 结果记录
@@ -282,8 +281,8 @@ mysql -u root -p123456 easymall < src/main/resources/db/migration/test-data.sql
 
 | 文档 | 检查内容 | 状态 | 备注 |
 |------|---------|------|------|
-| `README.md` | 项目结构、技术栈、启动命令 | ✅ 已更新 | V1-V12 迁移引用已修正 |
-| `docs/deployment.md` | Docker Compose 配置、环境变量 | ✅ 已更新 | V12 迁移脚本已添加到手动导入列表 |
+| `README.md` | 项目结构、技术栈、启动命令 | ✅ 已更新 | V1-V12 表结构迁移和可选 V13 演示数据引用已修正 |
+| `docs/deployment.md` | Docker Compose 配置、环境变量 | ✅ 已更新 | V13 演示数据迁移已添加到手动导入列表，并说明禁用方式 |
 | `docs/demo.md` | 演示流程与实际一致 | ✅ 无漂移 | demo.md 为描述性流程，与 API 验证结果一致 |
 | `docs/API.md` | API 示例与当前实现匹配 | ✅ 无漂移 | API 路径已验证 |
 | 业务设计文档 | 订单/库存/支付/MQ/优惠券/积分 | ✅ 无漂移 | 与实现验证的订单状态机、库存三态、支付幂等、MQ 延迟关单、优惠券生命周期一致 |
@@ -299,7 +298,7 @@ mysql -u root -p123456 easymall < src/main/resources/db/migration/test-data.sql
 | dev 默认密码 | `application-dev.yml` 中 MySQL 密码为 `123456`，JWT secret 和 mock signature 硬编码 | 仅限本地开发，不用于生产 |
 | Flyway dev 关闭 | dev profile 关闭 Flyway，需手动初始化数据库 | 设计决策，非缺陷 |
 | Testcontainers | 集成测试依赖 Docker 运行时，Windows 上需暴露 TCP 2375 端口 | Windows Docker Desktop 需启用 "Expose daemon on tcp://localhost:2375" |
-| test-data.sql | 不由 Flyway 管理，Docker 环境需手动导入；末尾含 inventory 同步 SQL 确保商品导入后库存可用 | V12 覆盖已有 product 的库，test-data.sql 覆盖演示数据导入后的库存同步 |
+| V13 演示数据 | 可选演示种子数据迁移；默认纳入 Flyway，Docker 环境 `docker compose up -d` 自动创建演示商品和库存 | 不需要演示数据时，在首次迁移前改为非 `V` 前缀或移出迁移目录；已执行过的库不要直接改名/删除 |
 | Spring Boot 4.0 Flyway | `spring-boot-flyway` 是 Spring Boot 4.0 新增的必需依赖，仅添加 `flyway-core` 不够 | 已在 pom.xml 中修复 |
 
 ### 推荐后续 OpenSpec 提案
@@ -320,7 +319,7 @@ mysql -u root -p123456 easymall < src/main/resources/db/migration/test-data.sql
 | 2 | 前端容器 healthcheck `localhost` 解析为 IPv6 导致 unhealthy | Docker 验证 | HIGH | ✅ 已修复 | 将 `localhost` 改为 `127.0.0.1` |
 | 3 | `favorite` 表缺少冗余字段导致收藏功能报错 | 用户端验证 | BLOCKER | ✅ 已修复 | V12 迁移添加 `product_name/image/price` 列 |
 | 4 | `comment` 表缺少 `show_status` 列导致评论查询报错 | 用户端验证 | HIGH | ✅ 已修复 | V12 迁移添加 `show_status` 列 |
-| 5 | V6 迁移中 inventory 初始化时 product 表为空 | Docker 验证 | HIGH | ✅ 已修复 | V12 覆盖已有 product 的库；test-data.sql 末尾覆盖演示数据导入后的库存同步 |
+| 5 | V6 迁移中 inventory 初始化时 product 表为空 | Docker 验证 | HIGH | ✅ 已修复 | V12 覆盖已有 product 的库；V13 末尾覆盖演示数据导入后的库存同步 |
 
 > **严重程度**: BLOCKER（必须修复） / HIGH（强烈建议修复） / MEDIUM（可接受并记录）
 > 发现问题时在此表格新增行，修复后更新状态。
@@ -334,9 +333,9 @@ mysql -u root -p123456 easymall < src/main/resources/db/migration/test-data.sql
 | 后端编译与测试 | ✅ 通过 | 179/179 非容器测试通过，3 个 Testcontainers 测试受 Windows Docker 限制 |
 | 前端类型检查与构建 | ✅ 通过 | typecheck 0 errors，build 成功 |
 | CI 工作流 | ✅ 通过 | backend-ci.yml 和 frontend-ci.yml 存在且命令一致 |
-| Docker Compose 部署 | ✅ 通过 | 5 个服务全部 healthy，Flyway V1-V12（11 个版本迁移）全部成功，API 正常 |
+| Docker Compose 部署 | ✅ 通过 | 5 个服务全部 healthy，Flyway V1-V12 表结构迁移 + 可选 V13 演示数据迁移全部成功，API 正常 |
 | 用户端演示 | ✅ 通过 | 注册/登录/浏览/购物车/下单/支付/订单/收藏/优惠券/积分/签到/会员/评论 |
 | 管理端演示 | ✅ 通过 | admin 登录/商品/分类/订单/用户/优惠券/会员等级/积分商品/评论 |
-| 文档一致性 | ✅ 通过 | 更新 V12 迁移引用 |
+| 文档一致性 | ✅ 通过 | 更新 V13 演示数据迁移引用和可选边界 |
 
 **发布就绪判定**: ✅ 全部通过，可发布

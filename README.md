@@ -144,7 +144,7 @@ EasyMall/
 │   │   ├── application.yml        # 基础配置
 │   │   ├── application-dev.yml    # 开发环境
 │   │   ├── application-prod.yml   # 生产环境（纯环境变量）
-│   │   ├── db/migration/          # Flyway 迁移脚本（V1-V12）
+│   │   ├── db/migration/          # Flyway 迁移脚本（V1-V12 表结构 + 可选 V13 演示数据）
 │   │   └── mapper/                # MyBatis XML
 │   ├── Dockerfile                 # 后端容器化
 │   └── docker-compose.yml         # MySQL + Redis + RabbitMQ + 后端
@@ -214,10 +214,11 @@ mysql -u root -p123456 easymall < src/main/resources/db/migration/V9__Add_points
 mysql -u root -p123456 easymall < src/main/resources/db/migration/V10__Add_coupon_lifecycle_indexes.sql
 mysql -u root -p123456 easymall < src/main/resources/db/migration/V11__Add_points_biz_columns.sql
 mysql -u root -p123456 easymall < src/main/resources/db/migration/V12__Add_favorite_redundant_columns.sql
-mysql -u root -p123456 easymall < src/main/resources/db/migration/test-data.sql
+mysql -u root -p123456 easymall < src/main/resources/db/migration/V13__Insert_demo_data.sql
 ```
 
-> Docker 全栈部署（prod profile）会自动执行 Flyway 迁移，无需手动导入。
+> Docker 全栈部署（prod profile）会自动执行 Flyway 迁移（含演示数据），无需手动导入。
+> `V13__Insert_demo_data.sql` 仅用于演示环境自动填充分类、商品和库存，不是业务表结构必需迁移；如果不需要演示数据，请在首次启动 Flyway 前将该文件改为非 `V` 前缀或移出迁移目录。已经执行过 V13 的数据库不要直接改名或删除该迁移文件，除非重置数据库或处理 Flyway 历史记录。
 
 **4. 启动后端**
 

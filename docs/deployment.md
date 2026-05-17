@@ -43,10 +43,11 @@ mysql -u root -p123456 easymall < src/main/resources/db/migration/V9__Add_points
 mysql -u root -p123456 easymall < src/main/resources/db/migration/V10__Add_coupon_lifecycle_indexes.sql
 mysql -u root -p123456 easymall < src/main/resources/db/migration/V11__Add_points_biz_columns.sql
 mysql -u root -p123456 easymall < src/main/resources/db/migration/V12__Add_favorite_redundant_columns.sql
-mysql -u root -p123456 easymall < src/main/resources/db/migration/test-data.sql
+mysql -u root -p123456 easymall < src/main/resources/db/migration/V13__Insert_demo_data.sql
 ```
 
 > Docker 全栈部署（prod profile）会自动执行 Flyway 迁移，无需手动导入。详见下方统一编排部署章节。
+> `V13__Insert_demo_data.sql` 是可选演示数据迁移，用于一键演示环境自动创建分类、商品和库存；它不是业务表结构必需迁移。生产或自定义数据环境如果不希望自动插入演示数据，应在首次启动 Flyway 前将该文件改为非 `V` 前缀或移出迁移目录。已经执行过 V13 的数据库不要直接改名或删除该迁移文件，除非重置数据库或处理 Flyway 历史记录。
 
 ### 4. 启动后端
 
