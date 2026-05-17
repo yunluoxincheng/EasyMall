@@ -25,4 +25,7 @@ public interface CartMapper extends BaseMapper<Cart> {
 
     @Delete("DELETE FROM cart WHERE user_id = #{userId} AND product_id = #{productId} AND deleted = 1")
     int physicallyDeleteSoftDeleted(@Param("userId") Long userId, @Param("productId") Long productId);
+
+    @Delete("<script>DELETE FROM cart WHERE id IN <foreach collection='cartIds' item='id' open='(' separator=',' close=')'>#{id}</foreach> AND deleted = 1</script>")
+    int physicallyDeleteBatchSoftDeleted(@Param("cartIds") List<Long> cartIds);
 }

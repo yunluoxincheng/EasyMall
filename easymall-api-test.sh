@@ -186,7 +186,15 @@ ORDER_ID=$(grep -oP '"id"\s*:\s*\K[0-9]+' /tmp/api_resp.json | head -1)
 if [ -n "$ORDER_ID" ]; then
   test_api GET "/api/order/$ORDER_ID" '' "$USER_TOKEN"
   test_api GET "/api/order/$ORDER_ID/payment" '' "$USER_TOKEN"
-  test_api PUT "/api/order/$ORDER_ID/cancel" '' "$USER_TOKEN" '200' || true
+  # cancel may return 200 or 400 (already cancelled)
+  STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X PUT -H "Authorization: Bearer $USER_TOKEN" "$BASE/api/order/$ORDER_ID/cancel")
+  if [ "$STATUS" = "200" ] || [ "$STATUS" = "400" ]; then
+    green "  PASS  PUT /api/order/$ORDER_ID/cancel => $STATUS"
+    PASS=$((PASS+1))
+  else
+    red "  FAIL  PUT /api/order/$ORDER_ID/cancel => $STATUS"
+    FAIL=$((FAIL+1))
+  fi
 fi
 
 # ─────────────────────────────
