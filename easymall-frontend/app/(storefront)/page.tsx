@@ -1,12 +1,25 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, Gift, ShieldCheck, ShoppingBag, Sparkles, TicketPercent } from "lucide-react";
-import { useEffect, useState } from "react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Cpu,
+  Gem,
+  Home,
+  MonitorSmartphone,
+  Package,
+  Popcorn,
+  Shirt,
+  Sparkles,
+  TicketPercent,
+  Trophy,
+  Tv,
+  Umbrella,
+} from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { LoadingState } from "@/components/ui/loading-state";
 import { storefrontApi } from "@/lib/api";
@@ -14,27 +27,38 @@ import { formatCurrency } from "@/lib/format";
 import type { CategoryVO, ProductVO } from "@/lib/types";
 
 const fallbackCategories = [
+  "女装上新",
   "手机数码",
   "家用电器",
-  "服饰鞋包",
+  "家居生活",
   "美妆个护",
   "食品生鲜",
-  "家居生活",
+  "运动户外",
+  "母婴玩具",
+  "珠宝配饰",
+  "图书文娱",
 ];
 
-const heroModules = [
-  {
-    title: "限时优惠与会员折扣同步上新",
-    description: "搜索商品、先领优惠券，再去结算页组合会员折扣与优惠券抵扣。",
-    href: "/coupons",
-    action: "先领优惠券",
-  },
-  {
-    title: "积分商城也在同一套会话里联动",
-    description: "签到、积分记录、积分兑换与会员等级全部收拢到统一用户中心。",
-    href: "/user/points/products",
-    action: "去积分商城",
-  },
+const categoryDecorators = [
+  { icon: Shirt, tags: ["春夏", "上新", "精选"] },
+  { icon: MonitorSmartphone, tags: ["电脑", "配件", "办公"] },
+  { icon: Tv, tags: ["品质", "节能", "换新"] },
+  { icon: Home, tags: ["家具", "家装", "厨具"] },
+  { icon: Sparkles, tags: ["香氛", "护肤", "彩妆"] },
+  { icon: Popcorn, tags: ["零食", "鲜果", "酒饮"] },
+  { icon: Umbrella, tags: ["女鞋", "男鞋", "户外"] },
+  { icon: Package, tags: ["童装", "童鞋", "用品"] },
+  { icon: Gem, tags: ["黄金", "饰品", "腕表"] },
+  { icon: Cpu, tags: ["图书", "文创", "娱乐"] },
+];
+
+const quickTags = ["春季女装", "手机换新", "会员满减", "品质家居", "积分好物", "爆款零食"];
+
+const promoPalette = [
+  "from-[#ff6d28] to-[#ff8848]",
+  "from-[#ff4f92] to-[#ff699b]",
+  "from-[#ff8c1f] to-[#ffa53b]",
+  "from-[#1e88e5] to-[#45a4f5]",
 ];
 
 export default function HomePage() {
@@ -51,8 +75,8 @@ export default function HomePage() {
       try {
         const [categoryData, hotData, newData] = await Promise.all([
           storefrontApi.getCategoryTree().catch(() => []),
-          storefrontApi.getHotProducts(8).catch(() => []),
-          storefrontApi.getNewProducts(8).catch(() => []),
+          storefrontApi.getHotProducts(10).catch(() => []),
+          storefrontApi.getNewProducts(10).catch(() => []),
         ]);
 
         if (!cancelled) {
@@ -73,6 +97,14 @@ export default function HomePage() {
     };
   }, []);
 
+  const mergedProducts = useMemo(() => {
+    const deduped = new Map<number, ProductVO>();
+    [...hotProducts, ...newProducts].forEach((product) => {
+      deduped.set(product.id, product);
+    });
+    return Array.from(deduped.values());
+  }, [hotProducts, newProducts]);
+
   if (loading) {
     return <LoadingState label="正在加载首页内容..." />;
   }
@@ -80,203 +112,302 @@ export default function HomePage() {
   const displayCategories = categories.length
     ? categories.slice(0, 10).map((item) => item.name)
     : fallbackCategories;
+  const categoryRows = displayCategories.map((name, index) => ({
+    name,
+    icon: categoryDecorators[index % categoryDecorators.length].icon,
+    tags: categoryDecorators[index % categoryDecorators.length].tags,
+  }));
+  const heroProduct = mergedProducts[0];
+  const heroSecondaryProduct = mergedProducts[1];
+  const productFlow = mergedProducts.slice(0, 10);
+  const featuredPromos = buildPromos(mergedProducts);
 
   return (
-    <div className="space-y-8">
-      <section className="grid gap-5 lg:grid-cols-[280px_minmax(0,1fr)_280px]">
-        <Card className="rounded-[32px] bg-white/88">
+    <div className="space-y-6">
+      <section className="rounded-[28px] bg-white p-4 shadow-[0_16px_40px_rgba(15,23,42,0.05)] md:p-5">
+        <div className="flex flex-wrap items-center gap-3 text-sm text-slate-500">
+          <Badge className="bg-[#fff1e8] text-[#ff5a00]">热门搜索</Badge>
+          {quickTags.map((tag) => (
+            <Link
+              key={tag}
+              href={`/products?keyword=${encodeURIComponent(tag)}`}
+              className="rounded-full bg-[#f8f8f8] px-3 py-1.5 font-medium transition hover:bg-[#fff0e8] hover:text-[#ff5a00]"
+            >
+              {tag}
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      <section className="grid gap-4 xl:grid-cols-[256px_minmax(0,1fr)_256px]">
+        <div className="rounded-[28px] bg-white p-5 shadow-[0_16px_40px_rgba(15,23,42,0.05)]">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-black">高频分类</h2>
-            <Badge tone="success">首屏发现</Badge>
+            <h2 className="text-[1.35rem] font-black text-slate-950">分类</h2>
+            <Link href="/products" className="text-sm font-semibold text-[#ff5a00]">
+              全部
+            </Link>
           </div>
-          <div className="mt-5 grid gap-3">
-            {displayCategories.map((category) => (
+          <div className="mt-4 space-y-2">
+            {categoryRows.map((row) => {
+              const Icon = row.icon;
+              return (
+                <Link
+                  key={row.name}
+                  href={`/products?keyword=${encodeURIComponent(row.name)}`}
+                  className="flex items-start gap-3 rounded-2xl px-3 py-3 transition hover:bg-[#fff6f0]"
+                >
+                  <span className="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-[#fff1e8] text-[#ff5a00]">
+                    <Icon className="h-4 w-4" />
+                  </span>
+                  <div className="min-w-0">
+                    <div className="text-sm font-bold text-slate-900">{row.name}</div>
+                    <div className="mt-1 line-clamp-1 text-xs text-slate-500">
+                      {row.tags.join(" / ")}
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <div className="overflow-hidden rounded-[32px] bg-[#8bb06b] shadow-[0_24px_50px_rgba(139,176,107,0.28)]">
+            <div className="grid min-h-[420px] gap-6 p-6 lg:grid-cols-[0.9fr_1.1fr] lg:p-8">
+              <div className="flex flex-col justify-between">
+                <div>
+                  <Badge className="bg-white/20 text-white">春季焕新</Badge>
+                  <h1 className="mt-5 text-4xl font-black leading-tight tracking-tight text-white md:text-5xl">
+                    春回暖
+                    <br />
+                    衣上新
+                  </h1>
+                  <p className="mt-4 max-w-sm text-sm leading-7 text-white/86">
+                    新装上架、一键焕新。首页把分类、促销、搜索和热门推荐重新铺成更熟悉的电商节奏。
+                  </p>
+                </div>
+
+                <div className="space-y-5">
+                  <div className="flex flex-wrap gap-2">
+                    <Link
+                      href="/products"
+                      className="rounded-full bg-white px-5 py-2.5 text-sm font-bold text-[#5c7d44] transition hover:bg-[#f4ffe9]"
+                    >
+                      逛热卖商品
+                    </Link>
+                    <Link
+                      href="/coupons"
+                      className="rounded-full border border-white/50 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-white/12"
+                    >
+                      先领优惠券
+                    </Link>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <button
+                      type="button"
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/16 text-white transition hover:bg-white/28"
+                      aria-label="上一张"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </button>
+                    <div className="flex items-center gap-2">
+                      {[0, 1, 2, 3, 4].map((dot) => (
+                        <span
+                          key={dot}
+                          className={`h-2.5 rounded-full ${
+                            dot === 0 ? "w-7 bg-white" : "w-2.5 bg-white/55"
+                          }`}
+                        />
+                      ))}
+                    </div>
+                    <button
+                      type="button"
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/16 text-white transition hover:bg-white/28"
+                      aria-label="下一张"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="relative flex min-h-[260px] items-center justify-center overflow-hidden rounded-[28px] bg-white/8">
+                <div className="absolute left-6 top-6 h-24 w-24 rounded-full bg-white/16 blur-xl" />
+                <div className="absolute bottom-10 right-8 h-32 w-32 rounded-full bg-[#d4f0bb]/30 blur-xl" />
+                {heroProduct?.image ? (
+                  <img
+                    src={heroProduct.image}
+                    alt={heroProduct.name}
+                    className="relative z-10 max-h-[300px] w-auto max-w-[46%] rounded-[28px] object-contain shadow-[0_18px_40px_rgba(255,255,255,0.18)]"
+                  />
+                ) : (
+                  <div className="relative z-10 h-[260px] w-[42%] rounded-[28px] bg-white/25" />
+                )}
+                {heroSecondaryProduct?.image ? (
+                  <img
+                    src={heroSecondaryProduct.image}
+                    alt={heroSecondaryProduct.name}
+                    className="relative z-20 -ml-4 mt-20 max-h-[260px] w-auto max-w-[38%] rounded-[28px] object-contain shadow-[0_18px_40px_rgba(255,255,255,0.16)]"
+                  />
+                ) : (
+                  <div className="relative z-20 -ml-4 mt-20 h-[220px] w-[34%] rounded-[28px] bg-white/18" />
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-3">
+            <ValuePill
+              title="首屏高效逛"
+              copy="分类、主推、促销位集中到第一屏，搜索入口始终放在最上方。"
+              icon={<Trophy className="h-5 w-5" />}
+            />
+            <ValuePill
+              title="优惠和会员联动"
+              copy="领券中心、会员折扣、积分入口继续保留原有业务链路。"
+              icon={<TicketPercent className="h-5 w-5" />}
+            />
+            <ValuePill
+              title="商品流更像首页"
+              copy="下方直接进入猜你喜欢和热销区，而不是信息说明页。"
+              icon={<Sparkles className="h-5 w-5" />}
+            />
+          </div>
+        </div>
+
+        <div className="grid gap-4">
+          {featuredPromos.map((promo, index) => (
+            <Link
+              key={promo.title}
+              href={promo.href}
+              className={`overflow-hidden rounded-[24px] bg-gradient-to-br ${promoPalette[index]} p-5 text-white shadow-[0_18px_40px_rgba(15,23,42,0.08)] transition hover:-translate-y-0.5`}
+            >
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <div className="text-xl font-black leading-tight">{promo.title}</div>
+                  <div className="mt-2 text-sm text-white/86">{promo.copy}</div>
+                </div>
+                {promo.image ? (
+                  <img
+                    src={promo.image}
+                    alt={promo.title}
+                    className="h-20 w-20 rounded-[20px] bg-white/20 object-cover"
+                  />
+                ) : (
+                  <div className="h-20 w-20 rounded-[20px] bg-white/18" />
+                )}
+              </div>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      <section className="rounded-[30px] bg-white p-5 shadow-[0_16px_40px_rgba(15,23,42,0.05)] md:p-6">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <div className="text-[1.7rem] font-black tracking-tight text-slate-950">猜你喜欢</div>
+            <p className="mt-1 text-sm text-slate-500">首屏继续往下就是商品流，保留电商首页那种连逛感。</p>
+          </div>
+          <Link href="/products" className="rounded-full bg-[#fff1e8] px-4 py-2 text-sm font-bold text-[#ff5a00]">
+            查看更多
+          </Link>
+        </div>
+
+        {productFlow.length ? (
+          <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+            {productFlow.map((product, index) => (
               <Link
-                key={category}
-                href={`/products?keyword=${encodeURIComponent(category)}`}
-                className="rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700"
+                key={product.id}
+                href={`/products/${product.id}`}
+                className="group overflow-hidden rounded-[24px] bg-[#fafafa] transition hover:-translate-y-0.5 hover:shadow-[0_18px_40px_rgba(15,23,42,0.08)]"
               >
-                {category}
+                <div className="relative aspect-[4/5] overflow-hidden bg-[#f3f3f3]">
+                  {product.image ? (
+                    <img
+                      alt={product.name}
+                      className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
+                      src={product.image}
+                    />
+                  ) : (
+                    <div className="flex h-full items-center justify-center bg-gradient-to-br from-[#ffe3d3] to-[#fff5ef] text-sm font-semibold text-[#ff6e2d]">
+                      EasyMall 推荐
+                    </div>
+                  )}
+                  <span className="absolute left-3 top-3 rounded-full bg-white/92 px-2.5 py-1 text-xs font-bold text-[#ff5a00]">
+                    {index % 2 === 0 ? "热卖" : "上新"}
+                  </span>
+                </div>
+                <div className="p-4">
+                  <div className="line-clamp-2 min-h-[44px] text-sm font-bold leading-6 text-slate-900">
+                    {product.name}
+                  </div>
+                  <div className="mt-2 line-clamp-1 text-xs text-slate-500">
+                    {product.categoryName || "EasyMall 精选好货"}
+                  </div>
+                  <div className="mt-4 flex items-end justify-between gap-3">
+                    <div className="text-xl font-black text-[#ff5a00]">{formatCurrency(product.price)}</div>
+                    <div className="text-xs text-slate-400">已售 {product.sales}</div>
+                  </div>
+                </div>
               </Link>
             ))}
           </div>
-        </Card>
-
-        <Card className="overflow-hidden rounded-[36px] bg-slate-950 p-0 text-white">
-          <div className="grid gap-8 px-7 py-8 md:grid-cols-[1.1fr_0.9fr]">
-            <div>
-              <Badge tone="info" className="bg-white/10 text-white">
-                Premium Commerce
-              </Badge>
-              <h1 className="mt-5 text-4xl font-black leading-tight tracking-tight">
-                搜索、分类、优惠和推荐密度重新排好了。
-              </h1>
-              <p className="mt-5 max-w-xl text-sm leading-7 text-white/72">
-                新首页把商城搜索、服务承诺、会员权益和推荐模块放回第一屏附近，
-                保持电商信息密度，同时用更干净的层次和卡片系统重做视觉节奏。
-              </p>
-              <div className="mt-7 flex flex-wrap gap-3">
-                <Link href="/products">
-                  <Button>
-                    进入商品列表
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                </Link>
-                <Link href="/coupons">
-                  <Button variant="secondary">先领优惠券</Button>
-                </Link>
-              </div>
-            </div>
-            <div className="grid gap-4">
-              {heroModules.map((module, index) => (
-                <div
-                  key={module.title}
-                  className={`rounded-[28px] border border-white/10 p-5 ${
-                    index === 0 ? "bg-white/8" : "bg-emerald-500/10"
-                  }`}
-                >
-                  <h3 className="text-xl font-black">{module.title}</h3>
-                  <p className="mt-3 text-sm leading-6 text-white/70">
-                    {module.description}
-                  </p>
-                  <Link
-                    href={module.href}
-                    className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-emerald-300"
-                  >
-                    {module.action}
-                    <ArrowRight className="h-4 w-4" />
-                  </Link>
-                </div>
-              ))}
-            </div>
+        ) : (
+          <div className="mt-6">
+            <EmptyState
+              title="首页商品流暂时加载失败"
+              description="搜索入口、分类导航和促销位仍可使用，避免首页第一屏出现断裂。"
+            />
           </div>
-        </Card>
-
-        <Card className="rounded-[32px] bg-gradient-to-br from-emerald-500 to-cyan-500 text-white">
-          <div className="flex h-full flex-col justify-between">
-            <div>
-              <Badge className="bg-white/20 text-white">服务承诺</Badge>
-              <div className="mt-5 space-y-4">
-                <PromiseRow icon={<ShieldCheck className="h-5 w-5" />} title="正品保障" copy="商品信息和库存状态以真实接口为准。" />
-                <PromiseRow icon={<TicketPercent className="h-5 w-5" />} title="优惠联动" copy="结算页直接展示优惠券与会员折扣影响。" />
-                <PromiseRow icon={<Gift className="h-5 w-5" />} title="积分生态" copy="积分商城、会员等级、签到入口统一在用户中心。" />
-              </div>
-            </div>
-            <Link href="/user/member" className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-white">
-              查看会员权益
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-          </div>
-        </Card>
-      </section>
-
-      <section className="grid gap-5 md:grid-cols-3">
-        <FeaturePanel icon={<ShoppingBag className="h-5 w-5" />} title="搜索发现" copy="从首页直接跳到商品搜索、分类筛选和分页浏览。" />
-        <FeaturePanel icon={<Sparkles className="h-5 w-5" />} title="焦点推荐" copy="热销与上新商品作为推荐区，接口失败时也会显示稳妥的首屏兜底。" />
-        <FeaturePanel icon={<Gift className="h-5 w-5" />} title="会员权益" copy="优惠券、积分商城、签到与会员等级都保留原业务链路。" />
-      </section>
-
-      <section className="grid gap-6 lg:grid-cols-2">
-        <ProductSection title="热门商品" products={hotProducts} emptyTitle="热门商品暂时加载失败" />
-        <ProductSection title="新品推荐" products={newProducts} emptyTitle="新品推荐暂时加载失败" />
+        )}
       </section>
     </div>
   );
 }
 
-function PromiseRow({
-  icon,
+function buildPromos(products: ProductVO[]) {
+  return [
+    {
+      title: "品质家居",
+      copy: "超值优惠",
+      href: "/products?keyword=家居",
+      image: products[2]?.image || products[0]?.image || "",
+    },
+    {
+      title: "精致美妆",
+      copy: "品质之选",
+      href: "/products?keyword=美妆",
+      image: products[3]?.image || products[1]?.image || "",
+    },
+    {
+      title: "品质数码",
+      copy: "热门爆款",
+      href: "/products?keyword=数码",
+      image: products[4]?.image || products[0]?.image || "",
+    },
+    {
+      title: "生活百货",
+      copy: "省钱省心",
+      href: "/products?keyword=百货",
+      image: products[5]?.image || products[1]?.image || "",
+    },
+  ];
+}
+
+function ValuePill({
   title,
   copy,
+  icon,
 }: {
-  icon: React.ReactNode;
   title: string;
   copy: string;
+  icon: React.ReactNode;
 }) {
   return (
-    <div className="rounded-[24px] bg-white/12 p-4">
-      <div className="flex items-center gap-3 text-base font-bold">
-        {icon}
-        {title}
-      </div>
-      <p className="mt-2 text-sm leading-6 text-white/72">{copy}</p>
+    <div className="rounded-[24px] bg-white p-5 shadow-[0_12px_30px_rgba(15,23,42,0.04)]">
+      <div className="inline-flex rounded-2xl bg-[#fff1e8] p-3 text-[#ff5a00]">{icon}</div>
+      <div className="mt-4 text-lg font-black text-slate-900">{title}</div>
+      <p className="mt-2 text-sm leading-7 text-slate-500">{copy}</p>
     </div>
-  );
-}
-
-function FeaturePanel({
-  icon,
-  title,
-  copy,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  copy: string;
-}) {
-  return (
-    <Card className="rounded-[30px]">
-      <div className="mb-4 inline-flex rounded-2xl bg-emerald-50 p-3 text-emerald-700">
-        {icon}
-      </div>
-      <h3 className="text-xl font-black">{title}</h3>
-      <p className="mt-3 text-sm leading-6 text-[var(--muted)]">{copy}</p>
-    </Card>
-  );
-}
-
-function ProductSection({
-  title,
-  products,
-  emptyTitle,
-}: {
-  title: string;
-  products: ProductVO[];
-  emptyTitle: string;
-}) {
-  if (!products.length) {
-    return (
-      <EmptyState
-        title={emptyTitle}
-        description="当前会显示兜底分类和引导入口，避免首页首屏出现破损空白。"
-      />
-    );
-  }
-
-  return (
-    <Card className="rounded-[32px]">
-      <div className="mb-5 flex items-center justify-between">
-        <h2 className="text-2xl font-black">{title}</h2>
-        <Link href="/products" className="text-sm font-semibold text-emerald-700">
-          查看全部
-        </Link>
-      </div>
-      <div className="grid gap-4 sm:grid-cols-2">
-        {products.slice(0, 4).map((product) => (
-          <Link
-            key={product.id}
-            href={`/products/${product.id}`}
-            className="rounded-[26px] border border-[var(--border)] bg-white p-4 transition hover:-translate-y-0.5 hover:shadow-card"
-          >
-            <div className="aspect-[4/3] overflow-hidden rounded-[24px] bg-slate-100">
-              <img alt={product.name} className="h-full w-full object-cover" src={product.image || "/favicon.svg"} />
-            </div>
-            <div className="mt-4 flex items-start justify-between gap-3">
-              <div>
-                <div className="line-clamp-2 text-sm font-bold text-slate-900">
-                  {product.name}
-                </div>
-                <div className="mt-1 text-xs text-slate-500">
-                  {product.categoryName || "精选推荐"}
-                </div>
-              </div>
-              <Badge tone="success">已售 {product.sales}</Badge>
-            </div>
-            <div className="mt-4 text-lg font-black text-rose-600">
-              {formatCurrency(product.price)}
-            </div>
-          </Link>
-        ))}
-      </div>
-    </Card>
   );
 }
