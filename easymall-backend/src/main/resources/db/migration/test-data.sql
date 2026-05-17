@@ -139,3 +139,12 @@ INSERT INTO product (name, subtitle, description, original_price, price, stock, 
 ('双立人 刀具套装', '德国工艺 锋利耐用', '双立人刀具套装，德国工艺，锋利耐用，包含菜刀、水果刀等。', 1299.00, 999.00, 60, 456, 'https://picsum.photos/seed/zwilling/400/400', 'https://picsum.photos/seed/zwilling_1/400/400,https://picsum.photos/seed/zwilling_2/400/400', 18, 'ZWILLING', 1),
 ('美的 电饭煲', '智能预约 4L容量', '美的电饭煲，智能预约，24小时定时，4L大容量，多功能菜单。', 399.00, 299.00, 150, 2345, 'https://picsum.photos/seed/midi_rice/400/400', 'https://picsum.photos/seed/midi_rice_1/400/400,https://picsum.photos/seed/midi_rice_2/400/400', 18, 'Midea', 1),
 ('苏泊尔 炒锅', '不粘锅 燃气电磁炉通用', '苏泊尔炒锅，不粘涂层，燃气电磁炉通用，炒菜更轻松。', 199.00, 149.00, 200, 3456, 'https://picsum.photos/seed/supor_pot/400/400', 'https://picsum.photos/seed/supor_pot_1/400/400,https://picsum.photos/seed/supor_pot_2/400/400', 18, 'SUPOR', 1);
+
+-- ============================================
+-- 从 product.stock 初始化 inventory 数据
+-- ============================================
+INSERT INTO `inventory` (`product_id`, `total_stock`, `available_stock`, `locked_stock`, `sold_stock`, `version`)
+SELECT `id`, `stock`, `stock`, 0, 0, 0
+FROM `product`
+WHERE `deleted` = 0
+  AND `id` NOT IN (SELECT `product_id` FROM `inventory`);

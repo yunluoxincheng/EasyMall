@@ -144,7 +144,7 @@ EasyMall/
 │   │   ├── application.yml        # 基础配置
 │   │   ├── application-dev.yml    # 开发环境
 │   │   ├── application-prod.yml   # 生产环境（纯环境变量）
-│   │   ├── db/migration/          # Flyway 迁移脚本（V1-V11）
+│   │   ├── db/migration/          # Flyway 迁移脚本（V1-V12）
 │   │   └── mapper/                # MyBatis XML
 │   ├── Dockerfile                 # 后端容器化
 │   └── docker-compose.yml         # MySQL + Redis + RabbitMQ + 后端
@@ -213,6 +213,7 @@ mysql -u root -p123456 easymall < src/main/resources/db/migration/V8__Create_mes
 mysql -u root -p123456 easymall < src/main/resources/db/migration/V9__Add_points_record_unique_constraint.sql
 mysql -u root -p123456 easymall < src/main/resources/db/migration/V10__Add_coupon_lifecycle_indexes.sql
 mysql -u root -p123456 easymall < src/main/resources/db/migration/V11__Add_points_biz_columns.sql
+mysql -u root -p123456 easymall < src/main/resources/db/migration/V12__Add_favorite_redundant_columns.sql
 mysql -u root -p123456 easymall < src/main/resources/db/migration/test-data.sql
 ```
 

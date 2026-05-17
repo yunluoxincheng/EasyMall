@@ -42,6 +42,7 @@ mysql -u root -p123456 easymall < src/main/resources/db/migration/V8__Create_mes
 mysql -u root -p123456 easymall < src/main/resources/db/migration/V9__Add_points_record_unique_constraint.sql
 mysql -u root -p123456 easymall < src/main/resources/db/migration/V10__Add_coupon_lifecycle_indexes.sql
 mysql -u root -p123456 easymall < src/main/resources/db/migration/V11__Add_points_biz_columns.sql
+mysql -u root -p123456 easymall < src/main/resources/db/migration/V12__Add_favorite_redundant_columns.sql
 mysql -u root -p123456 easymall < src/main/resources/db/migration/test-data.sql
 ```
 
