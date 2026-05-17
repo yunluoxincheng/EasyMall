@@ -25,6 +25,7 @@ import {
   StarOutline,
   GiftOutline,
   LogOutOutline,
+  StorefrontOutline,
 } from '@vicons/ionicons5'
 import { useAuthStore } from '@/stores/auth'
 
@@ -109,6 +110,12 @@ function handleLogout() {
           </NBreadcrumb>
         </div>
         <div class="header-right">
+          <NButton text @click="router.push('/products')">
+            <template #icon>
+              <NIcon :component="StorefrontOutline" />
+            </template>
+            返回商城
+          </NButton>
           <NButton text @click="handleLogout">
             <template #icon>
               <NIcon :component="LogOutOutline" />
@@ -174,6 +181,7 @@ function handleLogout() {
 .header-right {
   display: flex;
   align-items: center;
+  gap: 12px;
 }
 
 .admin-content {

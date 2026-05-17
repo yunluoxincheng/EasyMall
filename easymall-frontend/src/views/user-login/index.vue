@@ -5,11 +5,13 @@ import { NForm, NFormItem, NInput, NButton, useMessage } from 'naive-ui'
 import type { FormInst, FormRules } from 'naive-ui'
 import { userLogin } from '@/api/user-user'
 import { useUserAuthStore } from '@/stores/userAuth'
+import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
 const route = useRoute()
 const message = useMessage()
 const userAuth = useUserAuthStore()
+const adminAuth = useAuthStore()
 const formRef = ref<FormInst | null>(null)
 const loading = ref(false)
 
@@ -34,6 +36,14 @@ async function handleLogin() {
   try {
     const res = await userLogin(formData)
     const { token, userId, username, nickname, avatar, role } = res.data.data
+    if (role === 1) {
+      userAuth.logout()
+      adminAuth.setLogin(token, role)
+      message.success('管理员登录成功')
+      router.push('/admin')
+      return
+    }
+
     userAuth.setLogin(token, { id: userId, username, nickname, avatar: avatar || '', phone: '', email: '', role, points: 0 })
     message.success('登录成功')
     const redirect = (route.query.redirect as string) || '/'
@@ -62,6 +72,8 @@ async function handleLogin() {
       </NForm>
       <div class="login-footer">
         还没有账号？<a @click="router.push('/register')">立即注册</a>
+        <span class="footer-divider">|</span>
+        <a @click="router.push('/admin/login')">管理后台</a>
       </div>
     </div>
   </div>
@@ -102,6 +114,11 @@ async function handleLogin() {
 .login-footer a {
   color: #667eea;
   cursor: pointer;
+}
+
+.footer-divider {
+  margin: 0 10px;
+  color: #ddd;
 }
 
 .login-footer a:hover {

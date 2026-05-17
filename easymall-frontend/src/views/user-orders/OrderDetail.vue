@@ -5,7 +5,7 @@ import {
   NCard, NImage, NTag, NButton, NSpace, NDescriptions, NDescriptionsItem,
   NSpin, NDivider, useMessage, useDialog,
 } from 'naive-ui'
-import { getOrderById, cancelOrder, confirmOrder } from '@/api/user-order'
+import { getOrderById, cancelOrder, confirmOrder, getOrderPayment } from '@/api/user-order'
 import type { OrderVO } from '@/types/user-order'
 
 const route = useRoute()
@@ -21,9 +21,10 @@ function getStatusType(status: number): 'warning' | 'info' | 'success' | 'error'
   const map: Record<number, 'warning' | 'info' | 'success' | 'error' | 'default'> = {
     0: 'warning',
     1: 'info',
+    2: 'success',
     3: 'success',
-    4: 'success',
-    5: 'error',
+    4: 'error',
+    5: 'warning',
   }
   return map[status] ?? 'default'
 }
@@ -81,6 +82,15 @@ function handleReview() {
   message.info('评论功能暂未开放')
 }
 
+async function handlePay() {
+  try {
+    const res = await getOrderPayment(orderId)
+    router.push(`/payment/${res.data.data.paymentNo}`)
+  } catch (e: unknown) {
+    message.error(e instanceof Error ? e.message : '获取支付信息失败')
+  }
+}
+
 function goBack() {
   router.push('/orders')
 }
@@ -135,7 +145,7 @@ onMounted(loadOrder)
                   <span class="item-subtotal">¥{{ item.totalPrice }}</span>
                 </div>
               </div>
-              <div class="item-action" v-if="order.status === 4">
+              <div class="item-action" v-if="order.status === 3">
                 <NButton size="small" type="primary" @click="handleReview">
                   评价
                 </NButton>
@@ -177,13 +187,16 @@ onMounted(loadOrder)
         </NCard>
 
         <!-- 操作按钮 -->
-        <NCard class="section-card" v-if="order.status === 0 || order.status === 3 || order.status === 4">
+        <NCard class="section-card" v-if="order.status === 0 || order.status === 2 || order.status === 3">
           <div class="action-bar">
             <NSpace>
+              <NButton v-if="order.status === 0" type="primary" @click="handlePay">
+                去支付
+              </NButton>
               <NButton v-if="order.status === 0" type="error" @click="handleCancel">
                 取消订单
               </NButton>
-              <NButton v-if="order.status === 3" type="success" @click="handleConfirm">
+              <NButton v-if="order.status === 2" type="success" @click="handleConfirm">
                 确认收货
               </NButton>
             </NSpace>

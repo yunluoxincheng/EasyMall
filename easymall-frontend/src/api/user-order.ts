@@ -1,6 +1,7 @@
 import request from '@/utils/request'
 import type { Result, PageResult } from '@/types/api'
 import type { OrderVO, OrderCreateDTO, OrderCreateVO, OrderQuery } from '@/types/user-order'
+import type { PaymentVO } from '@/types/payment'
 
 export function createOrder(data: OrderCreateDTO) {
   return request.post<Result<OrderCreateVO>>('/api/order/create', data)
@@ -15,7 +16,7 @@ export function getOrderById(orderId: number) {
 }
 
 export function getOrderPayment(orderId: number) {
-  return request.get<Result<unknown>>(`/api/order/${orderId}/payment`)
+  return request.get<Result<PaymentVO>>(`/api/order/${orderId}/payment`)
 }
 
 export function cancelOrder(orderId: number) {

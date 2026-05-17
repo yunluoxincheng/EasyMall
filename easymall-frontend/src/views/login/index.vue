@@ -93,6 +93,10 @@ async function handleLogin() {
             登 录
           </NButton>
         </NForm>
+
+        <div class="login-footer">
+          <a @click="router.push('/products')">返回商城</a>
+        </div>
       </div>
     </div>
   </div>
@@ -137,5 +141,20 @@ async function handleLogin() {
   font-size: 14px;
   color: #999;
   margin: 0;
+}
+
+.login-footer {
+  margin-top: 18px;
+  text-align: center;
+  font-size: 14px;
+}
+
+.login-footer a {
+  color: #667eea;
+  cursor: pointer;
+}
+
+.login-footer a:hover {
+  text-decoration: underline;
 }
 </style>

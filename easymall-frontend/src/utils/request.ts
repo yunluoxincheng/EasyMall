@@ -6,18 +6,18 @@ const request = axios.create({
   timeout: 10000,
 })
 
-function getTokenKey(): string {
+function getTokenKey(url?: string): string {
   const path = window.location.pathname
-  return path.startsWith('/admin') ? 'admin_token' : 'user_token'
+  return path.startsWith('/admin') || url?.startsWith('/api/admin') ? 'admin_token' : 'user_token'
 }
 
-function getLoginPath(): string {
+function getLoginPath(url?: string): string {
   const path = window.location.pathname
-  return path.startsWith('/admin') ? '/admin/login' : '/login'
+  return path.startsWith('/admin') || url?.startsWith('/api/admin') ? '/admin/login' : '/login'
 }
 
 request.interceptors.request.use((config) => {
-  const tokenKey = getTokenKey()
+  const tokenKey = getTokenKey(config.url)
   const token = localStorage.getItem(tokenKey)
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
@@ -35,12 +35,12 @@ request.interceptors.response.use(
   },
   (error) => {
     if (error.response?.status === 401) {
-      const tokenKey = getTokenKey()
+      const tokenKey = getTokenKey(error.config?.url)
       localStorage.removeItem(tokenKey)
       if (tokenKey === 'admin_token') {
         localStorage.removeItem('role')
       }
-      window.location.href = getLoginPath()
+      window.location.href = getLoginPath(error.config?.url)
       return Promise.reject(new Error('登录已过期，请重新登录'))
     }
     const message = error.response?.data?.message || error.message || '网络错误'

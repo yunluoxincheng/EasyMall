@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { NCard, NImage, NTag, NPagination, NEmpty, NSpin, useMessage } from 'naive-ui'
-import { getOrderPage } from '@/api/user-order'
+import { NButton, NCard, NImage, NTag, NPagination, NEmpty, NSpin, useMessage } from 'naive-ui'
+import { getOrderPage, getOrderPayment } from '@/api/user-order'
 import type { OrderVO, OrderQuery } from '@/types/user-order'
 
 const router = useRouter()
@@ -20,9 +20,10 @@ const tabs: { label: string; status?: number }[] = [
   { label: '全部' },
   { label: '待支付', status: 0 },
   { label: '已支付', status: 1 },
-  { label: '已发货', status: 3 },
-  { label: '已完成', status: 4 },
-  { label: '已取消', status: 5 },
+  { label: '待发货', status: 5 },
+  { label: '已发货', status: 2 },
+  { label: '已完成', status: 3 },
+  { label: '已取消', status: 4 },
 ]
 
 const activeTab = ref<number | undefined>(undefined)
@@ -31,9 +32,10 @@ function getStatusType(status: number): 'warning' | 'info' | 'success' | 'error'
   const map: Record<number, 'warning' | 'info' | 'success' | 'error' | 'default'> = {
     0: 'warning',
     1: 'info',
+    2: 'success',
     3: 'success',
-    4: 'success',
-    5: 'error',
+    4: 'error',
+    5: 'warning',
   }
   return map[status] ?? 'default'
 }
@@ -72,6 +74,15 @@ function handlePageSizeChange(pageSize: number) {
 
 function goDetail(orderId: number) {
   router.push(`/orders/${orderId}`)
+}
+
+async function goPay(orderId: number) {
+  try {
+    const res = await getOrderPayment(orderId)
+    router.push(`/payment/${res.data.data.paymentNo}`)
+  } catch (e: unknown) {
+    message.error(e instanceof Error ? e.message : '获取支付信息失败')
+  }
 }
 
 onMounted(loadData)
@@ -137,6 +148,14 @@ onMounted(loadData)
             <span class="order-amount">
               实付：<span class="amount-value">¥{{ order.payAmount }}</span>
             </span>
+            <NButton
+              v-if="order.status === 0"
+              type="primary"
+              size="small"
+              @click.stop="goPay(order.id)"
+            >
+              去支付
+            </NButton>
           </div>
         </NCard>
       </div>
@@ -283,6 +302,8 @@ onMounted(loadData)
 .order-footer {
   display: flex;
   justify-content: flex-end;
+  align-items: center;
+  gap: 16px;
   margin-top: 12px;
   padding-top: 10px;
   border-top: 1px solid #f5f5f5;

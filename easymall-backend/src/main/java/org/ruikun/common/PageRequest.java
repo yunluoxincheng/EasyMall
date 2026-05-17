@@ -8,6 +8,7 @@ public class PageRequest {
     private Integer pageSize = 10;
     private String keyword;
     private Long categoryId;
+    private Integer status;
     private String sortBy;
     private String sortOrder = "asc";
 

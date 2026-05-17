@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { NButton, NCard, NDescriptions, NDescriptionsItem, NResult, NSpin, NSpace, useMessage } from 'naive-ui'
+import { NButton, NCard, NDescriptions, NDescriptionsItem, NDivider, NResult, NSpin, NSpace, useMessage } from 'naive-ui'
 import { getPaymentByPaymentNo, payByPaymentNo } from '@/api/user-payment'
 import type { PaymentVO } from '@/types/payment'
 
@@ -17,15 +17,15 @@ const paymentNo = route.params.paymentNo as string
 
 const isPaid = ref(false)
 const payFailed = ref(false)
+const waitingPayStatus = 'WAITING_PAY'
 
 async function fetchPayment() {
   loading.value = true
   try {
     const res = await getPaymentByPaymentNo(paymentNo)
     paymentInfo.value = res.data.data
-    if (paymentInfo.value.status === 'PAID') {
-      isPaid.value = true
-    }
+    isPaid.value = paymentInfo.value.status === 'PAID'
+    payFailed.value = false
   } catch {
     message.error('获取支付信息失败')
     payFailed.value = true
@@ -108,7 +108,7 @@ onMounted(() => fetchPayment())
               {{ paymentInfo.paymentNo }}
             </NDescriptionsItem>
             <NDescriptionsItem label="支付状态">
-              <span :class="['status-tag', paymentInfo.status === 'PENDING' ? 'pending' : '']">
+              <span :class="['status-tag', paymentInfo.status === waitingPayStatus ? 'pending' : '']">
                 {{ paymentInfo.statusText }}
               </span>
             </NDescriptionsItem>
@@ -123,10 +123,10 @@ onMounted(() => fetchPayment())
               size="large"
               block
               :loading="paying"
-              :disabled="paymentInfo.status !== 'PENDING'"
+              :disabled="paymentInfo.status !== waitingPayStatus"
               @click="handlePay"
             >
-              {{ paymentInfo.status === 'PENDING' ? '确认支付' : paymentInfo.statusText }}
+              {{ paymentInfo.status === waitingPayStatus ? '确认支付' : paymentInfo.statusText }}
             </NButton>
           </div>
         </NCard>

@@ -157,6 +157,7 @@ public class OrderServiceImpl implements IOrderService {
         Page<Order> orderPage = orderMapper.selectPage(page,
                 new LambdaQueryWrapper<Order>()
                         .eq(Order::getUserId, userId)
+                        .eq(pageRequest.getStatus() != null, Order::getStatus, pageRequest.getStatus())
                         .orderByDesc(Order::getCreateTime));
 
         List<OrderVO> orderVOs = orderPage.getRecords().stream()

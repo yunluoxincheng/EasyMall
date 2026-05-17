@@ -21,14 +21,17 @@ import {
   DocumentTextOutline,
   HeartOutline,
   StarOutline,
+  ShieldCheckmarkOutline,
 } from '@vicons/ionicons5'
 import { useUserAuthStore } from '@/stores/userAuth'
+import { useAuthStore } from '@/stores/auth'
 import { getCartCount } from '@/api/user-cart'
 import UserFooter from './UserFooter.vue'
 
 const router = useRouter()
 const route = useRoute()
 const userAuth = useUserAuthStore()
+const adminAuth = useAuthStore()
 const message = useMessage()
 const dialog = useDialog()
 
@@ -63,14 +66,26 @@ function goToCart() {
   router.push('/cart')
 }
 
-const userDropdownOptions = computed(() => [
-  { label: '我的订单', key: 'orders', icon: () => h(NIcon, null, { default: () => h(DocumentTextOutline) }) },
-  { label: '个人中心', key: 'profile', icon: () => h(NIcon, null, { default: () => h(PersonOutline) }) },
-  { label: '我的收藏', key: 'favorites', icon: () => h(NIcon, null, { default: () => h(HeartOutline) }) },
-  { label: '会员中心', key: 'member', icon: () => h(NIcon, null, { default: () => h(StarOutline) }) },
-  { type: 'divider' as const },
-  { label: '退出登录', key: 'logout', icon: () => h(NIcon, null, { default: () => h(LogOutOutline) }) },
-])
+const isAdminUser = computed(() => userAuth.userInfo?.role === 1 || adminAuth.isAdmin)
+
+const userDropdownOptions = computed(() => {
+  const options = [
+    { label: '我的订单', key: 'orders', icon: () => h(NIcon, null, { default: () => h(DocumentTextOutline) }) },
+    { label: '个人中心', key: 'profile', icon: () => h(NIcon, null, { default: () => h(PersonOutline) }) },
+    { label: '我的收藏', key: 'favorites', icon: () => h(NIcon, null, { default: () => h(HeartOutline) }) },
+    { label: '会员中心', key: 'member', icon: () => h(NIcon, null, { default: () => h(StarOutline) }) },
+  ]
+
+  if (isAdminUser.value) {
+    options.push({ label: '管理后台', key: 'admin', icon: () => h(NIcon, null, { default: () => h(ShieldCheckmarkOutline) }) })
+  }
+
+  return [
+    ...options,
+    { type: 'divider' as const },
+    { label: '退出登录', key: 'logout', icon: () => h(NIcon, null, { default: () => h(LogOutOutline) }) },
+  ]
+})
 
 import { h } from 'vue'
 
@@ -80,6 +95,12 @@ function handleUserAction(key: string) {
     case 'profile': router.push('/user'); break
     case 'favorites': router.push('/user/favorites'); break
     case 'member': router.push('/user/member'); break
+    case 'admin':
+      if (userAuth.token && userAuth.userInfo?.role === 1) {
+        adminAuth.setLogin(userAuth.token, 1)
+      }
+      router.push('/admin')
+      break
     case 'logout':
       dialog.warning({
         title: '确认退出',
@@ -97,12 +118,14 @@ function handleUserAction(key: string) {
 }
 
 const navItems = [
-  { label: '首页', path: '/products' },
+  { label: '商城首页', path: '/products' },
   { label: '优惠券', path: '/coupons' },
+  { label: '积分商城', path: '/user/points/products' },
 ]
 
 const activeNav = computed(() => {
   if (route.path === '/coupons') return '/coupons'
+  if (route.path === '/user/points/products') return '/user/points/products'
   return '/products'
 })
 
@@ -150,6 +173,15 @@ onMounted(() => fetchCartCount())
           </NBadge>
 
           <template v-if="userAuth.isLoggedIn">
+            <NButton
+              v-if="isAdminUser"
+              secondary
+              size="small"
+              type="primary"
+              @click="handleUserAction('admin')"
+            >
+              管理后台
+            </NButton>
             <NDropdown
               :options="userDropdownOptions"
               @select="handleUserAction"
