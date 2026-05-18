@@ -6,11 +6,11 @@ type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
 
 const variantMap: Record<ButtonVariant, string> = {
   primary:
-    "bg-[var(--accent)] text-[var(--accent-foreground)] shadow-card hover:bg-[color:var(--accent-strong)]",
+    "bg-accent text-white hover:bg-accent-strong",
   secondary:
-    "border border-[var(--border)] bg-white text-[var(--ink)] hover:bg-slate-50",
-  ghost: "bg-transparent text-[var(--ink)] hover:bg-slate-100",
-  danger: "bg-[var(--danger)] text-white hover:opacity-90",
+    "border border-border bg-white text-ink hover:border-accent hover:text-accent",
+  ghost: "bg-transparent text-ink hover:bg-accent-light",
+  danger: "bg-danger text-white hover:opacity-90",
 };
 
 export interface ButtonProps
@@ -24,7 +24,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       <button
         ref={ref}
         className={cn(
-          "inline-flex min-h-11 items-center justify-center rounded-2xl px-4 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60",
+          "inline-flex h-9 items-center justify-center rounded-lg px-4 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50",
           variantMap[variant],
           className,
         )}

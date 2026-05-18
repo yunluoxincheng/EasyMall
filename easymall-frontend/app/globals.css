@@ -3,17 +3,19 @@
 @tailwind utilities;
 
 :root {
-  --canvas: #f5f7fb;
-  --surface: rgba(255, 255, 255, 0.92);
-  --border: rgba(148, 163, 184, 0.2);
-  --ink: #0f172a;
-  --muted: #64748b;
-  --accent: #0f9b6a;
-  --accent-strong: #0a7f57;
+  --canvas: #f5f5f5;
+  --surface: #ffffff;
+  --border: #e8e8e8;
+  --ink: #1a1a1a;
+  --muted: #888888;
+  --accent: #ff5000;
+  --accent-strong: #e64900;
   --accent-foreground: #ffffff;
-  --success: #16a34a;
-  --warning: #d97706;
-  --danger: #dc2626;
+  --accent-light: #fff5f0;
+  --accent-lighter: #fff0e8;
+  --success: #52c41a;
+  --warning: #faad14;
+  --danger: #ff4d4f;
 }
 
 * {
@@ -29,7 +31,10 @@ body {
   min-width: 320px;
   background: var(--canvas);
   color: var(--ink);
-  font-family: "SF Pro Display", "PingFang SC", "Segoe UI", sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB",
+    "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
 }
 
 a {
@@ -49,16 +54,17 @@ textarea {
   width: 100%;
   border: 0;
   background: transparent;
-  padding: 0.85rem 1rem;
+  padding: 0.75rem 1rem;
   text-align: left;
-  font-size: 0.92rem;
-  color: #0f172a;
-  border-radius: 1rem;
-  transition: background 0.2s ease, color 0.2s ease;
+  font-size: 0.875rem;
+  color: var(--ink);
+  border-radius: 8px;
+  transition: background 0.15s ease, color 0.15s ease;
 }
 
 .store-menu-item:hover {
-  background: #f8fafc;
+  background: var(--accent-light);
+  color: var(--accent);
 }
 
 .admin-table {
@@ -67,38 +73,38 @@ textarea {
 }
 
 .admin-table th {
-  padding: 0.9rem 1rem;
+  padding: 0.75rem 1rem;
   text-align: left;
-  font-size: 0.78rem;
-  font-weight: 800;
+  font-size: 0.75rem;
+  font-weight: 700;
   letter-spacing: 0.04em;
-  color: #64748b;
+  color: #999;
   text-transform: uppercase;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+  border-bottom: 1px solid var(--border);
 }
 
 .admin-table td {
-  padding: 1rem;
+  padding: 0.875rem 1rem;
   vertical-align: top;
-  border-bottom: 1px solid rgba(226, 232, 240, 0.7);
-  font-size: 0.92rem;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.875rem;
 }
 
 .admin-table tbody tr:hover {
-  background: rgba(248, 250, 252, 0.8);
+  background: var(--accent-light);
 }
 
 .field-label {
-  margin-bottom: 0.45rem;
+  margin-bottom: 0.375rem;
   display: block;
-  font-size: 0.83rem;
-  font-weight: 700;
-  color: #475569;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #666;
 }
 
 .panel-grid {
   display: grid;
-  gap: 1.25rem;
+  gap: 1rem;
 }
 
 @media (prefers-reduced-motion: reduce) {

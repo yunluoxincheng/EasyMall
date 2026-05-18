@@ -5,7 +5,6 @@ import { toast } from "sonner";
 
 import { AccountShell } from "@/components/layout/account-shell";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useUpdatePassword } from "@/lib/hooks";
 
@@ -40,12 +39,9 @@ export default function ChangePasswordPage() {
   }
 
   return (
-    <AccountShell
-      title="修改密码"
-      description="密码页保持独立入口，便于用户在个人中心中快速完成安全更新。"
-    >
-      <Card className="rounded-[30px]">
-        <div className="grid gap-4">
+    <AccountShell title="修改密码" description="修改你的登录密码">
+      <div className="rounded-lg bg-white p-4 shadow-card">
+        <div className="grid gap-3">
           <div>
             <label className="field-label">当前密码</label>
             <Input type="password" value={form.oldPassword} onChange={(event) => setForm((prev) => ({ ...prev, oldPassword: event.target.value }))} />
@@ -59,12 +55,12 @@ export default function ChangePasswordPage() {
             <Input type="password" value={form.confirmPassword} onChange={(event) => setForm((prev) => ({ ...prev, confirmPassword: event.target.value }))} />
           </div>
         </div>
-        <div className="mt-6">
+        <div className="mt-4">
           <Button disabled={updatePassword.isPending} onClick={handleSave}>
             {updatePassword.isPending ? "提交中..." : "更新密码"}
           </Button>
         </div>
-      </Card>
+      </div>
     </AccountShell>
   );
 }

@@ -22,6 +22,8 @@ export function ProtectedRoute({
   const session = useSession();
 
   useEffect(() => {
+    if (!session.mounted) return;
+
     if (redirectIfAuthed && session.isLoggedIn) {
       router.replace("/");
       return;
@@ -36,7 +38,11 @@ export function ProtectedRoute({
       const target = session.isLoggedIn ? "/" : `/login?redirect=${encodeURIComponent(pathname)}`;
       router.replace(target);
     }
-  }, [adminOnly, pathname, redirectIfAuthed, requireAuth, router, session.isAdmin, session.isLoggedIn]);
+  }, [adminOnly, pathname, redirectIfAuthed, requireAuth, router, session.isAdmin, session.isLoggedIn, session.mounted]);
+
+  if (!session.mounted) {
+    return <LoadingState label="正在加载..." />;
+  }
 
   if (redirectIfAuthed && session.isLoggedIn) {
     return <LoadingState label="正在跳转..." />;
@@ -47,7 +53,7 @@ export function ProtectedRoute({
   }
 
   if (adminOnly && (!session.isLoggedIn || !session.isAdmin)) {
-    return <LoadingState label="正在验证管理员权限..." />;
+    return <LoadingState label="正在验证权限..." />;
   }
 
   return <>{children}</>;

@@ -4,7 +4,6 @@ import { useState } from "react";
 
 import { AccountShell } from "@/components/layout/account-shell";
 import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Pagination } from "@/components/ui/pagination";
 import { usePointsRecords, useUserProfile } from "@/lib/hooks";
@@ -20,52 +19,39 @@ export default function UserPointsPage() {
   const total = recordPage?.total ?? 0;
 
   return (
-    <AccountShell
-      title="积分记录"
-      description="积分页展示当前余额和积分变化明细，方便用户理解签到、订单和兑换行为带来的变化。"
-    >
-      <Card className="rounded-[30px] bg-gradient-to-r from-emerald-500 to-cyan-500 text-white">
-        <div className="text-xs font-black uppercase tracking-[0.2em] text-white/70">
-          Current Points
-        </div>
-        <div className="mt-4 text-5xl font-black">{currentPoints}</div>
-      </Card>
+    <AccountShell title="积分记录" description="查看你的积分变化明细">
+      <div className="rounded-lg bg-gradient-to-r from-accent to-[#ff7a33] p-4 text-white shadow-card">
+        <div className="text-xs text-white/70">当前积分</div>
+        <div className="mt-1 text-3xl font-bold">{currentPoints}</div>
+      </div>
 
       {records.length ? (
         <>
-          <div className="mt-5 space-y-4">
+          <div className="mt-3 space-y-2">
             {records.map((item) => (
-              <Card key={item.id} className="rounded-[28px]">
-                <div className="flex flex-wrap items-start justify-between gap-4">
-                  <div>
-                    <div className="font-bold text-slate-950">{item.description}</div>
-                    <div className="mt-2 flex items-center gap-2 text-sm text-slate-500">
-                      <Badge tone={item.pointsChange > 0 ? "success" : "danger"}>
-                        {item.typeDesc}
-                      </Badge>
-                      <span>{formatDateTime(item.createTime)}</span>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className={`text-2xl font-black ${item.pointsChange > 0 ? "text-emerald-600" : "text-rose-600"}`}>
-                      {item.pointsChange > 0 ? "+" : ""}
-                      {item.pointsChange}
-                    </div>
-                    <div className="mt-1 text-sm text-slate-400">余额：{item.afterPoints}</div>
+              <div key={item.id} className="flex items-center justify-between rounded-lg bg-white p-3 shadow-card">
+                <div>
+                  <div className="text-sm font-medium text-ink">{item.description}</div>
+                  <div className="mt-1 flex items-center gap-2 text-xs text-muted">
+                    <Badge tone={item.pointsChange > 0 ? "success" : "danger"}>{item.typeDesc}</Badge>
+                    <span>{formatDateTime(item.createTime)}</span>
                   </div>
                 </div>
-              </Card>
+                <div className="text-right">
+                  <div className={`text-lg font-bold ${item.pointsChange > 0 ? "text-green-500" : "text-red-500"}`}>
+                    {item.pointsChange > 0 ? "+" : ""}{item.pointsChange}
+                  </div>
+                  <div className="text-xs text-muted">余额：{item.afterPoints}</div>
+                </div>
+              </div>
             ))}
           </div>
-          <div className="mt-6">
+          <div className="mt-4">
             <Pagination page={page} pageSize={10} total={total} onPageChange={setPage} />
           </div>
         </>
       ) : (
-        <EmptyState
-          title="暂无积分记录"
-          description="可以先去签到、下单或积分商城兑换，积分变化会在这里展示出来。"
-        />
+        <EmptyState title="暂无积分记录" description="签到、下单或兑换后积分变化会在这里展示" />
       )}
     </AccountShell>
   );

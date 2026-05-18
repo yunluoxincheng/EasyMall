@@ -1,11 +1,12 @@
 import { cn } from "@/lib/cn";
 
 const toneMap = {
-  success: "bg-emerald-50 text-emerald-700",
+  success: "bg-green-50 text-green-700",
   warning: "bg-amber-50 text-amber-700",
-  danger: "bg-rose-50 text-rose-700",
-  info: "bg-sky-50 text-sky-700",
-  neutral: "bg-slate-100 text-slate-700",
+  danger: "bg-red-50 text-red-600",
+  info: "bg-blue-50 text-blue-600",
+  neutral: "bg-gray-100 text-gray-600",
+  accent: "bg-accent-light text-accent",
 } as const;
 
 export function Badge({
@@ -20,7 +21,7 @@ export function Badge({
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold",
+        "inline-flex items-center rounded px-2 py-0.5 text-xs font-medium",
         toneMap[tone],
         className,
       )}

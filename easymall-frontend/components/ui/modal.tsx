@@ -40,7 +40,7 @@ export function Modal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
       <div
         className="absolute inset-0"
         aria-hidden="true"
@@ -48,28 +48,28 @@ export function Modal({
       />
       <div
         className={cn(
-          "relative z-10 w-full max-w-3xl rounded-[32px] border border-white/40 bg-white p-6 shadow-panel",
+          "relative z-10 w-full max-w-2xl rounded-lg border border-border bg-white p-5 shadow-float",
           className,
         )}
       >
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h2 className="text-xl font-black text-[var(--ink)]">{title}</h2>
+            <h2 className="text-lg font-semibold text-ink">{title}</h2>
             {description ? (
-              <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
+              <p className="mt-1 text-sm text-muted">
                 {description}
               </p>
             ) : null}
           </div>
           <button
-            className="grid h-10 w-10 place-items-center rounded-full bg-slate-100 text-slate-500 transition hover:bg-slate-200"
+            className="grid h-8 w-8 place-items-center rounded-md bg-gray-100 text-gray-500 transition hover:bg-gray-200"
             onClick={onClose}
             type="button"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
-        <div className="mt-6">{children}</div>
+        <div className="mt-4">{children}</div>
       </div>
     </div>
   );

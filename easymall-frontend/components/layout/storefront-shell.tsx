@@ -5,27 +5,25 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   ChevronDown,
   Heart,
-  LifeBuoy,
   LogOut,
-  MapPin,
   ReceiptText,
   Search,
   ShoppingCart,
   Store,
   TicketPercent,
   UserCircle2,
+  X,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
-import { Button } from "@/components/ui/button";
 import { useCartCount, useLogout } from "@/lib/hooks";
 import { clearSession } from "@/lib/session";
 import { useSession } from "@/lib/use-session";
 
 const navItems = [
-  { label: "商城首页", href: "/" },
-  { label: "热卖商品", href: "/products" },
+  { label: "首页", href: "/" },
+  { label: "全部商品", href: "/products" },
   { label: "领券中心", href: "/coupons" },
   { label: "积分商城", href: "/user/points/products" },
 ];
@@ -34,7 +32,7 @@ const topLinks = [
   { label: "我的订单", href: "/orders", icon: ReceiptText },
   { label: "会员中心", href: "/user/member", icon: UserCircle2 },
   { label: "我的收藏", href: "/user/favorites", icon: Heart },
-  { label: "帮助中心", href: "/user", icon: LifeBuoy },
+  { label: "领券中心", href: "/coupons", icon: TicketPercent },
 ];
 
 export function StorefrontShell({ children }: { children: React.ReactNode }) {
@@ -44,12 +42,28 @@ export function StorefrontShell({ children }: { children: React.ReactNode }) {
   const keywordParam = searchParams.get("keyword") || "";
   const session = useSession();
   const [keyword, setKeyword] = useState(keywordParam);
+  const [scrolled, setScrolled] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const logout = useLogout();
   const { data: cartCount = 0 } = useCartCount();
 
   useEffect(() => {
     setKeyword(keywordParam);
   }, [keywordParam]);
+
+  useEffect(() => {
+    function onScroll() {
+      setScrolled(window.scrollY > 60);
+    }
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  useEffect(() => {
+    function close() { setUserMenuOpen(false); }
+    document.addEventListener("click", close);
+    return () => document.removeEventListener("click", close);
+  }, []);
 
   const activeHref = useMemo(() => {
     if (pathname.startsWith("/products")) return "/products";
@@ -80,236 +94,198 @@ export function StorefrontShell({ children }: { children: React.ReactNode }) {
     }
   }
 
+  const onUserMenuClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    setUserMenuOpen((prev) => !prev);
+  }, []);
+
   return (
-    <div className="min-h-screen bg-[#f5f5f5] text-slate-900">
-      <header className="border-b border-[#f0f0f0] bg-white">
-        <div className="mx-auto hidden max-w-7xl items-center justify-between px-4 py-2 text-[13px] text-slate-500 lg:flex">
-          <div className="flex items-center gap-4">
-            {session.isLoggedIn ? (
-              <>
-                <span className="text-[#ff5000]">
-                  嗨，{session.user?.nickname || session.user?.username}
-                </span>
-                <button className="transition hover:text-[#ff5000]" onClick={handleLogout}>
-                  退出
-                </button>
-              </>
-            ) : (
-              <>
-                <button
-                  className="font-medium text-[#ff5000] transition hover:text-[#ff6a1f]"
-                  onClick={() => router.push("/login")}
-                >
-                  亲，请登录
-                </button>
-                <button className="transition hover:text-[#ff5000]" onClick={() => router.push("/register")}>
-                  免费注册
-                </button>
-              </>
-            )}
-            <span>网页无障碍</span>
-          </div>
-
-          <div className="flex items-center gap-5">
-            {topLinks.map((item) => {
-              const Icon = item.icon;
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className="inline-flex items-center gap-1 transition hover:text-[#ff5000]"
-                >
-                  <Icon className="h-3.5 w-3.5" />
-                  <span>{item.label}</span>
-                </Link>
-              );
-            })}
-          </div>
-        </div>
-
-        <div className="bg-gradient-to-r from-[#ff174f] via-[#ff4d61] to-[#ff6c74] text-white">
-          <div className="mx-auto flex max-w-7xl items-center justify-center gap-3 px-4 py-3 text-center">
-            <span className="rounded-full bg-white/20 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em]">
-              EasyMall
-            </span>
-            <p className="text-sm font-semibold sm:text-base">
-              首页专属福利限时领，好货低价别错过
-            </p>
-            <Link
-              href="/coupons"
-              className="rounded-full bg-white px-4 py-1.5 text-sm font-bold text-[#ff5000] transition hover:bg-[#fff1ea]"
-            >
-              去逛逛
-            </Link>
-          </div>
-        </div>
-
-        <div className="mx-auto max-w-7xl px-4 py-5">
-          <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:gap-8">
+    <div className="min-h-screen bg-canvas text-ink">
+      {/* Top bar */}
+      {!scrolled && (
+        <div className="border-b border-border bg-white">
+          <div className="mx-auto flex max-w-[1200px] items-center justify-between px-4 py-1.5 text-xs text-muted">
             <div className="flex items-center gap-4">
-              <Link href="/" className="shrink-0">
-                <div className="text-[2.2rem] font-black leading-none tracking-tight text-[#ff5a00]">
-                  EasyMall
-                </div>
-                <div className="text-base font-semibold text-[#ff7a2f]">乐享好货</div>
-              </Link>
-
-              <div className="hidden border-l border-[#ffd7c2] pl-4 text-[#ff5a00] md:block">
-                <div className="text-[1.9rem] font-black leading-none">热卖</div>
-                <div className="text-[1.9rem] font-black leading-none">商品</div>
-              </div>
+              {session.isLoggedIn ? (
+                <>
+                  <span className="text-accent">
+                    Hi，{session.user?.nickname || session.user?.username}
+                  </span>
+                  <button className="hover:text-accent" onClick={handleLogout}>
+                    退出登录
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    className="font-medium text-accent hover:text-accent-strong"
+                    onClick={() => router.push("/login")}
+                  >
+                    请登录
+                  </button>
+                  <button
+                    className="hover:text-accent"
+                    onClick={() => router.push("/register")}
+                  >
+                    免费注册
+                  </button>
+                </>
+              )}
             </div>
-
-            <div className="flex-1">
-              <nav className="mb-3 hidden flex-wrap gap-2 md:flex">
-                {navItems.map((item) => (
+            <div className="hidden items-center gap-4 sm:flex">
+              {topLinks.map((item) => {
+                const Icon = item.icon;
+                return (
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`rounded-t-2xl px-4 py-2 text-sm font-bold transition ${
-                      activeHref === item.href
-                        ? "bg-[#ff5a00] text-white"
-                        : "text-[#ff5a00] hover:bg-[#fff0e8]"
-                    }`}
+                    className="inline-flex items-center gap-1 hover:text-accent"
                   >
+                    <Icon className="h-3.5 w-3.5" />
                     {item.label}
                   </Link>
-                ))}
-              </nav>
-
-              <form className="flex flex-col gap-3 sm:flex-row" onSubmit={handleSearch}>
-                <div className="flex h-12 flex-1 items-center rounded-full border-2 border-[#ff6200] bg-white pl-4 shadow-[0_12px_30px_rgba(255,98,0,0.12)]">
-                  <button
-                    type="button"
-                    className="mr-3 inline-flex min-w-[72px] items-center justify-between rounded-full bg-[#fff7f2] px-3 py-2 text-sm font-medium text-slate-600"
-                  >
-                    宝贝
-                    <ChevronDown className="ml-2 h-4 w-4" />
-                  </button>
-                  <Search className="mr-2 h-4 w-4 text-slate-400" />
-                  <input
-                    value={keyword}
-                    onChange={(event) => setKeyword(event.target.value)}
-                    placeholder="搜索商品、品牌或优惠关键词"
-                    className="h-full flex-1 rounded-r-full pr-4 text-sm outline-none"
-                  />
-                </div>
-                <button
-                  type="submit"
-                  className="inline-flex h-12 items-center justify-center rounded-full bg-[#ff6200] px-8 text-base font-bold text-white transition hover:bg-[#f25600]"
-                >
-                  搜索
-                </button>
-              </form>
-            </div>
-
-            <div className="hidden items-center gap-3 xl:flex">
-              <button
-                className="inline-flex h-12 items-center gap-2 rounded-full border border-[#ffd7c2] bg-white px-5 text-sm font-semibold text-slate-700 transition hover:border-[#ff6200] hover:text-[#ff6200]"
-                onClick={() => router.push("/cart")}
-              >
-                <ShoppingCart className="h-4 w-4" />
-                购物车
-                {cartCount > 0 ? <span className="text-[#ff5000]">({cartCount})</span> : null}
-              </button>
-
-              {session.isLoggedIn ? (
-                <details className="relative">
-                  <summary className="flex h-12 cursor-pointer list-none items-center gap-2 rounded-full border border-[#ffd7c2] bg-white px-5 text-sm font-semibold text-slate-700 transition hover:border-[#ff6200] hover:text-[#ff6200]">
-                    <UserCircle2 className="h-4 w-4" />
-                    {session.user?.nickname || session.user?.username}
-                  </summary>
-                  <div className="absolute right-0 top-14 w-60 rounded-3xl border border-[#ffe2d3] bg-white p-2 shadow-panel">
-                    <button className="store-menu-item" onClick={() => router.push("/orders")}>
-                      我的订单
-                    </button>
-                    <button className="store-menu-item" onClick={() => router.push("/user")}>
-                      个人中心
-                    </button>
-                    <button className="store-menu-item" onClick={() => router.push("/user/favorites")}>
-                      我的收藏
-                    </button>
-                    <button className="store-menu-item" onClick={() => router.push("/user/member")}>
-                      会员中心
-                    </button>
-                    <button className="store-menu-item" onClick={() => router.push("/coupons")}>
-                      <TicketPercent className="mr-2 inline h-4 w-4" />
-                      领券中心
-                    </button>
-                    <button className="store-menu-item text-rose-600" onClick={handleLogout}>
-                      <LogOut className="mr-2 inline h-4 w-4" />
-                      退出登录
-                    </button>
-                  </div>
-                </details>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="ghost"
-                    className="rounded-full border border-[#ffd7c2] bg-white px-5 text-slate-700 hover:bg-[#fff7f2] hover:text-[#ff6200]"
-                    onClick={() => router.push("/login")}
-                  >
-                    登录
-                  </Button>
-                  <button
-                    className="inline-flex h-12 items-center justify-center rounded-full bg-[#fff0e8] px-5 text-sm font-bold text-[#ff6200] transition hover:bg-[#ffe0d2]"
-                    onClick={() => router.push("/register")}
-                  >
-                    注册
-                  </button>
-                </div>
-              )}
+                );
+              })}
             </div>
           </div>
+        </div>
+      )}
 
-          <div className="mt-4 flex flex-wrap items-center gap-2 text-sm text-slate-500 md:hidden">
+      {/* Main header */}
+      <header
+        className={`sticky top-0 z-40 bg-white transition-shadow ${
+          scrolled ? "shadow-header" : "border-b border-border"
+        }`}
+      >
+        <div className="mx-auto flex max-w-[1200px] items-center gap-6 px-4 py-3">
+          {/* Logo */}
+          <Link href="/" className="shrink-0">
+            <div className="flex items-center gap-2">
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent text-sm font-bold text-white">
+                <Store className="h-4 w-4" />
+              </span>
+              <span className="text-xl font-bold text-accent">EasyMall</span>
+            </div>
+          </Link>
+
+          {/* Nav links */}
+          {!scrolled && (
+            <nav className="hidden items-center gap-1 lg:flex">
+              {navItems.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`rounded-md px-3 py-1.5 text-sm font-medium transition ${
+                    activeHref === item.href
+                      ? "bg-accent text-white"
+                      : "text-ink hover:bg-accent-light hover:text-accent"
+                  }`}
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </nav>
+          )}
+
+          {/* Search */}
+          <form className="flex flex-1 items-center" onSubmit={handleSearch}>
+            <div className="flex h-9 w-full max-w-lg items-center rounded-lg border-2 border-accent bg-white">
+              <input
+                value={keyword}
+                onChange={(event) => setKeyword(event.target.value)}
+                placeholder="搜索商品、品牌或关键词"
+                className="h-full flex-1 rounded-l-md bg-transparent px-3 text-sm outline-none"
+              />
+              <button
+                type="submit"
+                className="flex h-full shrink-0 items-center justify-center rounded-r-[6px] bg-accent px-4 text-sm font-medium text-white transition hover:bg-accent-strong"
+              >
+                <Search className="h-4 w-4" />
+              </button>
+            </div>
+          </form>
+
+          {/* Right actions */}
+          <div className="flex shrink-0 items-center gap-3">
             <button
-              className="inline-flex items-center gap-1 rounded-full border border-[#ffe0d2] bg-white px-4 py-2"
+              className="relative flex h-9 w-9 items-center justify-center rounded-md text-ink transition hover:bg-accent-light hover:text-accent"
               onClick={() => router.push("/cart")}
             >
-              <ShoppingCart className="h-4 w-4 text-[#ff6200]" />
-              购物车
-              {cartCount > 0 ? <span className="text-[#ff5000]">({cartCount})</span> : null}
+              <ShoppingCart className="h-5 w-5" />
+              {cartCount > 0 && (
+                <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 text-[10px] font-bold text-white">
+                  {cartCount > 99 ? "99+" : cartCount}
+                </span>
+              )}
             </button>
-            {navItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`rounded-full px-4 py-2 font-semibold ${
-                  activeHref === item.href ? "bg-[#ff5a00] text-white" : "bg-[#fff3eb] text-[#ff6200]"
-                }`}
-              >
-                {item.label}
-              </Link>
-            ))}
+
+            {session.isLoggedIn ? (
+              <div className="relative">
+                <button
+                  className="flex h-9 items-center gap-1.5 rounded-md px-2 text-sm transition hover:bg-accent-light hover:text-accent"
+                  onClick={onUserMenuClick}
+                >
+                  <UserCircle2 className="h-5 w-5" />
+                  <span className="hidden max-w-20 truncate md:inline">
+                    {session.user?.nickname || session.user?.username}
+                  </span>
+                  <ChevronDown className="h-3.5 w-3.5" />
+                </button>
+                {userMenuOpen && (
+                  <div className="absolute right-0 top-full z-50 mt-1 w-44 rounded-lg border border-border bg-white py-1 shadow-float">
+                    <MenuButton label="我的订单" onClick={() => { router.push("/orders"); setUserMenuOpen(false); }} />
+                    <MenuButton label="个人中心" onClick={() => { router.push("/user"); setUserMenuOpen(false); }} />
+                    <MenuButton label="我的收藏" onClick={() => { router.push("/user/favorites"); setUserMenuOpen(false); }} />
+                    <MenuButton label="会员中心" onClick={() => { router.push("/user/member"); setUserMenuOpen(false); }} />
+                    <MenuButton label="领券中心" onClick={() => { router.push("/coupons"); setUserMenuOpen(false); }} />
+                    <div className="my-1 border-t border-border" />
+                    <MenuButton label="退出登录" danger onClick={() => { handleLogout(); setUserMenuOpen(false); }} />
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="hidden items-center gap-2 sm:flex">
+                <button
+                  className="h-9 rounded-md px-4 text-sm font-medium text-accent transition hover:bg-accent-light"
+                  onClick={() => router.push("/login")}
+                >
+                  登录
+                </button>
+                <button
+                  className="h-9 rounded-md bg-accent px-4 text-sm font-medium text-white transition hover:bg-accent-strong"
+                  onClick={() => router.push("/register")}
+                >
+                  注册
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </header>
 
-      <main className="mx-auto min-h-[calc(100vh-220px)] max-w-7xl px-4 py-6 lg:py-8">
+      {/* Main content */}
+      <main className="mx-auto min-h-[calc(100vh-200px)] max-w-[1200px] px-4 py-5">
         {children}
       </main>
 
-      <footer className="mt-10 border-t border-[#ececec] bg-white">
-        <div className="mx-auto grid max-w-7xl gap-8 px-4 py-10 lg:grid-cols-[2fr_1fr_1fr_1fr]">
+      {/* Footer */}
+      <footer className="mt-8 border-t border-border bg-white">
+        <div className="mx-auto grid max-w-[1200px] gap-8 px-4 py-8 sm:grid-cols-2 lg:grid-cols-4">
           <div>
-            <div className="flex items-center gap-3 text-[var(--ink)]">
-              <span className="grid h-11 w-11 place-items-center rounded-2xl bg-[#ff6200] text-lg font-black text-white">
-                <Store className="h-5 w-5" />
+            <div className="flex items-center gap-2">
+              <span className="flex h-7 w-7 items-center justify-center rounded-md bg-accent text-xs font-bold text-white">
+                <Store className="h-3.5 w-3.5" />
               </span>
-              <div>
-                <div className="text-lg font-black">EasyMall</div>
-                <div className="text-sm text-[var(--muted)]">更像传统电商首页的沉浸式逛街体验</div>
-              </div>
+              <span className="font-bold text-ink">EasyMall</span>
             </div>
-            <p className="mt-4 max-w-xl text-sm leading-7 text-[var(--muted)]">
-              首页强化分类、搜索、促销和商品流，用户中心承载订单、会员、积分与管理入口，保留现有业务链路与接口兜底能力。
+            <p className="mt-3 text-sm leading-6 text-muted">
+              精致好物，轻松选购。EasyMall 为您提供优质的线上购物体验。
             </p>
           </div>
           <FooterColumn
             title="购物服务"
             items={[
-              ["商品浏览", "/products"],
+              ["全部商品", "/products"],
               ["购物车", "/cart"],
               ["领券中心", "/coupons"],
               ["积分商城", "/user/points/products"],
@@ -325,7 +301,7 @@ export function StorefrontShell({ children }: { children: React.ReactNode }) {
             ]}
           />
           <FooterColumn
-            title="商家帮助"
+            title="更多服务"
             items={[
               ["积分记录", "/user/points"],
               ["我的优惠券", "/user/coupons"],
@@ -334,31 +310,39 @@ export function StorefrontShell({ children }: { children: React.ReactNode }) {
             ]}
           />
         </div>
+        <div className="border-t border-border py-4 text-center text-xs text-muted">
+          EasyMall - 课程实训项目
+        </div>
       </footer>
     </div>
   );
 }
 
-function FooterColumn({
-  title,
-  items,
-}: {
-  title: string;
-  items: [string, string][];
-}) {
+function FooterColumn({ title, items }: { title: string; items: [string, string][] }) {
   return (
     <div>
-      <div className="flex items-center gap-2 text-sm font-black uppercase tracking-[0.18em] text-slate-500">
-        <MapPin className="h-4 w-4 text-[#ff6200]" />
-        {title}
-      </div>
-      <div className="mt-4 flex flex-col gap-3">
+      <h3 className="text-sm font-semibold text-ink">{title}</h3>
+      <div className="mt-3 flex flex-col gap-2">
         {items.map(([label, href]) => (
-          <Link key={href} href={href} className="text-sm text-slate-600 transition hover:text-[#ff6200]">
+          <Link key={href} href={href} className="text-sm text-muted hover:text-accent">
             {label}
           </Link>
         ))}
       </div>
     </div>
+  );
+}
+
+function MenuButton({ label, danger, onClick }: { label: string; danger?: boolean; onClick: () => void }) {
+  return (
+    <button
+      className={`block w-full px-3 py-2 text-left text-sm transition hover:bg-accent-light ${
+        danger ? "text-red-500 hover:text-red-600" : "text-ink hover:text-accent"
+      }`}
+      onClick={onClick}
+      type="button"
+    >
+      {label}
+    </button>
   );
 }

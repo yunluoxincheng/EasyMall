@@ -7,7 +7,6 @@ import { toast } from "sonner";
 
 import { ProtectedRoute } from "@/components/auth/protected";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useLogin } from "@/lib/hooks";
 import { authApi, mapLoginToSessionUser } from "@/lib/api";
@@ -71,63 +70,51 @@ function LoginForm() {
 
   return (
     <ProtectedRoute redirectIfAuthed>
-      <div className="min-h-screen bg-storefront-glow">
-        <div className="mx-auto flex min-h-screen max-w-7xl items-center justify-center px-4 py-10 lg:py-14">
-          <div className="w-full max-w-[560px]">
-            <Card className="overflow-hidden rounded-[40px] border-white/70 bg-white/92 p-0 shadow-panel">
-              <div className="border-b border-[var(--border)] bg-gradient-to-br from-white via-emerald-50/70 to-cyan-50/70 px-8 py-7">
-                <p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-700">
-                  EasyMall Access
-                </p>
-                <h1 className="mt-4 text-3xl font-black tracking-tight text-slate-950">
-                  登录 EasyMall
-                </h1>
-                <p className="mt-3 text-sm leading-7 text-[var(--muted)]">
-                  输入商城账号继续。如果你是管理员，登录后会在个人中心看到后台入口。
-                </p>
-              </div>
+      <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-10">
+        <div className="w-full max-w-sm">
+          <div className="mb-6 text-center">
+            <div className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-accent text-white">
+              <span className="text-sm font-bold">E</span>
+            </div>
+            <h1 className="mt-3 text-xl font-semibold text-ink">登录 EasyMall</h1>
+            <p className="mt-1 text-sm text-muted">输入账号密码继续</p>
+          </div>
 
-              <div className="px-8 py-8">
-                <form className="space-y-5" onSubmit={handleSubmit}>
-                  <div>
-                    <label className="field-label">用户名</label>
-                    <Input
-                      value={username}
-                      onChange={(event) => setUsername(event.target.value)}
-                      placeholder="请输入用户名"
-                    />
-                  </div>
-                  <div>
-                    <label className="field-label">密码</label>
-                    <Input
-                      type="password"
-                      value={password}
-                      onChange={(event) => setPassword(event.target.value)}
-                      placeholder="请输入密码"
-                    />
-                  </div>
-                  {redirectTarget ? (
-                    <p className="rounded-2xl bg-amber-50 px-4 py-3 text-sm text-amber-700">
-                      登录后将跳转到：{redirectTarget}
-                    </p>
-                  ) : (
-                    <p className="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600">
-                      登录后默认进入商城首页；管理员可从个人中心继续进入后台。
-                    </p>
-                  )}
-                  <Button className="w-full" disabled={login.isPending} type="submit">
-                    {login.isPending ? "登录中..." : "登录"}
-                  </Button>
-                </form>
-
-                <div className="mt-6 flex items-center justify-between text-sm text-slate-500">
-                  <span>还没有账号？</span>
-                  <Link href="/register" className="font-semibold text-emerald-700">
-                    立即注册
-                  </Link>
-                </div>
+          <div className="rounded-lg bg-white p-6 shadow-card">
+            <form className="space-y-4" onSubmit={handleSubmit}>
+              <div>
+                <label className="field-label">用户名</label>
+                <Input
+                  value={username}
+                  onChange={(event) => setUsername(event.target.value)}
+                  placeholder="请输入用户名"
+                />
               </div>
-            </Card>
+              <div>
+                <label className="field-label">密码</label>
+                <Input
+                  type="password"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  placeholder="请输入密码"
+                />
+              </div>
+              {redirectTarget && (
+                <p className="rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                  登录后将跳转到指定页面
+                </p>
+              )}
+              <Button className="w-full" disabled={login.isPending} type="submit">
+                {login.isPending ? "登录中..." : "登录"}
+              </Button>
+            </form>
+
+            <div className="mt-4 text-center text-sm text-muted">
+              还没有账号？
+              <Link href="/register" className="ml-1 font-medium text-accent hover:text-accent-strong">
+                立即注册
+              </Link>
+            </div>
           </div>
         </div>
       </div>

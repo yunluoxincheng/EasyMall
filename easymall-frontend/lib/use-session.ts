@@ -23,5 +23,6 @@ export function useSession() {
     ...session,
     isLoggedIn,
     isAdmin,
+    mounted,
   };
 }

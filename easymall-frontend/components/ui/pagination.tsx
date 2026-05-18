@@ -25,19 +25,21 @@ export function Pagination({
   );
 
   return (
-    <div className="flex flex-wrap items-center justify-center gap-2">
+    <div className="flex flex-wrap items-center justify-center gap-1.5">
       <Button
         variant="secondary"
+        className="h-8 px-2.5 text-xs"
         onClick={() => onPageChange(page - 1)}
         disabled={page <= 1}
       >
-        <ChevronLeft className="mr-2 h-4 w-4" />
+        <ChevronLeft className="mr-1 h-3.5 w-3.5" />
         上一页
       </Button>
       {numbers.map((item) => (
         <Button
           key={item}
           variant={item === page ? "primary" : "secondary"}
+          className="h-8 w-8 justify-center px-0 text-xs"
           onClick={() => onPageChange(item)}
         >
           {item}
@@ -45,11 +47,12 @@ export function Pagination({
       ))}
       <Button
         variant="secondary"
+        className="h-8 px-2.5 text-xs"
         onClick={() => onPageChange(page + 1)}
         disabled={page >= totalPages}
       >
         下一页
-        <ChevronRight className="ml-2 h-4 w-4" />
+        <ChevronRight className="ml-1 h-3.5 w-3.5" />
       </Button>
     </div>
   );

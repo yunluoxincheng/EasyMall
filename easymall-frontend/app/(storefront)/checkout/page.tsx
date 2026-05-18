@@ -6,41 +6,19 @@ import { toast } from "sonner";
 
 import { ProtectedRoute } from "@/components/auth/protected";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { LoadingState } from "@/components/ui/loading-state";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useCartList, useUserProfile, useMemberDiscount, useAvailableCoupons, useCalculateCoupon, useCreateOrder } from "@/lib/hooks";
-import { storefrontApi } from "@/lib/api";
 import { formatCurrency } from "@/lib/format";
 
-function SummaryRow({
-  label,
-  value,
-  highlight = false,
-  muted = false,
-}: {
-  label: string;
-  value: string;
-  highlight?: boolean;
-  muted?: boolean;
-}) {
+function SummaryRow({ label, value, highlight, muted }: { label: string; value: string; highlight?: boolean; muted?: boolean }) {
   return (
     <div className="flex items-center justify-between">
-      <span className={`text-sm ${highlight ? "font-bold text-slate-900" : "text-slate-500"}`}>
-        {label}
-      </span>
-      <span
-        className={`${
-          highlight
-            ? "text-2xl font-black text-rose-600"
-            : muted
-              ? "text-sm text-slate-400"
-              : "text-base font-bold text-slate-900"
-        }`}
-      >
+      <span className={`text-sm ${highlight ? "font-semibold text-ink" : "text-muted"}`}>{label}</span>
+      <span className={highlight ? "text-xl font-bold text-accent" : muted ? "text-sm text-muted" : "text-sm font-semibold text-ink"}>
         {value}
       </span>
     </div>
@@ -157,20 +135,16 @@ function CheckoutContent() {
   return (
     <ProtectedRoute requireAuth>
       {items.length ? (
-        <div className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
-          <div className="space-y-5">
-            <Card className="rounded-[34px]">
-              <h1 className="text-3xl font-black tracking-tight text-slate-950">
-                确认订单
-              </h1>
-              <p className="mt-3 text-sm leading-7 text-[var(--muted)]">
-                结算页会同时展示商品小计、可用优惠券和会员折扣影响，帮助你清楚看到最终实付金额。
-              </p>
-            </Card>
+        <div className="grid gap-4 lg:grid-cols-[1fr_380px]">
+          <div className="space-y-3">
+            <div className="rounded-lg bg-white p-4 shadow-card">
+              <h1 className="text-lg font-semibold text-ink">确认订单</h1>
+              <p className="text-xs text-muted">请确认收货信息和商品清单</p>
+            </div>
 
-            <Card className="rounded-[32px]">
-              <h2 className="text-xl font-black">收货信息</h2>
-              <div className="mt-5 grid gap-4 md:grid-cols-2">
+            <div className="rounded-lg bg-white p-4 shadow-card">
+              <h2 className="text-sm font-semibold text-ink">收货信息</h2>
+              <div className="mt-3 grid gap-3 sm:grid-cols-2">
                 <div>
                   <label className="field-label">收货人</label>
                   <Input value={form.receiverName} onChange={(event) => setForm((prev) => ({ ...prev, receiverName: event.target.value }))} />
@@ -179,44 +153,40 @@ function CheckoutContent() {
                   <label className="field-label">手机号</label>
                   <Input value={form.receiverPhone} onChange={(event) => setForm((prev) => ({ ...prev, receiverPhone: event.target.value }))} />
                 </div>
-                <div className="md:col-span-2">
+                <div className="sm:col-span-2">
                   <label className="field-label">收货地址</label>
                   <Textarea value={form.receiverAddress} onChange={(event) => setForm((prev) => ({ ...prev, receiverAddress: event.target.value }))} />
                 </div>
-                <div className="md:col-span-2">
+                <div className="sm:col-span-2">
                   <label className="field-label">备注</label>
                   <Input value={form.remark} onChange={(event) => setForm((prev) => ({ ...prev, remark: event.target.value }))} placeholder="例如工作日送达、放门口等" />
                 </div>
               </div>
-            </Card>
+            </div>
 
-            <Card className="rounded-[32px]">
-              <h2 className="text-xl font-black">商品清单</h2>
-              <div className="mt-5 space-y-4">
+            <div className="rounded-lg bg-white p-4 shadow-card">
+              <h2 className="text-sm font-semibold text-ink">商品清单</h2>
+              <div className="mt-3 space-y-3">
                 {items.map((item) => (
-                  <div key={item.id} className="flex gap-4 rounded-[24px] border border-[var(--border)] p-4">
-                    <div className="h-20 w-20 overflow-hidden rounded-[18px] bg-slate-100">
+                  <div key={item.id} className="flex items-center gap-3 rounded-lg border border-border p-3">
+                    <div className="h-16 w-16 shrink-0 overflow-hidden rounded-md bg-gray-50">
                       <img alt={item.productName} className="h-full w-full object-cover" src={item.productImage || "/favicon.svg"} />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className="font-bold text-slate-950">{item.productName}</div>
-                      <div className="mt-2 text-sm text-slate-500">
-                        {formatCurrency(item.productPrice)} × {item.quantity}
-                      </div>
+                      <div className="text-sm font-medium text-ink">{item.productName}</div>
+                      <div className="text-xs text-muted">{formatCurrency(item.productPrice)} × {item.quantity}</div>
                     </div>
-                    <div className="text-right text-lg font-black text-rose-600">
-                      {formatCurrency(item.totalPrice)}
-                    </div>
+                    <div className="text-sm font-bold text-accent">{formatCurrency(item.totalPrice)}</div>
                   </div>
                 ))}
               </div>
-            </Card>
+            </div>
           </div>
 
-          <div className="space-y-5">
-            <Card className="rounded-[32px]">
-              <h2 className="text-xl font-black">优惠与会员折扣</h2>
-              <div className="mt-5">
+          <div className="space-y-3">
+            <div className="rounded-lg bg-white p-4 shadow-card">
+              <h2 className="text-sm font-semibold text-ink">优惠与折扣</h2>
+              <div className="mt-3">
                 <label className="field-label">选择优惠券</label>
                 <Select value={selectedCouponId} onChange={(event) => void handleCouponChange(event.target.value)}>
                   <option value="">暂不使用优惠券</option>
@@ -227,42 +197,39 @@ function CheckoutContent() {
                   ))}
                 </Select>
               </div>
-              <div className="mt-4 rounded-[24px] bg-slate-50 p-4 text-sm leading-6 text-[var(--muted)]">
+              <div className="mt-3 rounded-md bg-gray-50 p-3 text-xs text-muted">
                 {memberDiscount && memberDiscount < 1
                   ? `当前会员折扣：${Math.round(memberDiscount * 100)} 折，已自动在实付金额中展示。`
                   : "当前订单暂无额外会员折扣。"}
               </div>
-            </Card>
+            </div>
 
-            <Card className="rounded-[32px]">
-              <h2 className="text-xl font-black">金额汇总</h2>
-              <div className="mt-5 space-y-4">
+            <div className="rounded-lg bg-white p-4 shadow-card">
+              <h2 className="text-sm font-semibold text-ink">金额汇总</h2>
+              <div className="mt-3 space-y-2">
                 <SummaryRow label="商品总额" value={formatCurrency(totalAmount)} />
                 <SummaryRow label="会员折扣" value={`-${formatCurrency(memberDiscountAmount)}`} muted={memberDiscountAmount <= 0} />
                 <SummaryRow label="优惠券抵扣" value={`-${formatCurrency(discountAmount)}`} muted={discountAmount <= 0} />
-                <div className="border-t border-[var(--border)] pt-4">
+                <div className="border-t border-border pt-2">
                   <SummaryRow highlight label="应付金额" value={formatCurrency(payAmount)} />
                 </div>
               </div>
-              <div className="mt-6 flex flex-wrap gap-3">
+              <div className="mt-4 flex gap-2">
                 <Button className="flex-1" disabled={createOrder.isPending} onClick={handleSubmit}>
                   {createOrder.isPending ? "提交中..." : "提交订单"}
                 </Button>
                 <Button variant="secondary" onClick={() => router.push("/cart")}>
-                  返回购物车
+                  返回
                 </Button>
               </div>
-            </Card>
+            </div>
           </div>
         </div>
       ) : (
         <EmptyState
           title="没有选中的商品"
-          description="请先在购物车中勾选需要结算的商品，然后再进入结算页。"
-          action={{
-            label: "返回购物车",
-            onClick: () => router.push("/cart"),
-          }}
+          description="请先在购物车中勾选需要结算的商品"
+          action={{ label: "返回购物车", onClick: () => router.push("/cart") }}
         />
       )}
     </ProtectedRoute>

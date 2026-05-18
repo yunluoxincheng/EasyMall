@@ -16,11 +16,9 @@ import { useSession } from "@/lib/use-session";
 
 function InfoTile({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-[24px] border border-[var(--border)] bg-slate-50 p-4">
-      <div className="text-xs font-black uppercase tracking-[0.16em] text-slate-400">
-        {label}
-      </div>
-      <div className="mt-2 text-lg font-black text-slate-950">{value}</div>
+    <div className="rounded-lg border border-border bg-gray-50 p-3">
+      <div className="text-xs text-muted">{label}</div>
+      <div className="mt-1 text-sm font-semibold text-ink">{value}</div>
     </div>
   );
 }
@@ -80,55 +78,49 @@ export default function UserProfilePage() {
   return (
     <AccountShell
       title="个人中心"
-      description="在这里维护个人资料、查看积分和会员等级；管理员账号还会看到后台管理入口。"
+      description="维护个人资料、查看积分和会员等级"
     >
       {isLoading ? (
-        <Card className="rounded-[30px]">正在加载个人资料...</Card>
+        <div className="rounded-lg bg-white p-4 shadow-card text-sm text-muted">正在加载...</div>
       ) : (
-        <div className="space-y-5">
+        <div className="space-y-3">
           {session.isAdmin ? (
-            <Card className="rounded-[30px] bg-slate-950 text-white">
-              <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="rounded-lg bg-ink p-4 text-white">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <div className="flex items-center gap-2 text-sm font-semibold text-emerald-300">
-                    <ShieldCheck className="h-4 w-4" />
+                  <div className="flex items-center gap-1.5 text-xs text-amber-300">
+                    <ShieldCheck className="h-3.5 w-3.5" />
                     管理员工作台
                   </div>
-                  <h2 className="mt-3 text-2xl font-black">
-                    当前账号具备后台访问能力
-                  </h2>
-                  <p className="mt-3 max-w-2xl text-sm leading-7 text-white/72">
-                    管理后台入口只会出现在这里，不会直接出现在商城顶部导航中。
-                    进入后台后仍然保留当前商城登录会话。
-                  </p>
+                  <h2 className="mt-1 text-sm font-semibold">当前账号具备后台访问能力</h2>
                 </div>
-                <div className="flex flex-wrap gap-3">
-                  <Button variant="secondary" onClick={() => router.push("/")}>
-                    <Store className="mr-2 h-4 w-4" />
+                <div className="flex gap-2">
+                  <Button variant="secondary" className="text-xs" onClick={() => router.push("/")}>
+                    <Store className="mr-1.5 h-3.5 w-3.5" />
                     返回商城
                   </Button>
-                  <Button onClick={() => router.push("/admin")}>
-                    <BarChart3 className="mr-2 h-4 w-4" />
-                    进入管理后台
+                  <Button className="text-xs" onClick={() => router.push("/admin")}>
+                    <BarChart3 className="mr-1.5 h-3.5 w-3.5" />
+                    管理后台
                   </Button>
                 </div>
               </div>
-            </Card>
+            </div>
           ) : null}
 
-          <Card className="rounded-[30px]">
-            <h2 className="text-xl font-black">账户信息</h2>
-            <div className="mt-5 grid gap-4 md:grid-cols-2">
+          <div className="rounded-lg bg-white p-4 shadow-card">
+            <h2 className="text-sm font-semibold text-ink">账户信息</h2>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
               <InfoTile label="用户名" value={user?.username || "-"} />
               <InfoTile label="注册时间" value={user?.createTime || "-"} />
               <InfoTile label="当前积分" value={String(user?.points || 0)} />
               <InfoTile label="会员等级" value={`Lv.${user?.level || 0}`} />
             </div>
-          </Card>
+          </div>
 
-          <Card className="rounded-[30px]">
-            <h2 className="text-xl font-black">编辑资料</h2>
-            <div className="mt-5 grid gap-4 md:grid-cols-2">
+          <div className="rounded-lg bg-white p-4 shadow-card">
+            <h2 className="text-sm font-semibold text-ink">编辑资料</h2>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
               <div>
                 <label className="field-label">昵称</label>
                 <Input value={form.nickname} onChange={(event) => setForm((prev) => ({ ...prev, nickname: event.target.value }))} />
@@ -150,12 +142,12 @@ export default function UserProfilePage() {
                 </Select>
               </div>
             </div>
-            <div className="mt-6">
+            <div className="mt-4">
               <Button disabled={updateProfile.isPending} onClick={handleSave}>
                 {updateProfile.isPending ? "保存中..." : "保存资料"}
               </Button>
             </div>
-          </Card>
+          </div>
         </div>
       )}
     </AccountShell>

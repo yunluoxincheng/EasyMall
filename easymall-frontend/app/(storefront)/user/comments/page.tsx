@@ -6,7 +6,6 @@ import { toast } from "sonner";
 
 import { AccountShell } from "@/components/layout/account-shell";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Pagination } from "@/components/ui/pagination";
 import { useMyComments, useDeleteMyComment } from "@/lib/hooks";
@@ -31,62 +30,48 @@ export default function UserCommentsPage() {
   }
 
   return (
-    <AccountShell
-      title="我的评论"
-      description="保留评论历史、评分和商家回复展示，同时允许用户删除自己的评论记录。"
-    >
+    <AccountShell title="我的评论" description="你的评论历史记录">
       {comments.length ? (
         <>
-          <div className="space-y-5">
+          <div className="space-y-3">
             {comments.map((comment) => (
-              <Card key={comment.id} className="rounded-[30px]">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div className="font-black text-slate-950">
-                    商品 ID：{comment.productId}
-                  </div>
-                  <div className="flex items-center gap-1 text-amber-500">
+              <div key={comment.id} className="rounded-lg bg-white p-4 shadow-card">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="text-sm font-medium text-ink">商品 ID：{comment.productId}</div>
+                  <div className="flex items-center gap-1 text-amber-400">
                     {Array.from({ length: 5 }).map((_, index) => (
-                      <Star
-                        key={index}
-                        className={`h-4 w-4 ${index < comment.rating ? "fill-current" : ""}`}
-                      />
+                      <Star key={index} className={`h-3.5 w-3.5 ${index < comment.rating ? "fill-current" : ""}`} />
                     ))}
                   </div>
                 </div>
-                <p className="mt-4 text-sm leading-7 text-[var(--muted)]">{comment.content}</p>
+                <p className="mt-2 text-sm leading-6 text-muted">{comment.content}</p>
                 {comment.images ? (
-                  <div className="mt-4 grid grid-cols-3 gap-3 md:grid-cols-5">
+                  <div className="mt-2 grid grid-cols-4 gap-2">
                     {comment.images.split(",").map((image, index) => (
-                      <div key={`${comment.id}-${index}`} className="aspect-square overflow-hidden rounded-[18px] bg-slate-100">
+                      <div key={`${comment.id}-${index}`} className="aspect-square overflow-hidden rounded-md bg-gray-50">
                         <img alt={`comment-${index}`} className="h-full w-full object-cover" src={image} />
                       </div>
                     ))}
                   </div>
                 ) : null}
                 {comment.reply ? (
-                  <div className="mt-4 rounded-[24px] bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-600">
-                    <span className="font-semibold text-slate-900">商家回复：</span>
-                    {comment.reply}
+                  <div className="mt-2 rounded-md bg-gray-50 p-3 text-sm text-muted">
+                    <span className="font-medium text-ink">商家回复：</span>{comment.reply}
                   </div>
                 ) : null}
-                <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
-                  <span className="text-sm text-slate-400">{formatDateTime(comment.createTime)}</span>
-                  <Button variant="secondary" onClick={() => void handleDelete(comment.id)}>
-                    删除评论
-                  </Button>
+                <div className="mt-3 flex items-center justify-between">
+                  <span className="text-xs text-muted">{formatDateTime(comment.createTime)}</span>
+                  <Button variant="secondary" className="text-xs h-7 px-2" onClick={() => void handleDelete(comment.id)}>删除</Button>
                 </div>
-              </Card>
+              </div>
             ))}
           </div>
-          <div className="mt-6">
+          <div className="mt-4">
             <Pagination page={page} pageSize={8} total={total} onPageChange={setPage} />
           </div>
         </>
       ) : (
-        <EmptyState
-          title="暂无评论记录"
-          description="确认收货后的订单仍会保留评论入口，后续可以继续增强成完整评价工作流。"
-        />
+        <EmptyState title="暂无评论记录" description="确认收货后可以对商品进行评价" />
       )}
     </AccountShell>
   );
