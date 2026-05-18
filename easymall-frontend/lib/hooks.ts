@@ -49,6 +49,8 @@ export const keys = {
   comments: {
     product: (productId: number, params: { pageNum?: number; pageSize?: number }) =>
       ["comments", "product", productId, params] as const,
+    count: (productId: number) => ["comments", "count", productId] as const,
+    rating: (productId: number) => ["comments", "rating", productId] as const,
     mine: (params: { pageNum?: number; pageSize?: number }) =>
       ["comments", "mine", params] as const,
   },
@@ -209,6 +211,22 @@ export function useProductComments(
   return useQuery({
     queryKey: keys.comments.product(productId, params),
     queryFn: () => storefrontApi.getProductComments(productId, params),
+    enabled: productId > 0,
+  });
+}
+
+export function useProductCommentCount(productId: number) {
+  return useQuery({
+    queryKey: keys.comments.count(productId),
+    queryFn: () => storefrontApi.getProductCommentCount(productId),
+    enabled: productId > 0,
+  });
+}
+
+export function useProductRating(productId: number) {
+  return useQuery({
+    queryKey: keys.comments.rating(productId),
+    queryFn: () => storefrontApi.getProductRating(productId),
     enabled: productId > 0,
   });
 }

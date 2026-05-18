@@ -1,5 +1,6 @@
 "use client";
 
+import { Coins, Gift, Sparkles } from "lucide-react";
 import { useState } from "react";
 
 import { AccountShell } from "@/components/layout/account-shell";
@@ -19,40 +20,65 @@ export default function UserPointsPage() {
   const total = recordPage?.total ?? 0;
 
   return (
-    <AccountShell title="积分记录" description="查看你的积分变化明细">
-      <div className="rounded-lg bg-gradient-to-r from-accent to-[#ff7a33] p-4 text-white shadow-card">
-        <div className="text-xs text-white/70">当前积分</div>
-        <div className="mt-1 text-3xl font-bold">{currentPoints}</div>
-      </div>
+    <AccountShell title="积分记录" description="把积分资产、变化来源和余额走势做得更像真实商城会员资产页。">
+      <div className="space-y-4">
+        <section className="grid gap-4 md:grid-cols-3">
+          <SummaryCard title="当前积分" value={`${currentPoints}`} icon={Coins} />
+          <SummaryCard title="累计记录" value={`${total}`} icon={Sparkles} />
+          <SummaryCard title="可去兑换" value="积分商城好物" icon={Gift} />
+        </section>
 
-      {records.length ? (
-        <>
-          <div className="mt-3 space-y-2">
-            {records.map((item) => (
-              <div key={item.id} className="flex items-center justify-between rounded-lg bg-white p-3 shadow-card">
-                <div>
-                  <div className="text-sm font-medium text-ink">{item.description}</div>
-                  <div className="mt-1 flex items-center gap-2 text-xs text-muted">
-                    <Badge tone={item.pointsChange > 0 ? "success" : "danger"}>{item.typeDesc}</Badge>
-                    <span>{formatDateTime(item.createTime)}</span>
+        {records.length ? (
+          <>
+            <section className="space-y-3">
+              {records.map((item) => (
+                <div key={item.id} className="store-section p-5">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <div className="text-base font-semibold text-ink">{item.description}</div>
+                      <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted">
+                        <Badge tone={item.pointsChange > 0 ? "success" : "danger"}>{item.typeDesc}</Badge>
+                        <span>{formatDateTime(item.createTime)}</span>
+                        <span>变更前 {item.beforePoints}</span>
+                      </div>
+                    </div>
+                    <div className="text-left sm:text-right">
+                      <div className={`text-2xl font-extrabold ${item.pointsChange > 0 ? "text-green-500" : "text-red-500"}`}>
+                        {item.pointsChange > 0 ? "+" : ""}
+                        {item.pointsChange}
+                      </div>
+                      <div className="mt-1 text-sm text-muted">当前余额：{item.afterPoints}</div>
+                    </div>
                   </div>
                 </div>
-                <div className="text-right">
-                  <div className={`text-lg font-bold ${item.pointsChange > 0 ? "text-green-500" : "text-red-500"}`}>
-                    {item.pointsChange > 0 ? "+" : ""}{item.pointsChange}
-                  </div>
-                  <div className="text-xs text-muted">余额：{item.afterPoints}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className="mt-4">
+              ))}
+            </section>
             <Pagination page={page} pageSize={10} total={total} onPageChange={setPage} />
-          </div>
-        </>
-      ) : (
-        <EmptyState title="暂无积分记录" description="签到、下单或兑换后积分变化会在这里展示" />
-      )}
+          </>
+        ) : (
+          <EmptyState title="暂无积分记录" description="签到、下单或兑换后，积分变化会在这里展示。" />
+        )}
+      </div>
     </AccountShell>
+  );
+}
+
+function SummaryCard({
+  title,
+  value,
+  icon: Icon,
+}: {
+  title: string;
+  value: string;
+  icon: React.ElementType;
+}) {
+  return (
+    <div className="store-section p-5">
+      <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#fff7f2] text-accent">
+        <Icon className="h-5 w-5" />
+      </span>
+      <div className="mt-4 text-sm text-muted">{title}</div>
+      <div className="mt-1 text-2xl font-extrabold text-ink">{value}</div>
+    </div>
   );
 }

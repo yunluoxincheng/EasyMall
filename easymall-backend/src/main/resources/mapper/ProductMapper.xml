@@ -38,10 +38,41 @@
                  OR p.subtitle LIKE CONCAT('%', #{keyword}, '%')
                  OR p.description LIKE CONCAT('%', #{keyword}, '%'))
         </if>
+        <if test="brand != null and brand != ''">
+            AND p.brand = #{brand}
+        </if>
+        <if test="minPrice != null">
+            AND p.price <![CDATA[>=]]> #{minPrice}
+        </if>
+        <if test="maxPrice != null">
+            AND p.price <![CDATA[<=]]> #{maxPrice}
+        </if>
         <if test="status != null">
             AND p.status = #{status}
         </if>
-        ORDER BY p.create_time DESC
+        <choose>
+            <when test="sortBy == 'sales' and sortOrder == 'asc'">
+                ORDER BY p.sales ASC, p.create_time DESC
+            </when>
+            <when test="sortBy == 'sales' and sortOrder == 'desc'">
+                ORDER BY p.sales DESC, p.create_time DESC
+            </when>
+            <when test="sortBy == 'price' and sortOrder == 'asc'">
+                ORDER BY p.price ASC, p.create_time DESC
+            </when>
+            <when test="sortBy == 'price' and sortOrder == 'desc'">
+                ORDER BY p.price DESC, p.create_time DESC
+            </when>
+            <when test="sortBy == 'createTime' and sortOrder == 'asc'">
+                ORDER BY p.create_time ASC
+            </when>
+            <when test="sortBy == 'createTime' and sortOrder == 'desc'">
+                ORDER BY p.create_time DESC
+            </when>
+            <otherwise>
+                ORDER BY p.create_time DESC
+            </otherwise>
+        </choose>
     </select>
 
     <select id="selectHotProducts" resultMap="BaseResultMap">

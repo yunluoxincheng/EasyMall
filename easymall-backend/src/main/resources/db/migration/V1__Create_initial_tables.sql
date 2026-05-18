@@ -59,7 +59,11 @@ CREATE TABLE IF NOT EXISTS `product` (
     `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted` TINYINT DEFAULT 0,
     INDEX idx_category_id (`category_id`),
-    INDEX idx_status (`status`)
+    INDEX idx_status (`status`),
+    INDEX idx_brand (`brand`),
+    INDEX idx_price (`price`),
+    INDEX idx_sales (`sales`),
+    INDEX idx_create_time (`create_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 购物车表

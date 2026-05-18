@@ -1,5 +1,6 @@
 "use client";
 
+import { LockKeyhole, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -39,28 +40,78 @@ export default function ChangePasswordPage() {
   }
 
   return (
-    <AccountShell title="修改密码" description="修改你的登录密码">
-      <div className="rounded-lg bg-white p-4 shadow-card">
-        <div className="grid gap-3">
-          <div>
-            <label className="field-label">当前密码</label>
-            <Input type="password" value={form.oldPassword} onChange={(event) => setForm((prev) => ({ ...prev, oldPassword: event.target.value }))} />
+    <AccountShell title="修改密码" description="安全设置也保持和商城前台一致的层次与可读性。">
+      <div className="space-y-4">
+        <section className="grid gap-4 md:grid-cols-2">
+          <InfoCard
+            title="账户安全"
+            desc="修改密码后，建议重新确认常用设备上的登录状态。"
+            icon={ShieldCheck}
+          />
+          <InfoCard
+            title="操作提醒"
+            desc="新密码提交前请确认两次输入一致，避免后续登录失败。"
+            icon={LockKeyhole}
+          />
+        </section>
+
+        <section className="store-section p-6">
+          <div className="grid gap-4">
+            <div>
+              <label className="field-label">当前密码</label>
+              <Input
+                className="h-11 rounded-2xl"
+                type="password"
+                value={form.oldPassword}
+                onChange={(event) => setForm((prev) => ({ ...prev, oldPassword: event.target.value }))}
+              />
+            </div>
+            <div>
+              <label className="field-label">新密码</label>
+              <Input
+                className="h-11 rounded-2xl"
+                type="password"
+                value={form.newPassword}
+                onChange={(event) => setForm((prev) => ({ ...prev, newPassword: event.target.value }))}
+              />
+            </div>
+            <div>
+              <label className="field-label">确认新密码</label>
+              <Input
+                className="h-11 rounded-2xl"
+                type="password"
+                value={form.confirmPassword}
+                onChange={(event) => setForm((prev) => ({ ...prev, confirmPassword: event.target.value }))}
+              />
+            </div>
           </div>
-          <div>
-            <label className="field-label">新密码</label>
-            <Input type="password" value={form.newPassword} onChange={(event) => setForm((prev) => ({ ...prev, newPassword: event.target.value }))} />
+          <div className="mt-5">
+            <Button className="rounded-full px-6" disabled={updatePassword.isPending} onClick={() => void handleSave()}>
+              {updatePassword.isPending ? "提交中..." : "更新密码"}
+            </Button>
           </div>
-          <div>
-            <label className="field-label">确认新密码</label>
-            <Input type="password" value={form.confirmPassword} onChange={(event) => setForm((prev) => ({ ...prev, confirmPassword: event.target.value }))} />
-          </div>
-        </div>
-        <div className="mt-4">
-          <Button disabled={updatePassword.isPending} onClick={handleSave}>
-            {updatePassword.isPending ? "提交中..." : "更新密码"}
-          </Button>
-        </div>
+        </section>
       </div>
     </AccountShell>
+  );
+}
+
+function InfoCard({
+  title,
+  desc,
+  icon: Icon,
+}: {
+  title: string;
+  desc: string;
+  icon: React.ElementType;
+}) {
+  return (
+    <div className="store-section p-5">
+      <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#fff7f2] text-accent">
+        <Icon className="h-5 w-5" />
+      </span>
+      <div className="mt-4 text-base font-semibold text-ink">{title}</div>
+      <div className="mt-2 text-sm leading-7 text-muted">{desc}</div>
+    </div>
   );
 }

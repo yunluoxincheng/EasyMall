@@ -4,26 +4,30 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   ChevronDown,
+  Clock3,
   Heart,
-  LogOut,
   ReceiptText,
   Search,
+  ShieldCheck,
   ShoppingCart,
+  Sparkles,
   Store,
   TicketPercent,
+  Truck,
   UserCircle2,
-  X,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { useCartCount, useLogout } from "@/lib/hooks";
+import { saveSearchHistory } from "@/lib/search-history";
 import { clearSession } from "@/lib/session";
 import { useSession } from "@/lib/use-session";
 
 const navItems = [
   { label: "首页", href: "/" },
   { label: "全部商品", href: "/products" },
+  { label: "品牌会场", href: "/brands" },
   { label: "领券中心", href: "/coupons" },
   { label: "积分商城", href: "/user/points/products" },
 ];
@@ -35,6 +39,22 @@ const topLinks = [
   { label: "领券中心", href: "/coupons", icon: TicketPercent },
 ];
 
+const spotlightKeywords = ["iPhone", "轻薄笔记本", "夏凉家纺", "咖啡机"];
+const categoryShortcuts = [
+  "手机数码",
+  "家电换新",
+  "美妆护肤",
+  "潮流服饰",
+  "居家百货",
+  "食品生鲜",
+];
+
+const assuranceItems = [
+  { label: "晚8点前下单", value: "极速发货", icon: Truck },
+  { label: "官方补贴", value: "满199减30", icon: Sparkles },
+  { label: "品牌承诺", value: "正品保障", icon: ShieldCheck },
+];
+
 export function StorefrontShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -43,7 +63,10 @@ export function StorefrontShell({ children }: { children: React.ReactNode }) {
   const session = useSession();
   const [keyword, setKeyword] = useState(keywordParam);
   const [scrolled, setScrolled] = useState(false);
+  const [headerCollapsed, setHeaderCollapsed] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const lastScrollYRef = useRef(0);
+  const tickingRef = useRef(false);
   const logout = useLogout();
   const { data: cartCount = 0 } = useCartCount();
 
@@ -53,33 +76,61 @@ export function StorefrontShell({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     function onScroll() {
-      setScrolled(window.scrollY > 60);
+      const currentY = window.scrollY;
+      if (tickingRef.current) return;
+
+      tickingRef.current = true;
+      window.requestAnimationFrame(() => {
+        const previousY = lastScrollYRef.current;
+        const delta = currentY - previousY;
+
+        setScrolled(currentY > 12);
+
+        setHeaderCollapsed((prev) => {
+          if (currentY <= 24) return false;
+          if (delta > 14 && currentY > 88) return true;
+          if (delta < -22) return false;
+          return prev;
+        });
+
+        lastScrollYRef.current = currentY;
+        tickingRef.current = false;
+      });
     }
+
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
   useEffect(() => {
-    function close() { setUserMenuOpen(false); }
+    function close() {
+      setUserMenuOpen(false);
+    }
     document.addEventListener("click", close);
     return () => document.removeEventListener("click", close);
   }, []);
 
   const activeHref = useMemo(() => {
     if (pathname.startsWith("/products")) return "/products";
+    if (pathname.startsWith("/brands")) return "/brands";
     if (pathname.startsWith("/coupons")) return "/coupons";
     if (pathname.startsWith("/user/points/products")) return "/user/points/products";
     return "/";
   }, [pathname]);
 
-  function handleSearch(event: React.FormEvent) {
-    event.preventDefault();
-    const value = keyword.trim();
-    if (!value) {
-      router.push("/products");
+  function goSearch(value: string) {
+    const normalized = value.trim();
+    if (!normalized) {
+      router.push("/search");
       return;
     }
-    router.push(`/products?keyword=${encodeURIComponent(value)}`);
+    saveSearchHistory(normalized);
+    router.push(`/search?keyword=${encodeURIComponent(normalized)}`);
+  }
+
+  function handleSearch(event: React.FormEvent) {
+    event.preventDefault();
+    goSearch(keyword);
   }
 
   async function handleLogout() {
@@ -94,38 +145,60 @@ export function StorefrontShell({ children }: { children: React.ReactNode }) {
     }
   }
 
-  const onUserMenuClick = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
+  const onUserMenuClick = useCallback((event: React.MouseEvent) => {
+    event.stopPropagation();
     setUserMenuOpen((prev) => !prev);
   }, []);
 
   return (
     <div className="min-h-screen bg-canvas text-ink">
-      {/* Top bar */}
-      {!scrolled && (
-        <div className="border-b border-border bg-white">
-          <div className="mx-auto flex max-w-[1200px] items-center justify-between px-4 py-1.5 text-xs text-muted">
-            <div className="flex items-center gap-4">
+      <div
+        className={`overflow-hidden transition-[max-height,opacity] duration-200 ease-out ${
+          headerCollapsed ? "max-h-0 opacity-0" : "max-h-28 opacity-100"
+        }`}
+      >
+        <div className="bg-[#1f2432] text-white">
+          <div className="mx-auto flex max-w-[1280px] flex-wrap items-center justify-between gap-2 px-4 py-2 text-xs">
+            <div className="flex items-center gap-2 text-white/88">
+              <Clock3 className="h-3.5 w-3.5 text-[#f6c764]" />
+              <span>春夏焕新周进行中</span>
+              <span className="hidden rounded-full bg-white/12 px-2 py-0.5 font-medium text-white/92 sm:inline-flex">
+                全场每满 199 减 30
+              </span>
+            </div>
+            <div className="flex items-center gap-4 text-white/72">
+              <span>30 天无忧退换</span>
+              <span>新人领 188 元礼包</span>
+              <span className="hidden sm:inline">会员日积分 2 倍返</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="border-b border-border/80 bg-white/88 backdrop-blur">
+          <div className="mx-auto flex max-w-[1280px] flex-wrap items-center justify-between gap-3 px-4 py-2 text-xs text-muted">
+            <div className="flex items-center gap-3">
               {session.isLoggedIn ? (
                 <>
-                  <span className="text-accent">
-                    Hi，{session.user?.nickname || session.user?.username}
+                  <span className="font-medium text-ink">
+                    欢迎回来，{session.user?.nickname || session.user?.username}
                   </span>
-                  <button className="hover:text-accent" onClick={handleLogout}>
+                  <button className="text-accent transition hover:text-accent-strong" onClick={handleLogout} type="button">
                     退出登录
                   </button>
                 </>
               ) : (
                 <>
                   <button
-                    className="font-medium text-accent hover:text-accent-strong"
+                    className="font-semibold text-accent transition hover:text-accent-strong"
                     onClick={() => router.push("/login")}
+                    type="button"
                   >
                     请登录
                   </button>
                   <button
-                    className="hover:text-accent"
+                    className="transition hover:text-accent"
                     onClick={() => router.push("/register")}
+                    type="button"
                   >
                     免费注册
                   </button>
@@ -139,7 +212,7 @@ export function StorefrontShell({ children }: { children: React.ReactNode }) {
                   <Link
                     key={item.href}
                     href={item.href}
-                    className="inline-flex items-center gap-1 hover:text-accent"
+                    className="inline-flex items-center gap-1 transition hover:text-accent"
                   >
                     <Icon className="h-3.5 w-3.5" />
                     {item.label}
@@ -149,169 +222,378 @@ export function StorefrontShell({ children }: { children: React.ReactNode }) {
             </div>
           </div>
         </div>
-      )}
+      </div>
 
-      {/* Main header */}
       <header
-        className={`sticky top-0 z-40 bg-white transition-shadow ${
-          scrolled ? "shadow-header" : "border-b border-border"
+        className={`sticky top-0 z-40 border-b border-border/70 bg-white/94 backdrop-blur transition-shadow duration-200 ${
+          scrolled ? "shadow-[0_18px_40px_-30px_rgba(16,24,40,0.45)]" : ""
         }`}
       >
-        <div className="mx-auto flex max-w-[1200px] items-center gap-6 px-4 py-3">
-          {/* Logo */}
-          <Link href="/" className="shrink-0">
-            <div className="flex items-center gap-2">
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent text-sm font-bold text-white">
-                <Store className="h-4 w-4" />
-              </span>
-              <span className="text-xl font-bold text-accent">EasyMall</span>
-            </div>
-          </Link>
+        <div className="mx-auto max-w-[1280px] px-4">
+          <div className="hidden lg:block">
+            <div
+              className={`grid items-center gap-4 transition-[padding] duration-200 ${
+                headerCollapsed
+                  ? "grid-cols-[220px_360px_minmax(320px,1fr)_auto] py-3"
+                  : "grid-cols-[220px_360px_minmax(380px,1fr)_auto] py-4"
+              }`}
+            >
+              <Link href="/" className="min-w-0">
+                <div className="flex items-center gap-3">
+                  <span
+                    className={`flex items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#ef4e23,#ff8352)] text-white shadow-[0_18px_34px_-18px_rgba(239,78,35,0.85)] transition-all duration-200 ${
+                      headerCollapsed ? "h-10 w-10" : "h-12 w-12"
+                    }`}
+                  >
+                    <Store className={`${headerCollapsed ? "h-5 w-5" : "h-6 w-6"}`} />
+                  </span>
+                  <div className="min-w-0">
+                    <div className="text-[1.35rem] font-extrabold tracking-[-0.04em] text-ink">EasyMall</div>
+                    <div
+                      className={`overflow-hidden text-xs text-muted transition-all duration-200 ${
+                        headerCollapsed ? "max-h-0 opacity-0" : "max-h-8 opacity-100"
+                      }`}
+                    >
+                      好价与质感都在线的生活商城
+                    </div>
+                  </div>
+                </div>
+              </Link>
 
-          {/* Nav links */}
-          {!scrolled && (
-            <nav className="hidden items-center gap-1 lg:flex">
-              {navItems.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`rounded-md px-3 py-1.5 text-sm font-medium transition ${
-                    activeHref === item.href
-                      ? "bg-accent text-white"
-                      : "text-ink hover:bg-accent-light hover:text-accent"
+              <nav className="flex min-w-0 items-center justify-start gap-2 whitespace-nowrap">
+                {navItems.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+                      activeHref === item.href
+                        ? "bg-accent text-white shadow-[0_16px_30px_-18px_rgba(239,78,35,0.8)]"
+                        : "text-ink hover:bg-accent-light hover:text-accent"
+                    }`}
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+              </nav>
+
+              <div className="min-w-0">
+                <form onSubmit={handleSearch}>
+                  <div
+                    className={`flex items-center overflow-hidden rounded-full border-2 border-accent/90 bg-white shadow-[0_20px_35px_-24px_rgba(239,78,35,0.45)] transition-all duration-200 ${
+                      headerCollapsed ? "h-10" : "h-12"
+                    }`}
+                  >
+                    <div
+                      className={`flex h-full items-center border-r border-border/70 text-sm font-semibold text-accent transition-all duration-200 ${
+                        headerCollapsed ? "w-0 overflow-hidden px-0 opacity-0" : "px-4 opacity-100"
+                      }`}
+                    >
+                      站内搜索
+                    </div>
+                    <input
+                      value={keyword}
+                      onChange={(event) => setKeyword(event.target.value)}
+                      placeholder="搜索商品、品牌、品类或灵感关键词"
+                      className="h-full min-w-0 flex-1 bg-transparent px-4 text-sm outline-none placeholder:text-muted"
+                    />
+                    <button
+                      type="submit"
+                      className="flex h-full min-w-[108px] items-center justify-center gap-2 bg-accent px-5 text-sm font-semibold text-white transition hover:bg-accent-strong"
+                    >
+                      <Search className="h-4 w-4" />
+                      搜索
+                    </button>
+                  </div>
+                </form>
+                <div
+                  className={`mt-2 flex items-center gap-2 overflow-hidden text-xs text-muted transition-all duration-200 ${
+                    headerCollapsed ? "max-h-0 opacity-0" : "max-h-8 opacity-100"
                   }`}
                 >
-                  {item.label}
-                </Link>
-              ))}
-            </nav>
-          )}
+                  <span className="font-semibold text-ink">热搜</span>
+                  {spotlightKeywords.map((item) => (
+                    <button
+                      key={item}
+                      className="rounded-full bg-[#f6f7fb] px-3 py-1 transition hover:bg-accent-light hover:text-accent"
+                      onClick={() => {
+                        setKeyword(item);
+                        goSearch(item);
+                      }}
+                      type="button"
+                    >
+                      {item}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-          {/* Search */}
-          <form className="flex flex-1 items-center" onSubmit={handleSearch}>
-            <div className="flex h-9 w-full max-w-lg items-center rounded-lg border-2 border-accent bg-white">
-              <input
-                value={keyword}
-                onChange={(event) => setKeyword(event.target.value)}
-                placeholder="搜索商品、品牌或关键词"
-                className="h-full flex-1 rounded-l-md bg-transparent px-3 text-sm outline-none"
-              />
-              <button
-                type="submit"
-                className="flex h-full shrink-0 items-center justify-center rounded-r-[6px] bg-accent px-4 text-sm font-medium text-white transition hover:bg-accent-strong"
-              >
-                <Search className="h-4 w-4" />
-              </button>
-            </div>
-          </form>
-
-          {/* Right actions */}
-          <div className="flex shrink-0 items-center gap-3">
-            <button
-              className="relative flex h-9 w-9 items-center justify-center rounded-md text-ink transition hover:bg-accent-light hover:text-accent"
-              onClick={() => router.push("/cart")}
-            >
-              <ShoppingCart className="h-5 w-5" />
-              {cartCount > 0 && (
-                <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 text-[10px] font-bold text-white">
-                  {cartCount > 99 ? "99+" : cartCount}
-                </span>
-              )}
-            </button>
-
-            {session.isLoggedIn ? (
-              <div className="relative">
+              <div className="flex shrink-0 items-center gap-2 justify-self-end">
                 <button
-                  className="flex h-9 items-center gap-1.5 rounded-md px-2 text-sm transition hover:bg-accent-light hover:text-accent"
-                  onClick={onUserMenuClick}
+                  className={`relative flex items-center justify-center rounded-full border border-border bg-[#f8f9fc] text-ink transition hover:border-accent hover:bg-accent-light hover:text-accent ${
+                    headerCollapsed ? "h-10 w-10" : "h-11 w-11"
+                  }`}
+                  onClick={() => router.push("/cart")}
+                  type="button"
                 >
-                  <UserCircle2 className="h-5 w-5" />
-                  <span className="hidden max-w-20 truncate md:inline">
-                    {session.user?.nickname || session.user?.username}
-                  </span>
-                  <ChevronDown className="h-3.5 w-3.5" />
+                  <ShoppingCart className="h-5 w-5" />
+                  {cartCount > 0 && (
+                    <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1 text-[10px] font-bold text-white">
+                      {cartCount > 99 ? "99+" : cartCount}
+                    </span>
+                  )}
                 </button>
-                {userMenuOpen && (
-                  <div className="absolute right-0 top-full z-50 mt-1 w-44 rounded-lg border border-border bg-white py-1 shadow-float">
-                    <MenuButton label="我的订单" onClick={() => { router.push("/orders"); setUserMenuOpen(false); }} />
-                    <MenuButton label="个人中心" onClick={() => { router.push("/user"); setUserMenuOpen(false); }} />
-                    <MenuButton label="我的收藏" onClick={() => { router.push("/user/favorites"); setUserMenuOpen(false); }} />
-                    <MenuButton label="会员中心" onClick={() => { router.push("/user/member"); setUserMenuOpen(false); }} />
-                    <MenuButton label="领券中心" onClick={() => { router.push("/coupons"); setUserMenuOpen(false); }} />
-                    <div className="my-1 border-t border-border" />
-                    <MenuButton label="退出登录" danger onClick={() => { handleLogout(); setUserMenuOpen(false); }} />
+
+                {session.isLoggedIn ? (
+                  <div className="relative">
+                    <button
+                      className={`flex items-center gap-2 rounded-full border border-border bg-[#f8f9fc] px-4 text-sm font-medium transition hover:border-accent hover:bg-accent-light hover:text-accent ${
+                        headerCollapsed ? "h-10" : "h-11"
+                      }`}
+                      onClick={onUserMenuClick}
+                      type="button"
+                    >
+                      <UserCircle2 className="h-5 w-5" />
+                      <span className={`${headerCollapsed ? "hidden xl:inline" : "inline"} max-w-24 truncate`}>
+                        {session.user?.nickname || session.user?.username}
+                      </span>
+                      <ChevronDown className="h-3.5 w-3.5" />
+                    </button>
+                    {userMenuOpen && (
+                      <div className="absolute right-0 top-full z-50 mt-2 w-48 rounded-2xl border border-border bg-white p-2 shadow-[0_24px_42px_-24px_rgba(16,24,40,0.35)]">
+                        <MenuButton label="我的订单" onClick={() => { router.push("/orders"); setUserMenuOpen(false); }} />
+                        <MenuButton label="个人中心" onClick={() => { router.push("/user"); setUserMenuOpen(false); }} />
+                        <MenuButton label="我的收藏" onClick={() => { router.push("/user/favorites"); setUserMenuOpen(false); }} />
+                        <MenuButton label="会员中心" onClick={() => { router.push("/user/member"); setUserMenuOpen(false); }} />
+                        <MenuButton label="领券中心" onClick={() => { router.push("/coupons"); setUserMenuOpen(false); }} />
+                        <div className="my-1 border-t border-border" />
+                        <MenuButton
+                          label="退出登录"
+                          danger
+                          onClick={() => {
+                            void handleLogout();
+                            setUserMenuOpen(false);
+                          }}
+                        />
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <button
+                      className={`rounded-full border border-border px-5 text-sm font-semibold text-ink transition hover:border-accent hover:text-accent ${
+                        headerCollapsed ? "h-10" : "h-11"
+                      }`}
+                      onClick={() => router.push("/login")}
+                      type="button"
+                    >
+                      登录
+                    </button>
+                    <button
+                      className={`rounded-full bg-accent px-5 text-sm font-semibold text-white transition hover:bg-accent-strong ${
+                        headerCollapsed ? "h-10" : "h-11"
+                      }`}
+                      onClick={() => router.push("/register")}
+                      type="button"
+                    >
+                      注册
+                    </button>
                   </div>
                 )}
               </div>
-            ) : (
-              <div className="hidden items-center gap-2 sm:flex">
-                <button
-                  className="h-9 rounded-md px-4 text-sm font-medium text-accent transition hover:bg-accent-light"
-                  onClick={() => router.push("/login")}
-                >
-                  登录
-                </button>
-                <button
-                  className="h-9 rounded-md bg-accent px-4 text-sm font-medium text-white transition hover:bg-accent-strong"
-                  onClick={() => router.push("/register")}
-                >
-                  注册
-                </button>
+            </div>
+
+            <div
+              className={`overflow-hidden border-t border-border/70 transition-[max-height,opacity,padding] duration-200 ease-out ${
+                headerCollapsed ? "max-h-0 py-0 opacity-0" : "max-h-24 py-3 opacity-100"
+              }`}
+            >
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex flex-wrap items-center gap-2">
+                  {categoryShortcuts.map((item) => (
+                    <button
+                      key={item}
+                      className="rounded-full bg-[#f6f7fb] px-3 py-1.5 text-sm font-medium text-ink transition hover:bg-accent-light hover:text-accent"
+                      onClick={() => goSearch(item)}
+                      type="button"
+                    >
+                      {item}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  {assuranceItems.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <div
+                        key={item.label}
+                        className="inline-flex min-h-11 items-center gap-2 rounded-full bg-[#fff7f2] px-4 py-2 text-sm"
+                      >
+                        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-accent">
+                          <Icon className="h-4 w-4" />
+                        </span>
+                        <div className="leading-tight">
+                          <div className="font-semibold text-ink">{item.value}</div>
+                          <div className="text-xs text-muted">{item.label}</div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-            )}
+            </div>
+          </div>
+
+          <div className="lg:hidden">
+            <div className={`transition-[padding] duration-200 ${headerCollapsed ? "py-3" : "py-4"}`}>
+              <div className="flex items-center gap-3">
+                <Link href="/" className="shrink-0">
+                  <div className="flex items-center gap-3">
+                    <span
+                      className={`flex items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#ef4e23,#ff8352)] text-white transition-all duration-200 ${
+                        headerCollapsed ? "h-10 w-10" : "h-11 w-11"
+                      }`}
+                    >
+                      <Store className="h-5 w-5" />
+                    </span>
+                    <div>
+                      <div className="text-[1.25rem] font-extrabold tracking-[-0.04em] text-ink">EasyMall</div>
+                      <div
+                        className={`overflow-hidden text-xs text-muted transition-all duration-200 ${
+                          headerCollapsed ? "max-h-0 opacity-0" : "max-h-8 opacity-100"
+                        }`}
+                      >
+                        好价与质感都在线的生活商城
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+
+                <div className="ml-auto flex items-center gap-2">
+                  <button
+                    className={`relative flex items-center justify-center rounded-full border border-border bg-[#f8f9fc] text-ink transition ${
+                      headerCollapsed ? "h-10 w-10" : "h-11 w-11"
+                    }`}
+                    onClick={() => router.push("/cart")}
+                    type="button"
+                  >
+                    <ShoppingCart className="h-5 w-5" />
+                    {cartCount > 0 && (
+                      <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1 text-[10px] font-bold text-white">
+                        {cartCount > 99 ? "99+" : cartCount}
+                      </span>
+                    )}
+                  </button>
+                  <button
+                    className={`rounded-full border border-border bg-[#f8f9fc] px-4 text-sm font-medium text-ink transition ${
+                      headerCollapsed ? "h-10" : "h-11"
+                    }`}
+                    onClick={() => router.push(session.isLoggedIn ? "/user" : "/login")}
+                    type="button"
+                  >
+                    {session.isLoggedIn ? "我的" : "登录"}
+                  </button>
+                </div>
+              </div>
+
+              <form className="mt-3" onSubmit={handleSearch}>
+                <div
+                  className={`flex w-full items-center overflow-hidden rounded-full border-2 border-accent/90 bg-white shadow-[0_20px_35px_-24px_rgba(239,78,35,0.45)] transition-all duration-200 ${
+                    headerCollapsed ? "h-10" : "h-11"
+                  }`}
+                >
+                  <input
+                    value={keyword}
+                    onChange={(event) => setKeyword(event.target.value)}
+                    placeholder="搜索商品、品牌、品类"
+                    className="h-full min-w-0 flex-1 bg-transparent px-4 text-sm outline-none placeholder:text-muted"
+                  />
+                  <button
+                    type="submit"
+                    className="flex h-full min-w-[96px] items-center justify-center gap-2 bg-accent px-4 text-sm font-semibold text-white transition hover:bg-accent-strong"
+                  >
+                    <Search className="h-4 w-4" />
+                    搜索
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            <div
+              className={`overflow-hidden border-t border-border/70 transition-[max-height,opacity,padding] duration-200 ${
+                headerCollapsed ? "max-h-0 py-0 opacity-0" : "max-h-32 py-3 opacity-100"
+              }`}
+            >
+              <div className="flex flex-wrap gap-2">
+                {navItems.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`rounded-full px-3 py-1.5 text-sm font-semibold transition ${
+                      activeHref === item.href
+                        ? "bg-accent text-white"
+                        : "bg-[#f6f7fb] text-ink hover:bg-accent-light hover:text-accent"
+                    }`}
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </header>
 
-      {/* Main content */}
-      <main className="mx-auto min-h-[calc(100vh-200px)] max-w-[1200px] px-4 py-5">
+      <main className="mx-auto min-h-[calc(100vh-240px)] max-w-[1280px] px-4 py-6">
         {children}
       </main>
 
-      {/* Footer */}
-      <footer className="mt-8 border-t border-border bg-white">
-        <div className="mx-auto grid max-w-[1200px] gap-8 px-4 py-8 sm:grid-cols-2 lg:grid-cols-4">
+      <footer className="mt-10 border-t border-border/80 bg-[#171c28] text-white">
+        <div className="mx-auto grid max-w-[1280px] gap-8 px-4 py-12 lg:grid-cols-[1.2fr_1fr_1fr_1fr]">
           <div>
-            <div className="flex items-center gap-2">
-              <span className="flex h-7 w-7 items-center justify-center rounded-md bg-accent text-xs font-bold text-white">
-                <Store className="h-3.5 w-3.5" />
+            <div className="flex items-center gap-3">
+              <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#ef4e23,#ff8352)] text-white">
+                <Store className="h-5 w-5" />
               </span>
-              <span className="font-bold text-ink">EasyMall</span>
+              <div>
+                <div className="text-xl font-bold">EasyMall</div>
+                <div className="text-sm text-white/60">真实购物氛围的 B2C 商城前台</div>
+              </div>
             </div>
-            <p className="mt-3 text-sm leading-6 text-muted">
-              精致好物，轻松选购。EasyMall 为您提供优质的线上购物体验。
+            <p className="mt-4 max-w-md text-sm leading-7 text-white/66">
+              从日常家居到数码潮品，我们把促销效率、选品质感和下单体验放在同一条购物链路里，让浏览、加购和成交都更顺手。
             </p>
           </div>
           <FooterColumn
-            title="购物服务"
+            title="购物通道"
             items={[
               ["全部商品", "/products"],
+              ["品牌会场", "/brands"],
               ["购物车", "/cart"],
+              ["订单中心", "/orders"],
               ["领券中心", "/coupons"],
-              ["积分商城", "/user/points/products"],
             ]}
           />
           <FooterColumn
-            title="我的账户"
+            title="会员与权益"
             items={[
-              ["我的订单", "/orders"],
-              ["个人中心", "/user"],
-              ["我的收藏", "/user/favorites"],
               ["会员中心", "/user/member"],
-            ]}
-          />
-          <FooterColumn
-            title="更多服务"
-            items={[
-              ["积分记录", "/user/points"],
+              ["积分商城", "/user/points/products"],
               ["我的优惠券", "/user/coupons"],
               ["每日签到", "/user/signin"],
+            ]}
+          />
+          <FooterColumn
+            title="帮助与服务"
+            items={[
+              ["个人中心", "/user"],
+              ["我的收藏", "/user/favorites"],
               ["评论管理", "/user/comments"],
+              ["积分记录", "/user/points"],
             ]}
           />
         </div>
-        <div className="border-t border-border py-4 text-center text-xs text-muted">
-          EasyMall - 课程实训项目
+        <div className="border-t border-white/10 py-4 text-center text-xs text-white/55">
+          EasyMall · 促销运营、商品陈列与完整购物路径一体化前台演示
         </div>
       </footer>
     </div>
@@ -321,10 +603,10 @@ export function StorefrontShell({ children }: { children: React.ReactNode }) {
 function FooterColumn({ title, items }: { title: string; items: [string, string][] }) {
   return (
     <div>
-      <h3 className="text-sm font-semibold text-ink">{title}</h3>
-      <div className="mt-3 flex flex-col gap-2">
+      <h3 className="text-sm font-semibold tracking-[0.04em] text-white/92">{title}</h3>
+      <div className="mt-4 flex flex-col gap-3">
         {items.map(([label, href]) => (
-          <Link key={href} href={href} className="text-sm text-muted hover:text-accent">
+          <Link key={href} href={href} className="text-sm text-white/62 transition hover:text-white">
             {label}
           </Link>
         ))}
@@ -336,8 +618,10 @@ function FooterColumn({ title, items }: { title: string; items: [string, string]
 function MenuButton({ label, danger, onClick }: { label: string; danger?: boolean; onClick: () => void }) {
   return (
     <button
-      className={`block w-full px-3 py-2 text-left text-sm transition hover:bg-accent-light ${
-        danger ? "text-red-500 hover:text-red-600" : "text-ink hover:text-accent"
+      className={`block w-full rounded-xl px-3 py-2.5 text-left text-sm font-medium transition ${
+        danger
+          ? "text-red-500 hover:bg-red-50 hover:text-red-600"
+          : "text-ink hover:bg-accent-light hover:text-accent"
       }`}
       onClick={onClick}
       type="button"

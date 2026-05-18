@@ -106,6 +106,14 @@ INSERT INTO product (name, subtitle, description, original_price, price, stock, 
 ('华为 Watch GT4', '健康管理 长续航', '华为Watch GT4，健康管理专家，14天超长续航。', 1688.00, 1488.00, 90, 567, 'https://picsum.photos/seed/huaweiwatch/400/400', 'https://picsum.photos/seed/huaweiwatch_1/400/400,https://picsum.photos/seed/huaweiwatch_2/400/400', 10, 'Huawei', 1, 0),
 ('小米手表 S3', 'eSIM独立通话', '小米手表S3，eSIM独立通话，百款表盘，117种运动模式。', 999.00, 799.00, 100, 678, 'https://picsum.photos/seed/miwatch/400/400', 'https://picsum.photos/seed/miwatch_1/400/400,https://picsum.photos/seed/miwatch_2/400/400', 10, 'Xiaomi', 1, 0);
 
+-- 扩充品牌与价格带数据，便于前台做品牌筛选、价格区间筛选和专题会场展示
+INSERT INTO product (name, subtitle, description, original_price, price, stock, sales, image, images, category_id, brand, status, deleted) VALUES
+('Redmi Note 13 Pro+', '2亿像素影像 中端爆款', 'Redmi Note 13 Pro+，面向注重性价比与影像体验的用户，覆盖热门中端价位筛选场景。', 2299.00, 1999.00, 130, 732, 'https://picsum.photos/seed/redmi_note13/400/400', 'https://picsum.photos/seed/redmi_note13_1/400/400,https://picsum.photos/seed/redmi_note13_2/400/400', 6, 'Xiaomi', 1, 0),
+('荣耀 100 Pro', '轻旗舰人像手机', '荣耀100 Pro，兼顾人像拍摄、曲面屏与快充能力，用于丰富手机品牌与价格带分布。', 3999.00, 3399.00, 88, 418, 'https://picsum.photos/seed/honor100pro/400/400', 'https://picsum.photos/seed/honor100pro_1/400/400,https://picsum.photos/seed/honor100pro_2/400/400', 6, 'HONOR', 1, 0),
+('美的 空气炸锅 5L', '少油烹饪 家庭常备', '美的空气炸锅，满足厨房小家电筛选场景，也让中低价家居商品更适合做价格区间过滤。', 499.00, 359.00, 160, 925, 'https://picsum.photos/seed/midea_airfryer/400/400', 'https://picsum.photos/seed/midea_airfryer_1/400/400,https://picsum.photos/seed/midea_airfryer_2/400/400', 18, 'Midea', 1, 0),
+('MUJI 香薰机', '简约家居 氛围提升', '无印良品香薰机，用于补充家居装饰场景下更明确的品牌心智和 300 元内价格带样本。', 399.00, 299.00, 115, 286, 'https://picsum.photos/seed/muji_aroma/400/400', 'https://picsum.photos/seed/muji_aroma_1/400/400,https://picsum.photos/seed/muji_aroma_2/400/400', 19, 'MUJI', 1, 0),
+('Anker 67W 氮化镓充电器', '轻巧快充 出差通勤必备', 'Anker 氮化镓充电器补充数码配件价位段，方便首页专题和列表页品牌筛选展示更多数码品牌。', 249.00, 199.00, 210, 1543, 'https://picsum.photos/seed/anker_charger/400/400', 'https://picsum.photos/seed/anker_charger_1/400/400,https://picsum.photos/seed/anker_charger_2/400/400', 1, 'Anker', 1, 0);
+
 -- 男装类商品
 INSERT INTO product (name, subtitle, description, original_price, price, stock, sales, image, images, category_id, brand, status, deleted) VALUES
 ('优衣库 男士圆领T恤', '纯棉舒适 舒适透气', '优衣库男士圆领T恤，100%纯棉，舒适透气，多色可选。', 99.00, 79.00, 200, 1234, 'https://picsum.photos/seed/men_tshirt/400/400', 'https://picsum.photos/seed/men_tshirt_1/400/400,https://picsum.photos/seed/men_tshirt_2/400/400', 11, 'Uniqlo', 1, 0),

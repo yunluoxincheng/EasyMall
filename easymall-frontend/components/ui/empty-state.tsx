@@ -17,19 +17,19 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        "flex min-h-48 flex-col items-center justify-center rounded-lg border border-dashed border-border bg-surface/80 px-6 py-12 text-center",
+        "store-section flex min-h-56 flex-col items-center justify-center rounded-[28px] border border-dashed border-border/80 bg-white/90 px-6 py-12 text-center shadow-none",
         className,
       )}
     >
-      <div className="mb-3 rounded-lg bg-accent-light p-3 text-accent">
-        <PackageSearch className="h-6 w-6" />
+      <div className="mb-4 rounded-[22px] bg-accent-light p-4 text-accent">
+        <PackageSearch className="h-7 w-7" />
       </div>
-      <h3 className="text-base font-semibold text-ink">{title}</h3>
-      <p className="mt-1 max-w-sm text-sm text-muted">
+      <h3 className="text-lg font-bold text-ink">{title}</h3>
+      <p className="mt-2 max-w-md text-sm leading-7 text-muted">
         {description}
       </p>
       {action ? (
-        <Button className="mt-4" onClick={action.onClick}>
+        <Button className="mt-5 rounded-full px-6" onClick={action.onClick}>
           {action.label}
         </Button>
       ) : null}

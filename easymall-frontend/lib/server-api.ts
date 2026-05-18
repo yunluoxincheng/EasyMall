@@ -30,6 +30,11 @@ export async function getProducts(params: ProductQuery): Promise<ListPage<Produc
   if (params.pageSize) searchParams.set("pageSize", String(params.pageSize));
   if (params.keyword) searchParams.set("keyword", params.keyword);
   if (params.categoryId) searchParams.set("categoryId", String(params.categoryId));
+  if (params.brand) searchParams.set("brand", params.brand);
+  if (params.minPrice !== undefined) searchParams.set("minPrice", String(params.minPrice));
+  if (params.maxPrice !== undefined) searchParams.set("maxPrice", String(params.maxPrice));
+  if (params.sortBy) searchParams.set("sortBy", params.sortBy);
+  if (params.sortOrder) searchParams.set("sortOrder", params.sortOrder);
   return (
     (await serverFetch<ListPage<ProductVO>>(`/api/product/page?${searchParams.toString()}`)) ?? {
       records: [],

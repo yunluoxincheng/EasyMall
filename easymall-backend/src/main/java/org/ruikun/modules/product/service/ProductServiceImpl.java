@@ -43,7 +43,12 @@ public class ProductServiceImpl implements IProductService {
         IPage<Product> productPage = productMapper.selectProductPage(page,
                 pageRequest.getCategoryId(),
                 pageRequest.getKeyword(),
-                1);
+                pageRequest.getBrand(),
+                pageRequest.getMinPrice(),
+                pageRequest.getMaxPrice(),
+                1,
+                pageRequest.getSortBy(),
+                pageRequest.getSortOrder());
 
         List<ProductVO> productVOs = productPage.getRecords().stream()
                 .map(product -> convertToVO(product))

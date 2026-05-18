@@ -1,6 +1,8 @@
 "use client";
 
+import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { Heart, ShoppingCart } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -9,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Pagination } from "@/components/ui/pagination";
-import { useFavorites, useRemoveFavorite, useAddToCart } from "@/lib/hooks";
+import { useAddToCart, useFavorites, useRemoveFavorite } from "@/lib/hooks";
 import { formatCurrency } from "@/lib/format";
 
 export default function FavoritesPage() {
@@ -42,45 +44,54 @@ export default function FavoritesPage() {
   }
 
   return (
-    <AccountShell title="我的收藏" description="你收藏的商品列表">
+    <AccountShell title="我的收藏" description="把感兴趣的商品先收进收藏夹，再决定什么时候加入购物车。">
       {favorites.length ? (
-        <>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="space-y-4">
+          <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {favorites.map((item) => (
-              <div key={item.id} className="overflow-hidden rounded-lg bg-white shadow-card">
+              <div key={item.id} className="store-section overflow-hidden">
                 <button className="w-full text-left" onClick={() => router.push(`/products/${item.productId}`)} type="button">
-                  <div className="aspect-square overflow-hidden bg-gray-50">
-                    <img alt={item.productName} className="h-full w-full object-cover transition hover:scale-105" src={item.productImage || "/favicon.svg"} />
+                  <div className="relative aspect-square overflow-hidden bg-[#f6f7fb]">
+                    <Image
+                      alt={item.productName}
+                      className="h-full w-full object-cover transition duration-300 hover:scale-[1.04]"
+                      fill
+                      sizes="(max-width: 768px) 100vw, 33vw"
+                      src={item.productImage || "/favicon.svg"}
+                    />
                   </div>
                 </button>
-                <div className="p-3">
-                  <div className="line-clamp-2 text-sm font-medium text-ink">{item.productName}</div>
-                  <div className="mt-2 flex items-center justify-between">
-                    <div className="text-sm font-bold text-accent">{formatCurrency(item.productPrice)}</div>
+                <div className="p-5">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="line-clamp-2 text-base font-semibold text-ink">{item.productName}</div>
                     <Badge tone={item.productStock > 0 ? "success" : "danger"}>
                       {item.productStock > 0 ? `库存 ${item.productStock}` : "已售罄"}
                     </Badge>
                   </div>
-                  <div className="mt-3 flex gap-2">
-                    <Button className="flex-1 text-xs h-7" disabled={item.productStock <= 0} onClick={() => void handleAddToCart(item.productId)}>
+                  <div className="mt-4 flex items-end justify-between gap-3">
+                    <div className="text-2xl font-extrabold text-accent">{formatCurrency(item.productPrice)}</div>
+                    <div className="rounded-full bg-[#f6f7fb] px-3 py-1 text-xs text-muted">收藏好物</div>
+                  </div>
+                  <div className="mt-5 flex gap-2">
+                    <Button className="h-11 flex-1 rounded-full" disabled={item.productStock <= 0} onClick={() => void handleAddToCart(item.productId)}>
+                      <ShoppingCart className="mr-2 h-4 w-4" />
                       加入购物车
                     </Button>
-                    <Button className="flex-1 text-xs h-7" variant="secondary" onClick={() => void handleRemove(item.productId, item.productName)}>
+                    <Button className="h-11 flex-1 rounded-full" variant="secondary" onClick={() => void handleRemove(item.productId, item.productName)}>
+                      <Heart className="mr-2 h-4 w-4" />
                       取消收藏
                     </Button>
                   </div>
                 </div>
               </div>
             ))}
-          </div>
-          <div className="mt-4">
-            <Pagination page={page} pageSize={8} total={total} onPageChange={setPage} />
-          </div>
-        </>
+          </section>
+          <Pagination page={page} pageSize={8} total={total} onPageChange={setPage} />
+        </div>
       ) : (
         <EmptyState
           title="暂无收藏商品"
-          description="去商品详情页收藏感兴趣的商品吧"
+          description="去商品详情页收藏感兴趣的商品吧。"
           action={{ label: "去浏览商品", onClick: () => router.push("/products") }}
         />
       )}

@@ -39,6 +39,28 @@ export function formatCurrency(value: number | null | undefined) {
   }).format(amount);
 }
 
+export function formatSalesVolume(value: number | null | undefined) {
+  const amount = Number(value || 0);
+  if (amount >= 10000) {
+    return `${(amount / 10000).toFixed(amount >= 100000 ? 0 : 1)}万+`;
+  }
+  return `${amount}`;
+}
+
+export function formatDiscountLabel(
+  originalPrice: number | null | undefined,
+  price: number | null | undefined,
+) {
+  const original = Number(originalPrice || 0);
+  const current = Number(price || 0);
+
+  if (!original || !current || current >= original) {
+    return "";
+  }
+
+  return `${Math.round((current / original) * 100) / 10} 折`;
+}
+
 export function formatDateTime(value: string | null | undefined) {
   if (!value) {
     return "-";

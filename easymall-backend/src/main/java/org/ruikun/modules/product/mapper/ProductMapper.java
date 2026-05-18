@@ -7,12 +7,16 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.ruikun.modules.product.entity.Product;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Mapper
 public interface ProductMapper extends BaseMapper<Product> {
     IPage<Product> selectProductPage(Page<Product> page, @Param("categoryId") Long categoryId,
-                                     @Param("keyword") String keyword, @Param("status") Integer status);
+                                     @Param("keyword") String keyword, @Param("brand") String brand,
+                                     @Param("minPrice") BigDecimal minPrice, @Param("maxPrice") BigDecimal maxPrice,
+                                     @Param("status") Integer status, @Param("sortBy") String sortBy,
+                                     @Param("sortOrder") String sortOrder);
 
     List<Product> selectHotProducts(@Param("limit") Integer limit);
 

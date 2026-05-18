@@ -218,6 +218,10 @@ export const storefrontApi = {
     normalizePage(
       await request<ListPage<UserCommentVO>>(`/api/comment/product/${productId}`, { params }),
     ),
+  getProductCommentCount: (productId: number) =>
+    request<number>(`/api/comment/count/${productId}`, { withAuth: false }),
+  getProductRating: (productId: number) =>
+    request<number>(`/api/comment/rating/${productId}`, { withAuth: false }),
   getMyComments: async (params: { pageNum?: number; pageSize?: number }) =>
     normalizePage(await request<ListPage<UserCommentVO>>("/api/comment/user", { params })),
   deleteMyComment: (commentId: number) =>

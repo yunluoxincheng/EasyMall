@@ -126,6 +126,11 @@ export interface ProductQuery {
   pageSize?: number;
   keyword?: string;
   categoryId?: number;
+  brand?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
 }
 
 export interface CategoryVO {

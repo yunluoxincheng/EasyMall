@@ -6,8 +6,7 @@ const config: Config = {
     extend: {
       fontFamily: {
         sans: [
-          "-apple-system",
-          "BlinkMacSystemFont",
+          "var(--font-body)",
           "\"PingFang SC\"",
           "\"Hiragino Sans GB\"",
           "\"Microsoft YaHei\"",
