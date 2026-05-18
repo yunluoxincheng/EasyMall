@@ -16,7 +16,7 @@ import {
   Truck,
   UserCircle2,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { useCartCount, useLogout } from "@/lib/hooks";
@@ -65,8 +65,6 @@ export function StorefrontShell({ children }: { children: React.ReactNode }) {
   const [scrolled, setScrolled] = useState(false);
   const [headerCollapsed, setHeaderCollapsed] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const lastScrollYRef = useRef(0);
-  const headerRef = useRef<HTMLDivElement>(null);
   const logout = useLogout();
   const { data: cartCount = 0 } = useCartCount();
 
@@ -75,27 +73,23 @@ export function StorefrontShell({ children }: { children: React.ReactNode }) {
   }, [keywordParam]);
 
   useEffect(() => {
-    let collapsing = false;
+    let prevCollapsed = false;
+    let prevScrolled = false;
 
     function onScroll() {
       const currentY = window.scrollY;
-      const shouldCollapse = currentY > 80;
-      const shouldShowShadow = currentY > 12;
+      const shouldCollapse = currentY > 0;
+      const shouldShowShadow = currentY > 0;
 
-      if (collapsing !== shouldCollapse) {
-        collapsing = shouldCollapse;
-        const el = headerRef.current;
-        if (el) {
-          if (shouldCollapse) {
-            el.classList.add("header-collapsed");
-          } else {
-            el.classList.remove("header-collapsed");
-          }
-        }
+      if (prevCollapsed !== shouldCollapse) {
+        prevCollapsed = shouldCollapse;
         setHeaderCollapsed(shouldCollapse);
       }
 
-      setScrolled(shouldShowShadow);
+      if (prevScrolled !== shouldShowShadow) {
+        prevScrolled = shouldShowShadow;
+        setScrolled(shouldShowShadow);
+      }
     }
 
     window.addEventListener("scroll", onScroll, { passive: true });
@@ -153,7 +147,7 @@ export function StorefrontShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-canvas text-ink">
-      <div ref={headerRef}>
+      <div>
         <div className="bg-[#1f2432] text-white">
           <div className="mx-auto flex max-w-[1280px] flex-wrap items-center justify-between gap-2 px-4 py-2 text-xs">
             <div className="flex items-center gap-2 text-white/88">
@@ -222,7 +216,7 @@ export function StorefrontShell({ children }: { children: React.ReactNode }) {
       </div>
 
       <header
-        className={`sticky top-0 z-40 border-b border-border/70 bg-white/94 backdrop-blur transition-shadow duration-300 ${
+        className={`sticky top-0 z-40 border-b border-border/70 bg-white/94 backdrop-blur ${
           scrolled ? "shadow-[0_18px_40px_-30px_rgba(16,24,40,0.45)]" : ""
         }`}
       >
@@ -556,12 +550,14 @@ function CollapsePanel({
   collapsed: boolean;
   horizontal?: boolean;
 }) {
+  const instant = collapsed;
   return (
     <div
-      className={`grid transition-[grid-template-rows,grid-template-columns,opacity] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${
+      style={instant ? { transition: "none" } : undefined}
+      className={`grid transition-[grid-template-rows,grid-template-columns] duration-200 ease-out ${
         horizontal
-          ? collapsed ? "grid-cols-[0fr] opacity-0" : "grid-cols-[1fr] opacity-100"
-          : collapsed ? "grid-rows-[0fr] opacity-0" : "grid-rows-[1fr] opacity-100"
+          ? collapsed ? "grid-cols-[0fr]" : "grid-cols-[1fr]"
+          : collapsed ? "grid-rows-[0fr]" : "grid-rows-[1fr]"
       }`}
     >
       <div className="overflow-hidden">{children}</div>
