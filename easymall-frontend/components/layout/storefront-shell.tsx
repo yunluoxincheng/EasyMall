@@ -66,7 +66,7 @@ export function StorefrontShell({ children }: { children: React.ReactNode }) {
   const [headerCollapsed, setHeaderCollapsed] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const lastScrollYRef = useRef(0);
-  const tickingRef = useRef(false);
+  const headerRef = useRef<HTMLDivElement>(null);
   const logout = useLogout();
   const { data: cartCount = 0 } = useCartCount();
 
@@ -75,30 +75,31 @@ export function StorefrontShell({ children }: { children: React.ReactNode }) {
   }, [keywordParam]);
 
   useEffect(() => {
+    let collapsing = false;
+
     function onScroll() {
       const currentY = window.scrollY;
-      if (tickingRef.current) return;
+      const shouldCollapse = currentY > 80;
+      const shouldShowShadow = currentY > 12;
 
-      tickingRef.current = true;
-      window.requestAnimationFrame(() => {
-        const previousY = lastScrollYRef.current;
-        const delta = currentY - previousY;
+      if (collapsing !== shouldCollapse) {
+        collapsing = shouldCollapse;
+        const el = headerRef.current;
+        if (el) {
+          if (shouldCollapse) {
+            el.classList.add("header-collapsed");
+          } else {
+            el.classList.remove("header-collapsed");
+          }
+        }
+        setHeaderCollapsed(shouldCollapse);
+      }
 
-        setScrolled(currentY > 12);
-
-        setHeaderCollapsed((prev) => {
-          if (currentY <= 24) return false;
-          if (delta > 14 && currentY > 88) return true;
-          if (delta < -22) return false;
-          return prev;
-        });
-
-        lastScrollYRef.current = currentY;
-        tickingRef.current = false;
-      });
+      setScrolled(shouldShowShadow);
     }
 
     window.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
@@ -152,11 +153,7 @@ export function StorefrontShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-canvas text-ink">
-      <div
-        className={`overflow-hidden transition-[max-height,opacity] duration-200 ease-out ${
-          headerCollapsed ? "max-h-0 opacity-0" : "max-h-28 opacity-100"
-        }`}
-      >
+      <div ref={headerRef}>
         <div className="bg-[#1f2432] text-white">
           <div className="mx-auto flex max-w-[1280px] flex-wrap items-center justify-between gap-2 px-4 py-2 text-xs">
             <div className="flex items-center gap-2 text-white/88">
@@ -225,37 +222,23 @@ export function StorefrontShell({ children }: { children: React.ReactNode }) {
       </div>
 
       <header
-        className={`sticky top-0 z-40 border-b border-border/70 bg-white/94 backdrop-blur transition-shadow duration-200 ${
+        className={`sticky top-0 z-40 border-b border-border/70 bg-white/94 backdrop-blur transition-shadow duration-300 ${
           scrolled ? "shadow-[0_18px_40px_-30px_rgba(16,24,40,0.45)]" : ""
         }`}
       >
         <div className="mx-auto max-w-[1280px] px-4">
           <div className="hidden lg:block">
-            <div
-              className={`grid items-center gap-4 transition-[padding] duration-200 ${
-                headerCollapsed
-                  ? "grid-cols-[220px_360px_minmax(320px,1fr)_auto] py-3"
-                  : "grid-cols-[220px_360px_minmax(380px,1fr)_auto] py-4"
-              }`}
-            >
+            <div className="grid grid-cols-[220px_360px_minmax(380px,1fr)_auto] items-center gap-4 py-4">
               <Link href="/" className="min-w-0">
                 <div className="flex items-center gap-3">
-                  <span
-                    className={`flex items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#ef4e23,#ff8352)] text-white shadow-[0_18px_34px_-18px_rgba(239,78,35,0.85)] transition-all duration-200 ${
-                      headerCollapsed ? "h-10 w-10" : "h-12 w-12"
-                    }`}
-                  >
-                    <Store className={`${headerCollapsed ? "h-5 w-5" : "h-6 w-6"}`} />
+                  <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#ef4e23,#ff8352)] text-white shadow-[0_18px_34px_-18px_rgba(239,78,35,0.85)]">
+                    <Store className="h-6 w-6" />
                   </span>
                   <div className="min-w-0">
                     <div className="text-[1.35rem] font-extrabold tracking-[-0.04em] text-ink">EasyMall</div>
-                    <div
-                      className={`overflow-hidden text-xs text-muted transition-all duration-200 ${
-                        headerCollapsed ? "max-h-0 opacity-0" : "max-h-8 opacity-100"
-                      }`}
-                    >
-                      好价与质感都在线的生活商城
-                    </div>
+                    <CollapsePanel collapsed={headerCollapsed}>
+                      <div className="text-xs text-muted">好价与质感都在线的生活商城</div>
+                    </CollapsePanel>
                   </div>
                 </div>
               </Link>
@@ -278,18 +261,12 @@ export function StorefrontShell({ children }: { children: React.ReactNode }) {
 
               <div className="min-w-0">
                 <form onSubmit={handleSearch}>
-                  <div
-                    className={`flex items-center overflow-hidden rounded-full border-2 border-accent/90 bg-white shadow-[0_20px_35px_-24px_rgba(239,78,35,0.45)] transition-all duration-200 ${
-                      headerCollapsed ? "h-10" : "h-12"
-                    }`}
-                  >
-                    <div
-                      className={`flex h-full items-center border-r border-border/70 text-sm font-semibold text-accent transition-all duration-200 ${
-                        headerCollapsed ? "w-0 overflow-hidden px-0 opacity-0" : "px-4 opacity-100"
-                      }`}
-                    >
-                      站内搜索
-                    </div>
+                  <div className="flex h-12 items-center overflow-hidden rounded-full border-2 border-accent/90 bg-white shadow-[0_20px_35px_-24px_rgba(239,78,35,0.45)]">
+                    <CollapsePanel collapsed={headerCollapsed} horizontal>
+                      <div className="flex h-full items-center border-r border-border/70 px-4 text-sm font-semibold text-accent">
+                        站内搜索
+                      </div>
+                    </CollapsePanel>
                     <input
                       value={keyword}
                       onChange={(event) => setKeyword(event.target.value)}
@@ -305,33 +282,29 @@ export function StorefrontShell({ children }: { children: React.ReactNode }) {
                     </button>
                   </div>
                 </form>
-                <div
-                  className={`mt-2 flex items-center gap-2 overflow-hidden text-xs text-muted transition-all duration-200 ${
-                    headerCollapsed ? "max-h-0 opacity-0" : "max-h-8 opacity-100"
-                  }`}
-                >
-                  <span className="font-semibold text-ink">热搜</span>
-                  {spotlightKeywords.map((item) => (
-                    <button
-                      key={item}
-                      className="rounded-full bg-[#f6f7fb] px-3 py-1 transition hover:bg-accent-light hover:text-accent"
-                      onClick={() => {
-                        setKeyword(item);
-                        goSearch(item);
-                      }}
-                      type="button"
-                    >
-                      {item}
-                    </button>
-                  ))}
-                </div>
+                <CollapsePanel collapsed={headerCollapsed}>
+                  <div className="mt-2 flex items-center gap-2 text-xs text-muted">
+                    <span className="font-semibold text-ink">热搜</span>
+                    {spotlightKeywords.map((item) => (
+                      <button
+                        key={item}
+                        className="rounded-full bg-[#f6f7fb] px-3 py-1 transition hover:bg-accent-light hover:text-accent"
+                        onClick={() => {
+                          setKeyword(item);
+                          goSearch(item);
+                        }}
+                        type="button"
+                      >
+                        {item}
+                      </button>
+                    ))}
+                  </div>
+                </CollapsePanel>
               </div>
 
               <div className="flex shrink-0 items-center gap-2 justify-self-end">
                 <button
-                  className={`relative flex items-center justify-center rounded-full border border-border bg-[#f8f9fc] text-ink transition hover:border-accent hover:bg-accent-light hover:text-accent ${
-                    headerCollapsed ? "h-10 w-10" : "h-11 w-11"
-                  }`}
+                  className="relative flex h-11 w-11 items-center justify-center rounded-full border border-border bg-[#f8f9fc] text-ink transition hover:border-accent hover:bg-accent-light hover:text-accent"
                   onClick={() => router.push("/cart")}
                   type="button"
                 >
@@ -346,14 +319,12 @@ export function StorefrontShell({ children }: { children: React.ReactNode }) {
                 {session.isLoggedIn ? (
                   <div className="relative">
                     <button
-                      className={`flex items-center gap-2 rounded-full border border-border bg-[#f8f9fc] px-4 text-sm font-medium transition hover:border-accent hover:bg-accent-light hover:text-accent ${
-                        headerCollapsed ? "h-10" : "h-11"
-                      }`}
+                      className="flex h-11 items-center gap-2 rounded-full border border-border bg-[#f8f9fc] px-4 text-sm font-medium transition hover:border-accent hover:bg-accent-light hover:text-accent"
                       onClick={onUserMenuClick}
                       type="button"
                     >
                       <UserCircle2 className="h-5 w-5" />
-                      <span className={`${headerCollapsed ? "hidden xl:inline" : "inline"} max-w-24 truncate`}>
+                      <span className="max-w-24 truncate">
                         {session.user?.nickname || session.user?.username}
                       </span>
                       <ChevronDown className="h-3.5 w-3.5" />
@@ -380,18 +351,14 @@ export function StorefrontShell({ children }: { children: React.ReactNode }) {
                 ) : (
                   <div className="flex items-center gap-2">
                     <button
-                      className={`rounded-full border border-border px-5 text-sm font-semibold text-ink transition hover:border-accent hover:text-accent ${
-                        headerCollapsed ? "h-10" : "h-11"
-                      }`}
+                      className="h-11 rounded-full border border-border px-5 text-sm font-semibold text-ink transition hover:border-accent hover:text-accent"
                       onClick={() => router.push("/login")}
                       type="button"
                     >
                       登录
                     </button>
                     <button
-                      className={`rounded-full bg-accent px-5 text-sm font-semibold text-white transition hover:bg-accent-strong ${
-                        headerCollapsed ? "h-10" : "h-11"
-                      }`}
+                      className="h-11 rounded-full bg-accent px-5 text-sm font-semibold text-white transition hover:bg-accent-strong"
                       onClick={() => router.push("/register")}
                       type="button"
                     >
@@ -402,77 +369,65 @@ export function StorefrontShell({ children }: { children: React.ReactNode }) {
               </div>
             </div>
 
-            <div
-              className={`overflow-hidden border-t border-border/70 transition-[max-height,opacity,padding] duration-200 ease-out ${
-                headerCollapsed ? "max-h-0 py-0 opacity-0" : "max-h-24 py-3 opacity-100"
-              }`}
-            >
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex flex-wrap items-center gap-2">
-                  {categoryShortcuts.map((item) => (
-                    <button
-                      key={item}
-                      className="rounded-full bg-[#f6f7fb] px-3 py-1.5 text-sm font-medium text-ink transition hover:bg-accent-light hover:text-accent"
-                      onClick={() => goSearch(item)}
-                      type="button"
-                    >
-                      {item}
-                    </button>
-                  ))}
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  {assuranceItems.map((item) => {
-                    const Icon = item.icon;
-                    return (
-                      <div
-                        key={item.label}
-                        className="inline-flex min-h-11 items-center gap-2 rounded-full bg-[#fff7f2] px-4 py-2 text-sm"
+            <CollapsePanel collapsed={headerCollapsed}>
+              <div className="border-t border-border/70 py-3">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex flex-wrap items-center gap-2">
+                    {categoryShortcuts.map((item) => (
+                      <button
+                        key={item}
+                        className="rounded-full bg-[#f6f7fb] px-3 py-1.5 text-sm font-medium text-ink transition hover:bg-accent-light hover:text-accent"
+                        onClick={() => goSearch(item)}
+                        type="button"
                       >
-                        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-accent">
-                          <Icon className="h-4 w-4" />
-                        </span>
-                        <div className="leading-tight">
-                          <div className="font-semibold text-ink">{item.value}</div>
-                          <div className="text-xs text-muted">{item.label}</div>
+                        {item}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {assuranceItems.map((item) => {
+                      const Icon = item.icon;
+                      return (
+                        <div
+                          key={item.label}
+                          className="inline-flex min-h-11 items-center gap-2 rounded-full bg-[#fff7f2] px-4 py-2 text-sm"
+                        >
+                          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-accent">
+                            <Icon className="h-4 w-4" />
+                          </span>
+                          <div className="leading-tight">
+                            <div className="font-semibold text-ink">{item.value}</div>
+                            <div className="text-xs text-muted">{item.label}</div>
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
-            </div>
+            </CollapsePanel>
           </div>
 
           <div className="lg:hidden">
-            <div className={`transition-[padding] duration-200 ${headerCollapsed ? "py-3" : "py-4"}`}>
+            <div className="py-4">
               <div className="flex items-center gap-3">
                 <Link href="/" className="shrink-0">
                   <div className="flex items-center gap-3">
-                    <span
-                      className={`flex items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#ef4e23,#ff8352)] text-white transition-all duration-200 ${
-                        headerCollapsed ? "h-10 w-10" : "h-11 w-11"
-                      }`}
-                    >
+                    <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#ef4e23,#ff8352)] text-white">
                       <Store className="h-5 w-5" />
                     </span>
                     <div>
                       <div className="text-[1.25rem] font-extrabold tracking-[-0.04em] text-ink">EasyMall</div>
-                      <div
-                        className={`overflow-hidden text-xs text-muted transition-all duration-200 ${
-                          headerCollapsed ? "max-h-0 opacity-0" : "max-h-8 opacity-100"
-                        }`}
-                      >
-                        好价与质感都在线的生活商城
-                      </div>
+                      <CollapsePanel collapsed={headerCollapsed}>
+                        <div className="text-xs text-muted">好价与质感都在线的生活商城</div>
+                      </CollapsePanel>
                     </div>
                   </div>
                 </Link>
 
                 <div className="ml-auto flex items-center gap-2">
                   <button
-                    className={`relative flex items-center justify-center rounded-full border border-border bg-[#f8f9fc] text-ink transition ${
-                      headerCollapsed ? "h-10 w-10" : "h-11 w-11"
-                    }`}
+                    className="relative flex h-11 w-11 items-center justify-center rounded-full border border-border bg-[#f8f9fc] text-ink transition"
                     onClick={() => router.push("/cart")}
                     type="button"
                   >
@@ -484,9 +439,7 @@ export function StorefrontShell({ children }: { children: React.ReactNode }) {
                     )}
                   </button>
                   <button
-                    className={`rounded-full border border-border bg-[#f8f9fc] px-4 text-sm font-medium text-ink transition ${
-                      headerCollapsed ? "h-10" : "h-11"
-                    }`}
+                    className="h-11 rounded-full border border-border bg-[#f8f9fc] px-4 text-sm font-medium text-ink transition"
                     onClick={() => router.push(session.isLoggedIn ? "/user" : "/login")}
                     type="button"
                   >
@@ -496,11 +449,7 @@ export function StorefrontShell({ children }: { children: React.ReactNode }) {
               </div>
 
               <form className="mt-3" onSubmit={handleSearch}>
-                <div
-                  className={`flex w-full items-center overflow-hidden rounded-full border-2 border-accent/90 bg-white shadow-[0_20px_35px_-24px_rgba(239,78,35,0.45)] transition-all duration-200 ${
-                    headerCollapsed ? "h-10" : "h-11"
-                  }`}
-                >
+                <div className="flex h-11 w-full items-center overflow-hidden rounded-full border-2 border-accent/90 bg-white shadow-[0_20px_35px_-24px_rgba(239,78,35,0.45)]">
                   <input
                     value={keyword}
                     onChange={(event) => setKeyword(event.target.value)}
@@ -518,27 +467,25 @@ export function StorefrontShell({ children }: { children: React.ReactNode }) {
               </form>
             </div>
 
-            <div
-              className={`overflow-hidden border-t border-border/70 transition-[max-height,opacity,padding] duration-200 ${
-                headerCollapsed ? "max-h-0 py-0 opacity-0" : "max-h-32 py-3 opacity-100"
-              }`}
-            >
-              <div className="flex flex-wrap gap-2">
-                {navItems.map((item) => (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={`rounded-full px-3 py-1.5 text-sm font-semibold transition ${
-                      activeHref === item.href
-                        ? "bg-accent text-white"
-                        : "bg-[#f6f7fb] text-ink hover:bg-accent-light hover:text-accent"
-                    }`}
-                  >
-                    {item.label}
-                  </Link>
-                ))}
+            <CollapsePanel collapsed={headerCollapsed}>
+              <div className="border-t border-border/70 py-3">
+                <div className="flex flex-wrap gap-2">
+                  {navItems.map((item) => (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={`rounded-full px-3 py-1.5 text-sm font-semibold transition ${
+                        activeHref === item.href
+                          ? "bg-accent text-white"
+                          : "bg-[#f6f7fb] text-ink hover:bg-accent-light hover:text-accent"
+                      }`}
+                    >
+                      {item.label}
+                    </Link>
+                  ))}
+                </div>
               </div>
-            </div>
+            </CollapsePanel>
           </div>
         </div>
       </header>
@@ -596,6 +543,28 @@ export function StorefrontShell({ children }: { children: React.ReactNode }) {
           EasyMall · 促销运营、商品陈列与完整购物路径一体化前台演示
         </div>
       </footer>
+    </div>
+  );
+}
+
+function CollapsePanel({
+  children,
+  collapsed,
+  horizontal,
+}: {
+  children: React.ReactNode;
+  collapsed: boolean;
+  horizontal?: boolean;
+}) {
+  return (
+    <div
+      className={`grid transition-[grid-template-rows,grid-template-columns,opacity] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${
+        horizontal
+          ? collapsed ? "grid-cols-[0fr] opacity-0" : "grid-cols-[1fr] opacity-100"
+          : collapsed ? "grid-rows-[0fr] opacity-0" : "grid-rows-[1fr] opacity-100"
+      }`}
+    >
+      <div className="overflow-hidden">{children}</div>
     </div>
   );
 }
