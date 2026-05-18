@@ -222,7 +222,7 @@ export function StorefrontShell({ children }: { children: React.ReactNode }) {
       >
         <div className="mx-auto max-w-[1280px] px-4">
           <div className="hidden lg:block">
-            <div className="grid grid-cols-[220px_360px_minmax(380px,1fr)_auto] items-center gap-4 py-4">
+            <div className="grid grid-cols-[220px_max-content_minmax(360px,430px)_max-content] items-center gap-5 py-4">
               <Link href="/" className="min-w-0">
                 <div className="flex items-center gap-3">
                   <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#ef4e23,#ff8352)] text-white shadow-[0_18px_34px_-18px_rgba(239,78,35,0.85)]">
@@ -237,12 +237,12 @@ export function StorefrontShell({ children }: { children: React.ReactNode }) {
                 </div>
               </Link>
 
-              <nav className="flex min-w-0 items-center justify-start gap-2 whitespace-nowrap">
+              <nav className="flex shrink-0 items-center justify-start gap-1 whitespace-nowrap xl:gap-2">
                 {navItems.map((item) => (
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+                    className={`rounded-full px-3 py-2 text-sm font-semibold transition xl:px-4 ${
                       activeHref === item.href
                         ? "bg-accent text-white shadow-[0_16px_30px_-18px_rgba(239,78,35,0.8)]"
                         : "text-ink hover:bg-accent-light hover:text-accent"
@@ -253,9 +253,9 @@ export function StorefrontShell({ children }: { children: React.ReactNode }) {
                 ))}
               </nav>
 
-              <div className="min-w-0">
+              <div className="min-w-0 w-full justify-self-end">
                 <form onSubmit={handleSearch}>
-                  <div className="flex h-12 items-center overflow-hidden rounded-full border-2 border-accent/90 bg-white shadow-[0_20px_35px_-24px_rgba(239,78,35,0.45)]">
+                  <div className="flex h-12 w-full items-center overflow-hidden rounded-full border-2 border-accent/90 bg-white shadow-[0_20px_35px_-24px_rgba(239,78,35,0.45)]">
                     <CollapsePanel collapsed={headerCollapsed} horizontal>
                       <div className="flex h-full items-center border-r border-border/70 px-4 text-sm font-semibold text-accent">
                         站内搜索
@@ -277,7 +277,7 @@ export function StorefrontShell({ children }: { children: React.ReactNode }) {
                   </div>
                 </form>
                 <CollapsePanel collapsed={headerCollapsed}>
-                  <div className="mt-2 flex items-center gap-2 text-xs text-muted">
+                  <div className="mt-2 flex w-full items-center gap-2 text-xs text-muted">
                     <span className="font-semibold text-ink">热搜</span>
                     {spotlightKeywords.map((item) => (
                       <button
