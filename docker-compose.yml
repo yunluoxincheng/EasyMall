@@ -1,5 +1,6 @@
 services:
   easymall-frontend:
+    image: yunluoxincheng/easymall-frontend:latest
     build:
       context: easymall-frontend/
     container_name: easymall-frontend
@@ -22,6 +23,7 @@ services:
     restart: unless-stopped
 
   easymall-app:
+    image: yunluoxincheng/easymall-backend:latest
     build:
       context: easymall-backend/
     container_name: easymall-app

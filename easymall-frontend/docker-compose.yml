@@ -1,5 +1,6 @@
 services:
   easymall-frontend:
+    image: yunluoxincheng/easymall-frontend:latest
     build: .
     container_name: easymall-frontend
     ports:
