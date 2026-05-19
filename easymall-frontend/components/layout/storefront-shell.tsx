@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
-  ChevronDown,
   Clock3,
   Heart,
   ReceiptText,
@@ -16,7 +15,7 @@ import {
   Truck,
   UserCircle2,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { useCartCount, useLogout } from "@/lib/hooks";
@@ -64,7 +63,6 @@ export function StorefrontShell({ children }: { children: React.ReactNode }) {
   const [keyword, setKeyword] = useState(keywordParam);
   const [scrolled, setScrolled] = useState(false);
   const [headerCollapsed, setHeaderCollapsed] = useState(false);
-  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const logout = useLogout();
   const { data: cartCount = 0 } = useCartCount();
 
@@ -95,14 +93,6 @@ export function StorefrontShell({ children }: { children: React.ReactNode }) {
     window.addEventListener("scroll", onScroll, { passive: true });
     onScroll();
     return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
-  useEffect(() => {
-    function close() {
-      setUserMenuOpen(false);
-    }
-    document.addEventListener("click", close);
-    return () => document.removeEventListener("click", close);
   }, []);
 
   const activeHref = useMemo(() => {
@@ -139,11 +129,6 @@ export function StorefrontShell({ children }: { children: React.ReactNode }) {
       router.push("/login");
     }
   }
-
-  const onUserMenuClick = useCallback((event: React.MouseEvent) => {
-    event.stopPropagation();
-    setUserMenuOpen((prev) => !prev);
-  }, []);
 
   return (
     <div className="min-h-screen bg-canvas text-ink">
@@ -311,37 +296,23 @@ export function StorefrontShell({ children }: { children: React.ReactNode }) {
                 </button>
 
                 {session.isLoggedIn ? (
-                  <div className="relative">
-                    <button
-                      className="flex h-11 items-center gap-2 rounded-full border border-border bg-[#f8f9fc] px-4 text-sm font-medium transition hover:border-accent hover:bg-accent-light hover:text-accent"
-                      onClick={onUserMenuClick}
-                      type="button"
-                    >
-                      <UserCircle2 className="h-5 w-5" />
-                      <span className="max-w-24 truncate">
-                        {session.user?.nickname || session.user?.username}
+                  <button
+                    className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-border bg-[#f8f9fc] transition hover:border-accent hover:shadow-[0_0_0_3px_rgba(239,78,35,0.15)]"
+                    onClick={() => router.push("/user")}
+                    type="button"
+                  >
+                    {session.user?.avatar ? (
+                      <img
+                        src={session.user.avatar}
+                        alt={session.user.nickname || session.user.username}
+                        className="h-full w-full rounded-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-sm font-bold text-accent">
+                        {(session.user?.nickname || session.user?.username || "U").charAt(0).toUpperCase()}
                       </span>
-                      <ChevronDown className="h-3.5 w-3.5" />
-                    </button>
-                    {userMenuOpen && (
-                      <div className="absolute right-0 top-full z-50 mt-2 w-48 rounded-2xl border border-border bg-white p-2 shadow-[0_24px_42px_-24px_rgba(16,24,40,0.35)]">
-                        <MenuButton label="我的订单" onClick={() => { router.push("/orders"); setUserMenuOpen(false); }} />
-                        <MenuButton label="个人中心" onClick={() => { router.push("/user"); setUserMenuOpen(false); }} />
-                        <MenuButton label="我的收藏" onClick={() => { router.push("/user/favorites"); setUserMenuOpen(false); }} />
-                        <MenuButton label="会员中心" onClick={() => { router.push("/user/member"); setUserMenuOpen(false); }} />
-                        <MenuButton label="领券中心" onClick={() => { router.push("/coupons"); setUserMenuOpen(false); }} />
-                        <div className="my-1 border-t border-border" />
-                        <MenuButton
-                          label="退出登录"
-                          danger
-                          onClick={() => {
-                            void handleLogout();
-                            setUserMenuOpen(false);
-                          }}
-                        />
-                      </div>
                     )}
-                  </div>
+                  </button>
                 ) : (
                   <div className="flex items-center gap-2">
                     <button
@@ -577,21 +548,5 @@ function FooterColumn({ title, items }: { title: string; items: [string, string]
         ))}
       </div>
     </div>
-  );
-}
-
-function MenuButton({ label, danger, onClick }: { label: string; danger?: boolean; onClick: () => void }) {
-  return (
-    <button
-      className={`block w-full rounded-xl px-3 py-2.5 text-left text-sm font-medium transition ${
-        danger
-          ? "text-red-500 hover:bg-red-50 hover:text-red-600"
-          : "text-ink hover:bg-accent-light hover:text-accent"
-      }`}
-      onClick={onClick}
-      type="button"
-    >
-      {label}
-    </button>
   );
 }
