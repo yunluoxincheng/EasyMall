@@ -156,7 +156,8 @@ class ProductServiceImplTest {
             mockPage.setRecords(List.of(product));
             mockPage.setTotal(1);
 
-            when(productMapper.selectProductPage(any(Page.class), isNull(), isNull(), eq(1)))
+            when(productMapper.selectProductPage(any(Page.class), isNull(), isNull(), isNull(),
+                    isNull(), isNull(), isNull(), isNull(), isNull()))
                     .thenReturn(mockPage);
 
             PageResult<ProductVO> result = productService.getProductPage(pageRequest);
