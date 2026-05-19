@@ -1,14 +1,15 @@
 "use client";
 
-import { BarChart3, ShieldCheck, Store, UserRound } from "lucide-react";
+import { BarChart3, Camera, ShieldCheck, Store, UserRound } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { AccountShell } from "@/components/layout/account-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
+import { storefrontApi } from "@/lib/api";
 import { useUpdateProfile, useUserProfile } from "@/lib/hooks";
 import { updateSessionUser } from "@/lib/session";
 import { formatDateTime } from "@/lib/format";
@@ -35,6 +36,8 @@ export default function UserProfilePage() {
     email: "",
     gender: "0",
   });
+  const [uploading, setUploading] = useState(false);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -45,6 +48,29 @@ export default function UserProfilePage() {
       gender: String(user.gender ?? 0),
     });
   }, [user]);
+
+  async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("图片大小不能超过 2MB");
+      return;
+    }
+    try {
+      setUploading(true);
+      const result = await storefrontApi.uploadImage(file, "avatar");
+      await updateProfile.mutateAsync({ avatar: result.url });
+      if (session.user) {
+        updateSessionUser({ ...session.user, avatar: result.url });
+      }
+      toast.success("头像已更新");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "上传失败");
+    } finally {
+      setUploading(false);
+      if (avatarInputRef.current) avatarInputRef.current.value = "";
+    }
+  }
 
   async function handleSave() {
     try {
@@ -132,6 +158,32 @@ export default function UserProfilePage() {
               <p className="mt-2 text-sm leading-7 text-muted">
                 这里维护的是商城会员基础信息，修改后会同步影响页面顶部欢迎语和用户中心展示。
               </p>
+              <div className="mt-4 flex items-center gap-4">
+                <button
+                  className="group relative flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-border bg-[#f6f7fb] transition hover:border-accent"
+                  disabled={uploading}
+                  onClick={() => avatarInputRef.current?.click()}
+                  type="button"
+                >
+                  {user?.avatar ? (
+                    <img src={user.avatar} alt="头像" className="h-full w-full object-cover" />
+                  ) : (
+                    <span className="text-2xl font-bold text-accent">
+                      {(user?.nickname || user?.username || "U").charAt(0).toUpperCase()}
+                    </span>
+                  )}
+                  <span className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 transition group-hover:opacity-100">
+                    <Camera className="h-6 w-6 text-white" />
+                  </span>
+                </button>
+                <div>
+                  <div className="text-sm font-medium text-ink">更换头像</div>
+                  <div className="mt-1 text-xs text-muted">
+                    {uploading ? "上传中..." : "点击上传，支持 JPG/PNG，不超过 2MB"}
+                  </div>
+                </div>
+                <input ref={avatarInputRef} accept="image/jpeg,image/png,image/webp" className="hidden" onChange={(e) => void handleAvatarChange(e)} type="file" />
+              </div>
               <div className="mt-4 grid gap-4 sm:grid-cols-2">
                 <div>
                   <label className="field-label">昵称</label>

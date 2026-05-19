@@ -100,6 +100,15 @@ export const authApi = {
 };
 
 export const storefrontApi = {
+  uploadImage: (file: File, type: string) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("type", type);
+    return request<{ url: string; filename: string; size: number; path: string }>(
+      "/api/upload/image",
+      { body: formData, method: "POST" },
+    );
+  },
   getCategoryTree: () => request<CategoryVO[]>("/api/category/tree", { withAuth: false }),
   getProducts: async (params: ProductQuery) =>
     normalizePage(await request<ListPage<ProductVO>>("/api/product/page", { params, withAuth: false })),
