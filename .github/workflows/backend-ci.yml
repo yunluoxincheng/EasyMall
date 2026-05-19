@@ -3,6 +3,8 @@ name: Backend CI
 on:
   push:
     branches: [master]
+    paths:
+      - 'easymall-backend/**'
 
 jobs:
   push-image:
