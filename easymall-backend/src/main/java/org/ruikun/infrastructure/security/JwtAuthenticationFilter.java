@@ -46,7 +46,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 ("GET".equals(method) && requestURI.startsWith("/api/comment/count/")) ||
                 ("GET".equals(method) && requestURI.startsWith("/api/comment/rating/")) ||
                 ("POST".equals(method) && "/api/payment/callback".equals(requestURI)) ||
-                requestURI.startsWith("/actuator/")) {
+                requestURI.startsWith("/actuator/") ||
+                requestURI.startsWith("/uploads/")) {
             filterChain.doFilter(request, response);
             return;
         }
