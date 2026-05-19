@@ -3,8 +3,10 @@
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
+  ArrowLeft,
   Clock3,
   Heart,
+  LogOut,
   ReceiptText,
   Search,
   ShieldCheck,
@@ -130,8 +132,43 @@ export function StorefrontShell({ children }: { children: React.ReactNode }) {
     }
   }
 
+  const isAccountPage = pathname.startsWith("/user");
+
   return (
     <div className="min-h-screen bg-canvas text-ink">
+      {isAccountPage ? (
+        <header className="sticky top-0 z-40 border-b border-border/70 bg-white/94 backdrop-blur">
+          <div className="mx-auto flex max-w-[1280px] items-center justify-between px-4 py-3">
+            <Link href="/" className="flex items-center gap-3">
+              <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#ef4e23,#ff8352)] text-white">
+                <Store className="h-5 w-5" />
+              </span>
+              <span className="text-lg font-extrabold tracking-[-0.04em] text-ink">EasyMall</span>
+            </Link>
+            <div className="flex items-center gap-3">
+              <button
+                className="inline-flex items-center gap-1.5 rounded-full border border-border px-4 py-2 text-sm font-medium text-ink transition hover:border-accent hover:text-accent"
+                onClick={() => router.push("/")}
+                type="button"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                返回商城
+              </button>
+              {session.isLoggedIn && (
+                <button
+                  className="inline-flex items-center gap-1.5 text-sm text-muted transition hover:text-accent"
+                  onClick={() => void handleLogout()}
+                  type="button"
+                >
+                  <LogOut className="h-4 w-4" />
+                  退出
+                </button>
+              )}
+            </div>
+          </div>
+        </header>
+      ) : (
+      <>
       <div>
         <div className="bg-[#1f2432] text-white">
           <div className="mx-auto flex max-w-[1280px] flex-wrap items-center justify-between gap-2 px-4 py-2 text-xs">
@@ -459,6 +496,11 @@ export function StorefrontShell({ children }: { children: React.ReactNode }) {
         {children}
       </main>
 
+      {isAccountPage ? (
+        <footer className="mt-10 border-t border-border/80 py-6 text-center text-xs text-muted">
+          EasyMall 个人中心
+        </footer>
+      ) : (
       <footer className="mt-10 border-t border-border/80 bg-[#171c28] text-white">
         <div className="mx-auto grid max-w-[1280px] gap-8 px-4 py-12 lg:grid-cols-[1.2fr_1fr_1fr_1fr]">
           <div>
@@ -508,6 +550,9 @@ export function StorefrontShell({ children }: { children: React.ReactNode }) {
           EasyMall · 促销运营、商品陈列与完整购物路径一体化前台演示
         </div>
       </footer>
+      )}
+      </>
+      )}
     </div>
   );
 }
