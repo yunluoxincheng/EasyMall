@@ -22,7 +22,9 @@ RUN apk add --no-cache tzdata && \
     apk del tzdata
 
 # 非 root 用户
-RUN addgroup -S spring && adduser -S spring -G spring
+RUN addgroup -S spring && adduser -S spring -G spring && \
+    mkdir -p /data/easymall/uploads && \
+    chown -R spring:spring /data/easymall/uploads
 USER spring:spring
 
 WORKDIR /app
