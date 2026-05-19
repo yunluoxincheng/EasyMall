@@ -106,6 +106,20 @@ public class SignInServiceImpl implements ISignInService {
     }
 
     @Override
+    public SignInResultVO getSignInStatus(Long userId) {
+        User user = userMapper.selectById(userId);
+        if (user == null) {
+            throw new BusinessException(ResponseCode.USER_NOT_FOUND, "用户不存在");
+        }
+
+        SignInResultVO result = new SignInResultVO();
+        result.setCurrentPoints(user.getPoints());
+        result.setContinuousDays(getContinuousDays(userId));
+        result.setHasSignedToday(hasSignedToday(userId));
+        return result;
+    }
+
+    @Override
     public Integer getContinuousDays(Long userId) {
         // 获取最近一次的签到记录
         LambdaQueryWrapper<UserSign> wrapper = new LambdaQueryWrapper<>();

@@ -30,4 +30,12 @@ public interface ISignInService {
      * @return 连续签到天数
      */
     Integer getContinuousDays(Long userId);
+
+    /**
+     * 获取用户签到状态（积分、连续天数、今日是否已签到）
+     *
+     * @param userId 用户ID
+     * @return 签到状态
+     */
+    SignInResultVO getSignInStatus(Long userId);
 }

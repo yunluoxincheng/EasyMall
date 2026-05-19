@@ -32,16 +32,16 @@ public class SignInController {
     }
 
     /**
-     * 检查今日是否已签到
+     * 获取签到状态（积分、连续天数、今日是否已签到）
      */
     @GetMapping("/status")
-    public Result<Boolean> hasSignedToday(HttpServletRequest request) {
+    public Result<SignInResultVO> getSignInStatus(HttpServletRequest request) {
         Long userId = (Long) request.getAttribute("userId");
         if (userId == null) {
             return Result.error(ResponseCode.UNAUTHORIZED);
         }
-        boolean hasSigned = signInService.hasSignedToday(userId);
-        return Result.success(hasSigned);
+        SignInResultVO result = signInService.getSignInStatus(userId);
+        return Result.success(result);
     }
 
     /**
