@@ -114,7 +114,7 @@ public class FileUploadController {
      */
     private String extractRelativePath(String fullUrl) {
         String baseUrl = fileStorageService.getUrl("");
-        if (fullUrl.startsWith(baseUrl)) {
+        if (baseUrl != null && fullUrl.startsWith(baseUrl)) {
             return fullUrl.substring(baseUrl.length() + 1);
         }
         return fullUrl;
