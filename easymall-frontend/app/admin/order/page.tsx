@@ -11,6 +11,7 @@ import { Modal } from "@/components/ui/modal";
 import { Pagination } from "@/components/ui/pagination";
 import { Select } from "@/components/ui/select";
 import { adminApi } from "@/lib/api";
+import { useAdminCancelOrder, useAdminUpdateOrderStatus } from "@/lib/hooks";
 import { formatCurrency, formatDateTime, getOrderStatusLabel, getStatusTone } from "@/lib/format";
 import type { OrderDetailAdmin, OrderPageItem } from "@/lib/types";
 
@@ -22,6 +23,8 @@ export default function AdminOrderPage() {
   const [total, setTotal] = useState(0);
   const [detail, setDetail] = useState<OrderDetailAdmin | null>(null);
   const [open, setOpen] = useState(false);
+  const updateOrderStatus = useAdminUpdateOrderStatus();
+  const cancelOrder = useAdminCancelOrder();
 
   useEffect(() => {
     void loadData();
@@ -54,7 +57,7 @@ export default function AdminOrderPage() {
 
   async function handleShip(item: OrderPageItem) {
     try {
-      await adminApi.updateOrderStatus(item.id, 2);
+      await updateOrderStatus.mutateAsync({ id: item.id, status: 2 });
       toast.success("订单已标记为已发货");
       await loadData();
     } catch (error) {
@@ -67,7 +70,7 @@ export default function AdminOrderPage() {
       return;
     }
     try {
-      await adminApi.cancelOrder(item.id);
+      await cancelOrder.mutateAsync(item.id);
       toast.success("订单已取消");
       await loadData();
     } catch (error) {

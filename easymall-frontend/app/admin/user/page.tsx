@@ -11,6 +11,7 @@ import { Modal } from "@/components/ui/modal";
 import { Pagination } from "@/components/ui/pagination";
 import { Select } from "@/components/ui/select";
 import { adminApi } from "@/lib/api";
+import { useAdminUpdateUserPoints, useAdminUpdateUserRole, useAdminUpdateUserStatus } from "@/lib/hooks";
 import { formatDateTime } from "@/lib/format";
 import type { UserPageItem, UserVO } from "@/lib/types";
 
@@ -24,6 +25,9 @@ export default function AdminUserPage() {
   const [detail, setDetail] = useState<UserVO | null>(null);
   const [open, setOpen] = useState(false);
   const [pointsDelta, setPointsDelta] = useState("0");
+  const updateUserStatus = useAdminUpdateUserStatus();
+  const updateUserRole = useAdminUpdateUserRole();
+  const updateUserPoints = useAdminUpdateUserPoints();
 
   useEffect(() => {
     void loadData();
@@ -58,7 +62,7 @@ export default function AdminUserPage() {
 
   async function handleToggleStatus(item: UserPageItem) {
     try {
-      await adminApi.updateUserStatus(item.id, item.status === 1 ? 0 : 1);
+      await updateUserStatus.mutateAsync({ id: item.id, status: item.status === 1 ? 0 : 1 });
       toast.success(item.status === 1 ? "用户已禁用" : "用户已启用");
       await loadData();
     } catch (error) {
@@ -68,7 +72,7 @@ export default function AdminUserPage() {
 
   async function handleToggleRole(item: UserPageItem) {
     try {
-      await adminApi.updateUserRole(item.id, item.role === 1 ? 0 : 1);
+      await updateUserRole.mutateAsync({ id: item.id, role: item.role === 1 ? 0 : 1 });
       toast.success(item.role === 1 ? "已降级为普通用户" : "已提升为管理员");
       await loadData();
     } catch (error) {
@@ -82,7 +86,7 @@ export default function AdminUserPage() {
     }
 
     try {
-      await adminApi.updateUserPoints(detail.id, Number(pointsDelta || "0"));
+      await updateUserPoints.mutateAsync({ id: detail.id, points: Number(pointsDelta || "0") });
       toast.success("积分调整成功");
       const refreshed = await adminApi.getUserById(detail.id);
       setDetail(refreshed);

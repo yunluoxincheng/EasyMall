@@ -13,9 +13,12 @@ import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
 import { Textarea } from "@/components/ui/textarea";
 import { useExchangePointsProduct, usePointsProducts, useUserProfile } from "@/lib/hooks";
+import { updateSessionUser } from "@/lib/session";
+import { useSession } from "@/lib/use-session";
 import type { PointsProductVO } from "@/lib/types";
 
 export default function PointsProductsPage() {
+  const session = useSession();
   const { data: products = [], isLoading } = usePointsProducts();
   const { data: profile } = useUserProfile();
   const exchangeMutation = useExchangePointsProduct();
@@ -53,6 +56,18 @@ export default function PointsProductsPage() {
         receiverAddress: form.receiverAddress.trim(),
         remark: form.remark.trim() || undefined,
       });
+      if (session.user) {
+        try {
+          const { authApi } = await import("@/lib/api");
+          const updated = await authApi.getCurrentUser();
+          updateSessionUser({
+            ...session.user,
+            points: updated.points,
+          });
+        } catch {
+          // session 积分更新失败不影响主流程
+        }
+      }
       toast.success("兑换成功");
       setSelectedProduct(null);
     } catch (error) {

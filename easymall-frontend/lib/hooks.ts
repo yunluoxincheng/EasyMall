@@ -374,8 +374,14 @@ export function useBatchSelectCart() {
 }
 
 export function useCreateOrder() {
+  const qc = useQueryClient();
   return useMutation({
     mutationFn: storefrontApi.createOrder,
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: keys.cart.list });
+      void qc.invalidateQueries({ queryKey: keys.cart.count });
+      void qc.invalidateQueries({ queryKey: ["orders"] });
+    },
   });
 }
 
@@ -432,8 +438,14 @@ export function useRemoveFavorite() {
 }
 
 export function useReceiveCoupon() {
+  const qc = useQueryClient();
   return useMutation({
     mutationFn: (templateId: number) => storefrontApi.receiveCoupon(templateId),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: keys.coupons.templates });
+      void qc.invalidateQueries({ queryKey: ["coupons", "mine"] });
+      void qc.invalidateQueries({ queryKey: ["coupons", "available"] });
+    },
   });
 }
 
@@ -455,6 +467,7 @@ export function useCreateComment() {
     mutationFn: storefrontApi.createComment,
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["comments"] });
+      void qc.invalidateQueries({ queryKey: ["products", "detail"] });
     },
   });
 }
@@ -465,6 +478,7 @@ export function useDeleteMyComment() {
     mutationFn: (commentId: number) => storefrontApi.deleteMyComment(commentId),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["comments"] });
+      void qc.invalidateQueries({ queryKey: ["products", "detail"] });
     },
   });
 }
@@ -488,6 +502,7 @@ export function useExchangePointsProduct() {
       void qc.invalidateQueries({ queryKey: keys.points.products });
       void qc.invalidateQueries({ queryKey: ["points", "records"] });
       void qc.invalidateQueries({ queryKey: keys.user.profile });
+      void qc.invalidateQueries({ queryKey: keys.signin.status });
     },
   });
 }
@@ -653,6 +668,7 @@ export function useAdminCreateProduct() {
     mutationFn: adminApi.createProduct,
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["admin", "products"] });
+      void qc.invalidateQueries({ queryKey: ["products"] });
     },
   });
 }
@@ -664,6 +680,7 @@ export function useAdminUpdateProduct() {
       adminApi.updateProduct(id, payload),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["admin", "products"] });
+      void qc.invalidateQueries({ queryKey: ["products"] });
     },
   });
 }
@@ -675,6 +692,7 @@ export function useAdminUpdateProductStatus() {
       adminApi.updateProductStatus(id, status),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["admin", "products"] });
+      void qc.invalidateQueries({ queryKey: ["products"] });
     },
   });
 }
@@ -686,6 +704,7 @@ export function useAdminUpdateProductStock() {
       adminApi.updateProductStock(id, stock),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["admin", "products"] });
+      void qc.invalidateQueries({ queryKey: ["products"] });
     },
   });
 }
@@ -696,6 +715,7 @@ export function useAdminDeleteProduct() {
     mutationFn: (id: number) => adminApi.deleteProduct(id),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["admin", "products"] });
+      void qc.invalidateQueries({ queryKey: ["products"] });
     },
   });
 }
@@ -706,6 +726,7 @@ export function useAdminCreateCategory() {
     mutationFn: adminApi.createCategory,
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["admin", "categories"] });
+      void qc.invalidateQueries({ queryKey: keys.categories.tree });
     },
   });
 }
@@ -717,6 +738,7 @@ export function useAdminUpdateCategory() {
       adminApi.updateCategory(id, payload),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["admin", "categories"] });
+      void qc.invalidateQueries({ queryKey: keys.categories.tree });
     },
   });
 }
@@ -728,6 +750,7 @@ export function useAdminUpdateCategoryStatus() {
       adminApi.updateCategoryStatus(id, status),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["admin", "categories"] });
+      void qc.invalidateQueries({ queryKey: keys.categories.tree });
     },
   });
 }
@@ -738,6 +761,7 @@ export function useAdminDeleteCategory() {
     mutationFn: (id: number) => adminApi.deleteCategory(id),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["admin", "categories"] });
+      void qc.invalidateQueries({ queryKey: keys.categories.tree });
     },
   });
 }
@@ -749,6 +773,8 @@ export function useAdminUpdateOrderStatus() {
       adminApi.updateOrderStatus(id, status),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["admin", "orders"] });
+      void qc.invalidateQueries({ queryKey: ["orders"] });
+      void qc.invalidateQueries({ queryKey: ["payments"] });
     },
   });
 }
@@ -759,6 +785,8 @@ export function useAdminCancelOrder() {
     mutationFn: (id: number) => adminApi.cancelOrder(id),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["admin", "orders"] });
+      void qc.invalidateQueries({ queryKey: ["orders"] });
+      void qc.invalidateQueries({ queryKey: ["payments"] });
     },
   });
 }
@@ -770,6 +798,7 @@ export function useAdminUpdateUserStatus() {
       adminApi.updateUserStatus(id, status),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["admin", "users"] });
+      void qc.invalidateQueries({ queryKey: keys.user.profile });
     },
   });
 }
@@ -781,6 +810,7 @@ export function useAdminUpdateUserRole() {
       adminApi.updateUserRole(id, role),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["admin", "users"] });
+      void qc.invalidateQueries({ queryKey: keys.user.profile });
     },
   });
 }
@@ -792,6 +822,9 @@ export function useAdminUpdateUserPoints() {
       adminApi.updateUserPoints(id, points),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["admin", "users"] });
+      void qc.invalidateQueries({ queryKey: keys.user.profile });
+      void qc.invalidateQueries({ queryKey: ["points", "records"] });
+      void qc.invalidateQueries({ queryKey: keys.signin.status });
     },
   });
 }
@@ -802,6 +835,8 @@ export function useAdminCreateCoupon() {
     mutationFn: adminApi.createCoupon,
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["admin", "coupons"] });
+      void qc.invalidateQueries({ queryKey: keys.coupons.templates });
+      void qc.invalidateQueries({ queryKey: keys.admin.couponStatistics });
     },
   });
 }
@@ -812,6 +847,8 @@ export function useAdminUpdateCoupon() {
     mutationFn: adminApi.updateCoupon,
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["admin", "coupons"] });
+      void qc.invalidateQueries({ queryKey: keys.coupons.templates });
+      void qc.invalidateQueries({ queryKey: keys.admin.couponStatistics });
     },
   });
 }
@@ -823,6 +860,7 @@ export function useAdminUpdateCouponStatus() {
       adminApi.updateCouponStatus(id, status),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["admin", "coupons"] });
+      void qc.invalidateQueries({ queryKey: keys.coupons.templates });
     },
   });
 }
@@ -833,6 +871,8 @@ export function useAdminDeleteCoupon() {
     mutationFn: (id: number) => adminApi.deleteCoupon(id),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["admin", "coupons"] });
+      void qc.invalidateQueries({ queryKey: keys.coupons.templates });
+      void qc.invalidateQueries({ queryKey: keys.admin.couponStatistics });
     },
   });
 }
@@ -843,6 +883,7 @@ export function useAdminApproveComment() {
     mutationFn: (id: number) => adminApi.approveComment(id),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["admin", "comments"] });
+      void qc.invalidateQueries({ queryKey: ["comments"] });
     },
   });
 }
@@ -853,6 +894,7 @@ export function useAdminRejectComment() {
     mutationFn: (id: number) => adminApi.rejectComment(id),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["admin", "comments"] });
+      void qc.invalidateQueries({ queryKey: ["comments"] });
     },
   });
 }
@@ -864,6 +906,7 @@ export function useAdminReplyComment() {
       adminApi.replyComment(id, reply),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["admin", "comments"] });
+      void qc.invalidateQueries({ queryKey: ["comments"] });
     },
   });
 }
@@ -874,6 +917,8 @@ export function useAdminDeleteComment() {
     mutationFn: (id: number) => adminApi.deleteComment(id),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["admin", "comments"] });
+      void qc.invalidateQueries({ queryKey: ["comments"] });
+      void qc.invalidateQueries({ queryKey: ["products", "detail"] });
     },
   });
 }

@@ -12,6 +12,12 @@ import { Pagination } from "@/components/ui/pagination";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { adminApi } from "@/lib/api";
+import {
+  useAdminCreateCoupon,
+  useAdminDeleteCoupon,
+  useAdminUpdateCoupon,
+  useAdminUpdateCouponStatus,
+} from "@/lib/hooks";
 import { formatCurrency, formatDate } from "@/lib/format";
 import type { CouponTemplateDTO, CouponTemplateVO, CouponUsageLogVO } from "@/lib/types";
 
@@ -44,6 +50,10 @@ export default function AdminCouponPage() {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<CouponTemplateVO | null>(null);
   const [form, setForm] = useState<CouponTemplateDTO>(emptyForm);
+  const createCoupon = useAdminCreateCoupon();
+  const updateCoupon = useAdminUpdateCoupon();
+  const updateCouponStatus = useAdminUpdateCouponStatus();
+  const deleteCoupon = useAdminDeleteCoupon();
 
   useEffect(() => {
     void loadData();
@@ -131,13 +141,13 @@ export default function AdminCouponPage() {
 
     try {
       if (editing) {
-        await adminApi.updateCoupon({
+        await updateCoupon.mutateAsync({
           ...form,
           id: editing.id,
         });
         toast.success("优惠券已更新");
       } else {
-        await adminApi.createCoupon(form);
+        await createCoupon.mutateAsync(form);
         toast.success("优惠券已创建");
       }
       setOpen(false);
@@ -151,7 +161,7 @@ export default function AdminCouponPage() {
 
   async function handleToggleStatus(item: CouponTemplateVO) {
     try {
-      await adminApi.updateCouponStatus(item.id, item.status === 1 ? 0 : 1);
+      await updateCouponStatus.mutateAsync({ id: item.id, status: item.status === 1 ? 0 : 1 });
       toast.success(item.status === 1 ? "优惠券已下架" : "优惠券已上架");
       await loadData();
     } catch (error) {
@@ -164,7 +174,7 @@ export default function AdminCouponPage() {
       return;
     }
     try {
-      await adminApi.deleteCoupon(item.id);
+      await deleteCoupon.mutateAsync(item.id);
       toast.success("优惠券已删除");
       await loadData();
       await loadStats();

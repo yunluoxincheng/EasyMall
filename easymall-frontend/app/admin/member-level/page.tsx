@@ -10,6 +10,12 @@ import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
 import { Textarea } from "@/components/ui/textarea";
 import { adminApi } from "@/lib/api";
+import {
+  useAdminCreateMemberLevel,
+  useAdminDeleteMemberLevel,
+  useAdminUpdateMemberLevel,
+  useAdminUpdateMemberLevelStatus,
+} from "@/lib/hooks";
 import { formatDateTime } from "@/lib/format";
 import type { MemberLevelFormData, MemberLevelItem } from "@/lib/types";
 
@@ -30,6 +36,10 @@ export default function AdminMemberLevelPage() {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<MemberLevelItem | null>(null);
   const [form, setForm] = useState<MemberLevelFormData>(emptyForm);
+  const createMemberLevel = useAdminCreateMemberLevel();
+  const updateMemberLevel = useAdminUpdateMemberLevel();
+  const updateMemberLevelStatus = useAdminUpdateMemberLevelStatus();
+  const deleteMemberLevel = useAdminDeleteMemberLevel();
 
   useEffect(() => {
     void loadData();
@@ -57,10 +67,10 @@ export default function AdminMemberLevelPage() {
 
     try {
       if (editing) {
-        await adminApi.updateMemberLevel(editing.id, form);
+        await updateMemberLevel.mutateAsync({ id: editing.id, payload: form });
         toast.success("会员等级已更新");
       } else {
-        await adminApi.createMemberLevel(form);
+        await createMemberLevel.mutateAsync(form);
         toast.success("会员等级已创建");
       }
       setOpen(false);
@@ -73,7 +83,7 @@ export default function AdminMemberLevelPage() {
 
   async function handleToggleStatus(item: MemberLevelItem) {
     try {
-      await adminApi.updateMemberLevelStatus(item.id, item.status === 1 ? 0 : 1);
+      await updateMemberLevelStatus.mutateAsync({ id: item.id, status: item.status === 1 ? 0 : 1 });
       toast.success(item.status === 1 ? "等级已禁用" : "等级已启用");
       await loadData();
     } catch (error) {
@@ -86,7 +96,7 @@ export default function AdminMemberLevelPage() {
       return;
     }
     try {
-      await adminApi.deleteMemberLevel(item.id);
+      await deleteMemberLevel.mutateAsync(item.id);
       toast.success("会员等级已删除");
       await loadData();
     } catch (error) {

@@ -12,6 +12,13 @@ import { Pagination } from "@/components/ui/pagination";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { adminApi } from "@/lib/api";
+import {
+  useAdminCreateProduct,
+  useAdminDeleteProduct,
+  useAdminUpdateProduct,
+  useAdminUpdateProductStatus,
+  useAdminUpdateProductStock,
+} from "@/lib/hooks";
 import { formatCurrency, formatDateTime } from "@/lib/format";
 import type { CategoryPageItem, ProductDetail, ProductFormData, ProductPageItem } from "@/lib/types";
 
@@ -40,6 +47,11 @@ export default function AdminProductPage() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [form, setForm] = useState<ProductFormData>(emptyForm);
   const [submitting, setSubmitting] = useState(false);
+  const createProduct = useAdminCreateProduct();
+  const updateProduct = useAdminUpdateProduct();
+  const updateProductStatus = useAdminUpdateProductStatus();
+  const updateProductStock = useAdminUpdateProductStock();
+  const deleteProduct = useAdminDeleteProduct();
 
   useEffect(() => {
     void loadCategories();
@@ -112,11 +124,11 @@ export default function AdminProductPage() {
     setSubmitting(true);
     try {
       if (editingId) {
-        await adminApi.updateProduct(editingId, form);
-        await adminApi.updateProductStock(editingId, form.stock || 0);
+        await updateProduct.mutateAsync({ id: editingId, payload: form });
+        await updateProductStock.mutateAsync({ id: editingId, stock: form.stock || 0 });
         toast.success("商品已更新");
       } else {
-        await adminApi.createProduct(form);
+        await createProduct.mutateAsync(form);
         toast.success("商品已创建");
       }
       setOpen(false);
@@ -131,7 +143,7 @@ export default function AdminProductPage() {
 
   async function handleToggleStatus(item: ProductPageItem) {
     try {
-      await adminApi.updateProductStatus(item.id, item.status === 1 ? 0 : 1);
+      await updateProductStatus.mutateAsync({ id: item.id, status: item.status === 1 ? 0 : 1 });
       toast.success(item.status === 1 ? "商品已下架" : "商品已上架");
       await loadData();
     } catch (error) {
@@ -144,7 +156,7 @@ export default function AdminProductPage() {
       return;
     }
     try {
-      await adminApi.deleteProduct(item.id);
+      await deleteProduct.mutateAsync(item.id);
       toast.success("商品已删除");
       await loadData();
     } catch (error) {

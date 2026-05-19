@@ -11,6 +11,7 @@ import { Modal } from "@/components/ui/modal";
 import { Pagination } from "@/components/ui/pagination";
 import { Select } from "@/components/ui/select";
 import { adminApi } from "@/lib/api";
+import { useAdminCreateCategory, useAdminDeleteCategory, useAdminUpdateCategory, useAdminUpdateCategoryStatus } from "@/lib/hooks";
 import type { CategoryFormData, CategoryPageItem } from "@/lib/types";
 
 const emptyForm: CategoryFormData = {
@@ -32,6 +33,10 @@ export default function AdminCategoryPage() {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<CategoryPageItem | null>(null);
   const [form, setForm] = useState<CategoryFormData>(emptyForm);
+  const createCategory = useAdminCreateCategory();
+  const updateCategory = useAdminUpdateCategory();
+  const updateCategoryStatus = useAdminUpdateCategoryStatus();
+  const deleteCategory = useAdminDeleteCategory();
 
   useEffect(() => {
     void loadData();
@@ -81,10 +86,10 @@ export default function AdminCategoryPage() {
 
     try {
       if (editing) {
-        await adminApi.updateCategory(editing.id, form);
+        await updateCategory.mutateAsync({ id: editing.id, payload: form });
         toast.success("分类已更新");
       } else {
-        await adminApi.createCategory(form);
+        await createCategory.mutateAsync(form);
         toast.success("分类已创建");
       }
       setOpen(false);
@@ -97,7 +102,7 @@ export default function AdminCategoryPage() {
 
   async function handleToggleStatus(item: CategoryPageItem) {
     try {
-      await adminApi.updateCategoryStatus(item.id, item.status === 1 ? 0 : 1);
+      await updateCategoryStatus.mutateAsync({ id: item.id, status: item.status === 1 ? 0 : 1 });
       toast.success(item.status === 1 ? "分类已禁用" : "分类已启用");
       await loadData();
     } catch (error) {
@@ -110,7 +115,7 @@ export default function AdminCategoryPage() {
       return;
     }
     try {
-      await adminApi.deleteCategory(item.id);
+      await deleteCategory.mutateAsync(item.id);
       toast.success("分类已删除");
       await loadData();
     } catch (error) {

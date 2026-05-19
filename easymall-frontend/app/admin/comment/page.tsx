@@ -12,6 +12,7 @@ import { Pagination } from "@/components/ui/pagination";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { adminApi } from "@/lib/api";
+import { useAdminApproveComment, useAdminDeleteComment, useAdminRejectComment, useAdminReplyComment } from "@/lib/hooks";
 import { formatDateTime } from "@/lib/format";
 import type { CommentPageItem } from "@/lib/types";
 
@@ -24,6 +25,10 @@ export default function AdminCommentPage() {
   const [total, setTotal] = useState(0);
   const [replyTarget, setReplyTarget] = useState<CommentPageItem | null>(null);
   const [reply, setReply] = useState("");
+  const approveComment = useAdminApproveComment();
+  const rejectComment = useAdminRejectComment();
+  const replyComment = useAdminReplyComment();
+  const deleteComment = useAdminDeleteComment();
 
   useEffect(() => {
     void loadData();
@@ -47,7 +52,7 @@ export default function AdminCommentPage() {
 
   async function handleApprove(id: number) {
     try {
-      await adminApi.approveComment(id);
+      await approveComment.mutateAsync(id);
       toast.success("评论已通过");
       await loadData();
     } catch (error) {
@@ -57,7 +62,7 @@ export default function AdminCommentPage() {
 
   async function handleReject(id: number) {
     try {
-      await adminApi.rejectComment(id);
+      await rejectComment.mutateAsync(id);
       toast.success("评论已拒绝");
       await loadData();
     } catch (error) {
@@ -70,7 +75,7 @@ export default function AdminCommentPage() {
       return;
     }
     try {
-      await adminApi.deleteComment(id);
+      await deleteComment.mutateAsync(id);
       toast.success("评论已删除");
       await loadData();
     } catch (error) {
@@ -84,7 +89,7 @@ export default function AdminCommentPage() {
       return;
     }
     try {
-      await adminApi.replyComment(replyTarget.id, reply.trim());
+      await replyComment.mutateAsync({ id: replyTarget.id, reply: reply.trim() });
       toast.success("回复成功");
       setReplyTarget(null);
       setReply("");

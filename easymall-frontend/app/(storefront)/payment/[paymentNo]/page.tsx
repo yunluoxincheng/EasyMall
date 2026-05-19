@@ -18,7 +18,7 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { LoadingState } from "@/components/ui/loading-state";
 import { usePayByPaymentNo, usePaymentByNo } from "@/lib/hooks";
-import { executePayment, getPaymentProviders } from "@/lib/payment-providers";
+import { getPaymentProviders } from "@/lib/payment-providers";
 import { formatCurrency, formatDateTime, getPaymentStatusLabel } from "@/lib/format";
 import type { PaymentProviderMeta } from "@/lib/types";
 
@@ -56,8 +56,10 @@ export default function PaymentPage() {
     setStatusMessage("");
 
     try {
-      await executePayment(payment.paymentNo, selectedProvider);
-      payMutation.reset();
+      if (selectedProvider !== "MOCK") {
+        throw new Error("当前版本仅开放模拟支付执行流程");
+      }
+      await payMutation.mutateAsync(payment.paymentNo);
       setStatusMessage("模拟支付执行成功，订单状态已完成回流。");
       toast.success("支付成功");
     } catch (error) {

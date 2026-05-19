@@ -12,6 +12,12 @@ import { Pagination } from "@/components/ui/pagination";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { adminApi } from "@/lib/api";
+import {
+  useAdminCreatePointsProduct,
+  useAdminDeletePointsProduct,
+  useAdminUpdatePointsProduct,
+  useAdminUpdatePointsProductStatus,
+} from "@/lib/hooks";
 import { formatDateTime } from "@/lib/format";
 import type { PointsProductFormData, PointsProductPageItem } from "@/lib/types";
 
@@ -33,6 +39,10 @@ export default function AdminPointsProductPage() {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<PointsProductPageItem | null>(null);
   const [form, setForm] = useState<PointsProductFormData>(emptyForm);
+  const createPointsProduct = useAdminCreatePointsProduct();
+  const updatePointsProduct = useAdminUpdatePointsProduct();
+  const updatePointsProductStatus = useAdminUpdatePointsProductStatus();
+  const deletePointsProduct = useAdminDeletePointsProduct();
 
   useEffect(() => {
     void loadData();
@@ -66,10 +76,10 @@ export default function AdminPointsProductPage() {
 
     try {
       if (editing) {
-        await adminApi.updatePointsProduct(editing.id, form);
+        await updatePointsProduct.mutateAsync({ id: editing.id, payload: form });
         toast.success("积分商品已更新");
       } else {
-        await adminApi.createPointsProduct(form);
+        await createPointsProduct.mutateAsync(form);
         toast.success("积分商品已创建");
       }
       setOpen(false);
@@ -82,7 +92,7 @@ export default function AdminPointsProductPage() {
 
   async function handleToggleStatus(item: PointsProductPageItem) {
     try {
-      await adminApi.updatePointsProductStatus(item.id, item.status === 1 ? 0 : 1);
+      await updatePointsProductStatus.mutateAsync({ id: item.id, status: item.status === 1 ? 0 : 1 });
       toast.success(item.status === 1 ? "积分商品已下架" : "积分商品已上架");
       await loadData();
     } catch (error) {
@@ -95,7 +105,7 @@ export default function AdminPointsProductPage() {
       return;
     }
     try {
-      await adminApi.deletePointsProduct(item.id);
+      await deletePointsProduct.mutateAsync(item.id);
       toast.success("积分商品已删除");
       await loadData();
     } catch (error) {
