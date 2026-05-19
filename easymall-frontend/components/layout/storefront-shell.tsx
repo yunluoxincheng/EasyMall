@@ -491,6 +491,8 @@ export function StorefrontShell({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       </header>
+      </>
+      )}
 
       <main className="mx-auto min-h-[calc(100vh-240px)] max-w-[1280px] px-4 py-6">
         {children}
@@ -550,8 +552,6 @@ export function StorefrontShell({ children }: { children: React.ReactNode }) {
           EasyMall · 促销运营、商品陈列与完整购物路径一体化前台演示
         </div>
       </footer>
-      )}
-      </>
       )}
     </div>
   );
