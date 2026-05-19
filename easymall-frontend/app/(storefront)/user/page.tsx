@@ -58,7 +58,7 @@ export default function UserProfilePage() {
     }
     try {
       setUploading(true);
-      const result = await storefrontApi.uploadImage(file, "avatar");
+      const result = await storefrontApi.uploadImage(file, "avatars");
       await updateProfile.mutateAsync({ avatar: result.url });
       if (session.user) {
         updateSessionUser({ ...session.user, avatar: result.url });
