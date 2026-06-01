@@ -1,14 +1,15 @@
 # user-layout Specification
 
 ## Purpose
-TBD - created by archiving change add-user-frontend. Update Purpose after archive.
+定义用户端公共布局，包括顶部导航栏、搜索功能、购物车角标、用户菜单，以及管理员在个人中心的专属入口。用户端顶部导航不直接暴露管理后台入口。
+
 ## Requirements
 ### Requirement: 用户端公共布局
-系统 SHALL 提供用户端专用布局，包含顶部导航栏和底部 Footer，与管理端布局独立。
+系统 SHALL 提供用户端专用布局，包含顶部导航栏、商城内容区域和底部 Footer，与管理端布局独立；用户端顶部导航 SHALL 不直接暴露管理后台入口。
 
 #### Scenario: 访问用户端任意页面显示公共布局
 - **WHEN** 用户访问用户端路由（如 /products、/cart、/orders）
-- **THEN** 页面顶部显示导航栏（Logo、商品分类入口、搜索框、购物车图标带数量角标、用户头像/菜单），底部显示 Footer
+- **THEN** 页面顶部显示导航栏（Logo、商城首页入口、优惠券入口、积分商城入口、搜索框、购物车图标带数量角标、用户菜单），底部显示 Footer
 
 #### Scenario: 未登录用户看到导航栏登录入口
 - **WHEN** 未登录用户访问用户端页面
@@ -16,7 +17,11 @@ TBD - created by archiving change add-user-frontend. Update Purpose after archiv
 
 #### Scenario: 已登录用户看到用户菜单
 - **WHEN** 已登录用户访问用户端页面
-- **THEN** 导航栏右侧显示用户昵称和下拉菜单（我的订单、个人中心、退出登录）
+- **THEN** 导航栏右侧显示用户昵称和下拉菜单（我的订单、个人中心、我的收藏、会员中心、退出登录）
+
+#### Scenario: 管理员不在顶部导航看到后台入口
+- **WHEN** 已登录管理员访问用户端页面
+- **THEN** 顶部导航 SHALL 不显示独立的管理后台按钮，管理员 SHALL 从个人中心进入后台
 
 ### Requirement: 顶部导航栏搜索功能
 系统 SHALL 在顶部导航栏提供搜索输入框，支持按商品名称搜索。
@@ -36,3 +41,13 @@ TBD - created by archiving change add-user-frontend. Update Purpose after archiv
 - **WHEN** 用户购物车为空
 - **THEN** 购物车图标不显示角标
 
+### Requirement: 个人中心管理员入口
+系统 SHALL 仅在管理员用户的个人中心开放管理后台入口，普通用户 SHALL 不看到该入口。
+
+#### Scenario: 管理员看到后台入口
+- **WHEN** 已登录管理员访问个人中心
+- **THEN** 页面 SHALL 显示进入管理后台的入口，并说明当前账号具备管理员权限
+
+#### Scenario: 普通用户不看到后台入口
+- **WHEN** 已登录普通用户访问个人中心
+- **THEN** 页面 SHALL 不显示管理后台入口

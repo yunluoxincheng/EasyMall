@@ -1,14 +1,37 @@
 # product-browsing Specification
 
 ## Purpose
-TBD - created by archiving change add-user-frontend. Update Purpose after archive.
+定义商城首页体验、商品列表页、商品详情页、热门/新品推荐、首页轮播图和商品分类导航。融合高质感视觉展示与高效商品发现能力。
+
 ## Requirements
+### Requirement: 商城首页体验
+系统 SHALL 提供现代商城首页，融合高质感视觉展示与高效商品发现能力。
+
+#### Scenario: 首页首屏展示商城核心模块
+- **WHEN** 用户访问商城首页
+- **THEN** 页面 SHALL 展示搜索入口、分类选择、轮播/焦点图、快捷入口、服务承诺和推荐商品模块
+
+#### Scenario: 首页接口短暂不可用
+- **WHEN** 首页商品或分类接口短暂请求失败
+- **THEN** 页面 SHALL 显示可用的兜底分类或推荐占位内容，不呈现破损空白首屏
+
+### Requirement: 首页轮播图
+系统 SHALL 在商城首页提供轮播/焦点图区域，用于展示主推商品、活动或平台精选内容。
+
+#### Scenario: 查看轮播内容
+- **WHEN** 用户访问商城首页
+- **THEN** 轮播区域 SHALL 展示主标题、辅助文案、行动按钮和关联图片或商品图
+
+#### Scenario: 点击轮播商品
+- **WHEN** 用户点击关联到商品的轮播内容
+- **THEN** 系统 SHALL 导航到对应商品详情页
+
 ### Requirement: 商品列表页
-系统 SHALL 提供商品列表页，支持分页浏览、分类筛选和关键词搜索。
+系统 SHALL 提供商品列表页，支持分页浏览、分类筛选、关键词搜索，并以现代商品卡片网格展示商品信息。
 
 #### Scenario: 默认加载商品列表
 - **WHEN** 用户访问商品列表页
-- **THEN** 系统显示商品卡片网格，每张卡片包含商品图片、名称、价格，支持分页加载
+- **THEN** 系统显示商品卡片网格，每张卡片包含商品图片、名称、副标题、分类、销量、价格和原价信息，支持分页加载
 
 #### Scenario: 按分类筛选商品
 - **WHEN** 用户选择某个商品分类
@@ -49,9 +72,12 @@ TBD - created by archiving change add-user-frontend. Update Purpose after archiv
 - **THEN** 页面显示新品推荐区域，展示最新上架商品卡片
 
 ### Requirement: 商品分类导航
-系统 SHALL 在用户端提供商品分类导航，展示分类树供用户浏览。
+系统 SHALL 在用户端提供商品分类导航，展示分类树和快捷分类入口供用户浏览。
 
 #### Scenario: 展示分类导航
 - **WHEN** 用户访问用户端页面
 - **THEN** 导航区域或侧边栏展示分类树，用户点击分类可筛选商品
 
+#### Scenario: 首页展示高频分类
+- **WHEN** 用户访问商城首页
+- **THEN** 页面 SHALL 在首屏或首屏附近展示可横向浏览的高频分类入口

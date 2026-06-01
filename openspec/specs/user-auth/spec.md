@@ -1,7 +1,8 @@
 # user-auth Specification
 
 ## Purpose
-TBD - created by archiving change add-user-frontend. Update Purpose after archive.
+定义用户注册、登录、登出、路由守卫以及管理员角色会话行为。管理员通过统一登录页登录，不再使用独立管理端登录页面。
+
 ## Requirements
 ### Requirement: 用户注册
 系统 SHALL 提供用户注册页面，允许新用户通过用户名、昵称、密码、确认密码进行注册。手机号和邮箱为可选字段。
@@ -19,11 +20,15 @@ TBD - created by archiving change add-user-frontend. Update Purpose after archiv
 - **THEN** 表单校验拦截提交，显示"昵称不能为空"
 
 ### Requirement: 用户登录
-系统 SHALL 提供用户登录页面，允许已注册用户通过用户名和密码登录。
+系统 SHALL 提供统一用户登录页面，允许已注册用户通过用户名和密码登录；管理员 SHALL 使用同一登录页面登录，不再使用独立管理端登录页面。
 
 #### Scenario: 成功登录
-- **WHEN** 用户输入正确的用户名和密码，点击登录
+- **WHEN** 普通用户输入正确的用户名和密码，点击登录
 - **THEN** 系统保存 token，跳转到用户端首页
+
+#### Scenario: 管理员成功登录
+- **WHEN** 管理员输入正确的用户名和密码，点击登录
+- **THEN** 系统保存 token 和管理员角色信息，默认跳转到个人中心并显示管理后台入口
 
 #### Scenario: 登录失败提示
 - **WHEN** 用户输入错误的用户名或密码
@@ -36,8 +41,19 @@ TBD - created by archiving change add-user-frontend. Update Purpose after archiv
 - **WHEN** 已登录用户点击导航栏"退出登录"
 - **THEN** 系统清除 token 和用户信息，跳转到用户端首页
 
+### Requirement: 管理员角色会话
+系统 SHALL 使用统一用户会话识别管理员角色，并基于角色开放管理后台访问能力。
+
+#### Scenario: 管理员登录后保留用户会话
+- **WHEN** 管理员通过统一登录页输入正确用户名和密码
+- **THEN** 系统 SHALL 保存普通用户会话信息，并标记该用户具备管理员访问能力
+
+#### Scenario: 普通用户不能访问后台
+- **WHEN** 普通用户登录后访问管理后台路由
+- **THEN** 系统 SHALL 拒绝访问并引导用户回到无权限状态或统一登录流程
+
 ### Requirement: 用户端路由守卫
-系统 SHALL 对需要登录的用户端页面进行路由守卫。
+系统 SHALL 对需要登录的用户端页面进行路由守卫，并 SHALL 对管理后台页面执行管理员角色守卫。
 
 #### Scenario: 未登录访问受保护页面
 - **WHEN** 未登录用户访问 /orders 或 /user 等受保护路由
@@ -47,3 +63,10 @@ TBD - created by archiving change add-user-frontend. Update Purpose after archiv
 - **WHEN** 已登录用户访问 /login
 - **THEN** 系统重定向到用户端首页
 
+#### Scenario: 管理员访问后台路由
+- **WHEN** 已登录管理员访问管理后台路由
+- **THEN** 系统允许访问并渲染管理后台页面
+
+#### Scenario: 未登录访问后台路由
+- **WHEN** 未登录用户访问管理后台路由
+- **THEN** 系统跳转到统一用户登录页，并在登录后返回目标后台路由
